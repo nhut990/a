@@ -1,316 +1,567 @@
 <!DOCTYPE html>
+
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Chia sẻ vị trí thời gian thực</title>
-
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-  <style>
-    body { font-family: sans-serif; text-align: center; background: #f2f2f2; }
-    #map { height: 70vh; }
-    input, button { padding: 10px; font-size: 16px; margin: 5px; }
-    button { background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; }
-    #info, #guide { padding: 10px; }
-    #guide {
-      display: none;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      margin: 10px auto;
-      text-align: left;
-      max-width: 600px;
-    }
-    #guide h3 { margin-top: 0; }
-    #guide ul { padding-left: 20px; }
-    /* Nút vị trí của tôi */
-    #locateMeBtn {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      z-index: 1000;
-      width: 46px;
-      height: 46px;
-      background: #fff;
-      border: 2px solid #2196F3;
-      border-radius: 50%;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    #locateMeBtn:hover {
-      background: #e3f2fd;
-    }
-    #locateMeBtn svg {
-      width: 28px;
-      height: 28px;
-      fill: #2196F3;
-    }
-    .leaflet-control-container { position: relative; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lấy Thông Tin IPA</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .main-container {
+            max-width: 700px;
+            margin: 50px auto;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: none;
+        }
+        .info-result {
+            display: none;
+            margin-top: 20px;
+        }
+        .info-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .info-value {
+            color: #333;
+            word-break: break-all;
+        }
+        .spinner-border {
+            display: none;
+        }
+        .progress-container {
+            display: none;
+            margin-top: 15px;
+        }
+        .copy-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .debug-toggle {
+            margin-top: 10px;
+            text-align: center;
+        }
+        .debug-info {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            font-size: 12px;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
 </head>
 <body>
+    <div class="main-container">
+        <div class="card">
+            <div class="card-header text-center">
+                <h2 class="mb-0">🔍 Lấy Thông Tin IPA</h2>
+                <p class="mb-0 mt-2">Nhập link IPA để xem thông tin chi tiết</p>
+            </div>
+            <div class="card-body p-4">
+                <form id="ipaForm">
+                    <div class="form-group">
+                        <label for="ipaLink"><strong>Link IPA:</strong></label>
+                        <input type="text" class="form-control form-control-lg" id="ipaLink" 
+                               placeholder="https://archive.org/download/example/app.ipa" required>
+                        <small class="form-text text-muted">
+                            📌 Hỗ trợ: archive.org, github.com, dropbox.com, direct links
+                        </small>
+                    </div>
 
-  <h2>📍 Chia sẻ & xem vị trí thời gian thực</h2>
-  <input id="username" placeholder="Tên người dùng">
-  <button onclick="startShare()">Tôi muốn chia sẻ vị trí</button>
-  <button onclick="startView()">Tôi muốn xem vị trí người khác</button>
-  <button onclick="toggleGuide()">📘 Hướng dẫn sử dụng</button>
+```
+                <div class="row">
+                    <div class="col-6">
+                        <button type="submit" class="btn btn-primary btn-lg btn-block">
+                            <span class="btn-text">Lấy Thông Tin</span>
+                            <span class="spinner-border spinner-border-sm ml-2" role="status"></span>
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button type="button" class="btn btn-success btn-lg btn-block" id="testProxyBtn">
+                            🔧 Test Proxy
+                        </button>
+                    </div>
+                </div>
 
-  <div id="guide">
-    <h3>📘 Cách sử dụng</h3>
-    <p><strong>A chia sẻ vị trí cho B:</strong></p>
-    <ul>
-      <li>A nhập một tên bất kỳ (ví dụ: <em>abc</em>) và nhấn “Tôi muốn chia sẻ vị trí”.</li>
-      <li>B ở thiết bị khác nhập đúng tên đó (<em>abc</em>) và nhấn “Tôi muốn xem vị trí người khác”.</li>
-      <li>B sẽ thấy vị trí của A thay đổi theo thời gian thực.</li>
-    </ul>
-    <p><strong>Lưu ý:</strong></p>
-    <ul>
-      <li>A cần cấp quyền truy cập vị trí chính xác cho trình duyệt.</li>
-      <li>A phải giữ trang web luôn mở. Nếu tắt màn hình hoặc chuyển tab, việc chia sẻ sẽ tạm dừng.</li>
-      <li>Bất cứ lúc nào, có thể bấm nút tròn góc dưới bản đồ để xem vị trí của chính mình.</li>
-    </ul>
-    <button onclick="closeGuide()">Đóng hướng dẫn</button>
-  </div>
+                <!-- Progress bar -->
+                <div class="progress-container">
+                    <div class="progress mt-3" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%">0%</div>
+                    </div>
+                    <small class="text-muted mt-2 d-block text-center" id="progressText">Đang tải...</small>
+                </div>
 
-  <div id="info">Nhập tên và chọn chế độ</div>
-  <div style="position:relative;">
-    <div id="map"></div>
-    <button id="locateMeBtn" title="Xem vị trí của tôi" onclick="showMyLocation()">
-      <!-- SVG icon vị trí -->
-      <svg viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="8" stroke="none"/>
-        <circle cx="12" cy="12" r="2" fill="#fff"/>
-      </svg>
-    </button>
-  </div>
+                <!-- Debug toggle -->
+                <div class="debug-toggle">
+                    <small>
+                        <a href="#" id="debugToggle">🐛 Hiện debug info</a>
+                    </small>
+                </div>
+                <div class="debug-info" id="debugInfo"></div>
+            </form>
 
-  <script>
-    // Firebase cấu hình
-    const firebaseConfig = {
-      apiKey: "AIzaSyDbAhdrKAiv_0VFj8nS2b9-aM6nwbtZXaA",
-      authDomain: "mapgps-6fa8a.firebaseapp.com",
-      databaseURL: "https://mapgps-6fa8a-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "mapgps-6fa8a",
-      storageBucket: "mapgps-6fa8a.appspot.com",
-      messagingSenderId: "237570405681",
-      appId: "1:237570405681:web:583749449110d7e1896c10",
-      measurementId: "G-9S5MMD1DJE"
+            <!-- Kết quả -->
+            <div class="info-result" id="infoResult">
+                <hr class="my-4">
+                <h5 class="text-center mb-4">📱 Thông Tin Ứng Dụng</h5>
+                
+                <div class="info-item">
+                    <div class="info-label">📝 Tên App:</div>
+                    <div class="info-value" id="appName">-</div>
+                    <button class="btn btn-sm btn-outline-secondary copy-btn" data-copy="appName">Copy</button>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">🔢 Phiên Bản:</div>
+                    <div class="info-value" id="appVersion">-</div>
+                    <button class="btn btn-sm btn-outline-secondary copy-btn" data-copy="appVersion">Copy</button>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">🆔 Bundle ID:</div>
+                    <div class="info-value" id="bundleId">-</div>
+                    <button class="btn btn-sm btn-outline-secondary copy-btn" data-copy="bundleId">Copy</button>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">🏗️ Build Version:</div>
+                    <div class="info-value" id="buildVersion">-</div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">📱 Minimum iOS Version:</div>
+                    <div class="info-value" id="minVersion">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick tips -->
+    <div class="card mt-3">
+        <div class="card-body">
+            <h6>💡 Mẹo sử dụng:</h6>
+            <ul class="mb-0 small">
+                <li>Link phải là <strong>direct download link</strong> (download trực tiếp)</li>
+                <li>Nếu dùng Dropbox: link sẽ tự động chuyển từ <code>dl=0</code> sang <code>dl=1</code></li>
+                <li>Link từ <strong>archive.org</strong> và <strong>github.com</strong> hoạt động tốt nhất</li>
+                <li>File IPA phải đúng định dạng và không bị hỏng</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Modal thông báo -->
+<div class="modal fade" id="messageModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Thông báo</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+
+<script>
+    // Debug logger
+    const debugLog = {
+        logs: [],
+        add(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            this.logs.push(`[${timestamp}] [${type.toUpperCase()}] ${message}`);
+            this.update();
+        },
+        update() {
+            $('#debugInfo').html(this.logs.join('<br>'));
+        },
+        clear() {
+            this.logs = [];
+            this.update();
+        }
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
 
-    // Icon marker màu xanh cho chính mình
-    const blueIcon = new L.Icon({
-      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
-      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
-    });
+    // IPA Parser Class - Enhanced version
+    class IPAParser {
+        constructor(proxyUrl = './proxy.php') {
+            this.proxyUrl = proxyUrl;
+            debugLog.add(`Khởi tạo parser với proxy: ${proxyUrl}`);
+        }
 
-    // Icon marker màu đỏ cho đối phương
-    const redIcon = new L.Icon({
-      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
-    });
+        async testProxy() {
+            try {
+                debugLog.add('Đang test proxy...');
+                const response = await fetch(this.proxyUrl);
+                const text = await response.text();
+                debugLog.add(`Proxy response: ${text.substring(0, 100)}`, 'success');
+                return response.ok;
+            } catch (error) {
+                debugLog.add(`Lỗi khi test proxy: ${error.message}`, 'error');
+                return false;
+            }
+        }
 
-    let map, marker, myLocationMarker;
-    let baseLayers;
+        async parseIPA(url) {
+            try {
+                debugLog.clear();
+                debugLog.add(`Bắt đầu parse IPA: ${url}`);
+                
+                // Chuẩn hóa URL
+                url = this.normalizeURL(url);
+                debugLog.add(`URL sau khi chuẩn hóa: ${url}`);
+                
+                // Tải file IPA qua proxy
+                const proxyFullUrl = `${this.proxyUrl}?url=${encodeURIComponent(url)}`;
+                debugLog.add(`Proxy URL: ${proxyFullUrl}`);
+                
+                this.updateProgress(10, 'Đang kết nối tới server...');
+                
+                const response = await fetch(proxyFullUrl);
+                debugLog.add(`Response status: ${response.status} ${response.statusText}`);
+                
+                if (!response.ok) {
+                    // Thử đọc error message từ response
+                    try {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || `HTTP ${response.status}`);
+                    } catch (e) {
+                        const errorText = await response.text();
+                        debugLog.add(`Error response: ${errorText.substring(0, 200)}`, 'error');
+                        throw new Error(`HTTP ${response.status}: Không thể tải file IPA. ${errorText.substring(0, 100)}`);
+                    }
+                }
+                
+                this.updateProgress(30, 'Đang tải file IPA...');
+                
+                const blob = await response.blob();
+                debugLog.add(`File size: ${(blob.size / 1024 / 1024).toFixed(2)} MB`);
+                
+                if (blob.size < 1000) {
+                    throw new Error('File quá nhỏ, có thể không phải file IPA hợp lệ');
+                }
+                
+                this.updateProgress(60, 'Đang phân tích cấu trúc ZIP...');
+                
+                const arrayBuffer = await blob.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
 
-    function initMap() {
-      // Lớp bản đồ đường phố (OpenStreetMap)
-      const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap'
-      });
+                // Kiểm tra ZIP signature
+                if (uint8Array[0] !== 0x50 || uint8Array[1] !== 0x4B) {
+                    throw new Error('File không phải định dạng ZIP/IPA hợp lệ');
+                }
+                debugLog.add('ZIP signature hợp lệ ✓');
 
-      // Lớp bản đồ vệ tinh (Esri World Imagery)
-      const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19,
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
-      });
+                this.updateProgress(80, 'Đang trích xuất Info.plist...');
+                
+                // Parse ZIP
+                const info = await this.extractInfoPlist(uint8Array);
+                debugLog.add('Trích xuất thông tin thành công ✓', 'success');
+                
+                this.updateProgress(100, 'Hoàn thành!');
+                
+                return info;
+            } catch (error) {
+                debugLog.add(`LỖI: ${error.message}`, 'error');
+                throw error;
+            }
+        }
 
-      baseLayers = {
-        "Đường phố": streetLayer,
-        "Vệ tinh": satelliteLayer
-      };
+        normalizeURL(url) {
+            // Xử lý Dropbox
+            if (url.includes('dropbox.com')) {
+                url = url.replace('?dl=0', '?dl=1');
+                if (!url.includes('?dl=')) {
+                    url += (url.includes('?') ? '&' : '?') + 'dl=1';
+                }
+                debugLog.add('Đã chuyển đổi Dropbox link');
+            }
+            
+            // Xử lý Google Drive
+            if (url.includes('drive.google.com')) {
+                const match = url.match(/\/d\/([^/]+)/);
+                if (match) {
+                    url = `https://drive.google.com/uc?export=download&id=${match[1]}`;
+                    debugLog.add('Đã chuyển đổi Google Drive link');
+                }
+            }
+            
+            return url;
+        }
 
-      // Việt Nam bounds (tọa độ góc Tây Bắc và Đông Nam)
-      const vietnamBounds = L.latLngBounds([8.3, 102.0], [23.4, 110.0]);
+        updateProgress(percent, text) {
+            $('.progress-bar').css('width', percent + '%').text(percent + '%');
+            $('#progressText').text(text);
+            debugLog.add(`Progress: ${percent}% - ${text}`);
+        }
 
-      map = L.map('map', {
-        layers: [streetLayer]
-      });
+        async extractInfoPlist(zipData) {
+            const view = new DataView(zipData.buffer);
+            let offset = 0;
+            let filesFound = 0;
+            
+            debugLog.add('Bắt đầu quét cấu trúc ZIP...');
+            
+            while (offset < zipData.length - 4) {
+                // Tìm ZIP local file header (0x504B0304)
+                if (view.getUint32(offset, true) === 0x04034b50) {
+                    filesFound++;
+                    
+                    const filenameLength = view.getUint16(offset + 26, true);
+                    const extraLength = view.getUint16(offset + 28, true);
+                    const compressedSize = view.getUint32(offset + 18, true);
+                    const uncompressedSize = view.getUint32(offset + 22, true);
+                    const compressionMethod = view.getUint16(offset + 8, true);
+                    
+                    const filenameOffset = offset + 30;
+                    const filename = new TextDecoder().decode(
+                        zipData.slice(filenameOffset, filenameOffset + filenameLength)
+                    );
+                    
+                    // Tìm Info.plist
+                    if (filename.includes('Info.plist') && !filename.includes('__MACOSX')) {
+                        debugLog.add(`Tìm thấy Info.plist: ${filename}`);
+                        debugLog.add(`Compression: ${compressionMethod === 8 ? 'Deflate' : compressionMethod === 0 ? 'None' : 'Unknown'}`);
+                        debugLog.add(`Size: ${compressedSize} -> ${uncompressedSize} bytes`);
+                        
+                        const dataOffset = filenameOffset + filenameLength + extraLength;
+                        let plistData = zipData.slice(dataOffset, dataOffset + compressedSize);
+                        
+                        // Giải nén nếu cần
+                        if (compressionMethod === 8) {
+                            try {
+                                plistData = pako.inflate(plistData);
+                                debugLog.add('Đã giải nén Info.plist ✓');
+                            } catch (e) {
+                                debugLog.add(`Lỗi giải nén: ${e.message}`, 'error');
+                                throw new Error('Lỗi khi giải nén Info.plist');
+                            }
+                        }
+                        
+                        return this.parsePlist(plistData);
+                    }
+                    
+                    offset += 30 + filenameLength + extraLength + compressedSize;
+                } else {
+                    offset++;
+                }
+            }
+            
+            debugLog.add(`Đã quét ${filesFound} files trong ZIP`, 'warning');
+            throw new Error(`Không tìm thấy Info.plist trong file IPA (quét ${filesFound} files)`);
+        }
 
-      // Fit map to Vietnam
-      map.fitBounds(vietnamBounds);
+        parsePlist(data) {
+            const text = new TextDecoder().decode(data);
+            debugLog.add(`Plist size: ${text.length} characters`);
+            
+            const getValue = (key) => {
+                const regex = new RegExp(`<key>${key}</key>\\s*<string>([^<]+)</string>`);
+                const match = text.match(regex);
+                if (match) {
+                    debugLog.add(`Found ${key}: ${match[1]}`);
+                }
+                return match ? match[1] : 'N/A';
+            };
 
-      // Thêm control chuyển đổi lớp bản đồ
-      L.control.layers(baseLayers).addTo(map);
+            const info = {
+                appName: getValue('CFBundleDisplayName') || getValue('CFBundleName'),
+                version: getValue('CFBundleShortVersionString'),
+                bundleId: getValue('CFBundleIdentifier'),
+                buildVersion: getValue('CFBundleVersion'),
+                minVersion: getValue('MinimumOSVersion')
+            };
 
-      marker = null;
-      myLocationMarker = null;
+            debugLog.add('Parse plist thành công ✓', 'success');
+            return info;
+        }
     }
 
-    // Hiển thị vị trí hiện tại của chính mình (không chia sẻ, không lưu lên DB)
-    function showMyLocation() {
-      if (!map) initMap();
-      if (!navigator.geolocation) {
-        alert("Thiết bị không hỗ trợ GPS");
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(pos => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        if (!myLocationMarker) {
-          myLocationMarker = L.marker([lat, lng], {icon: blueIcon}).addTo(map);
-        }
-        myLocationMarker.setLatLng([lat, lng]).setIcon(blueIcon).bindPopup("<b>Tôi</b>").openPopup();
-        map.setView([lat, lng], 16);
-        document.getElementById("info").innerText = `Vị trí của tôi: ${lat.toFixed(5)}, ${lng.toFixed(5)} lúc ${new Date().toLocaleTimeString()}`;
-      }, err => {
-        alert("Không lấy được vị trí: " + err.message);
-      }, { enableHighAccuracy: true, timeout: 10000 });
-    }
+    // Main app logic
+    $(document).ready(function() {
+        const parser = new IPAParser();
 
-    function startShare() {
-      if (!map) initMap();
-      const username = document.getElementById("username").value.trim();
-      if (!username) return alert("Nhập tên người dùng");
-
-      document.getElementById("info").innerText = "Đang chia sẻ liên tục...";
-      if (!navigator.geolocation) return alert("Thiết bị không hỗ trợ GPS");
-
-      // Nếu chưa có marker, tạo marker mới với icon màu xanh
-      if (!marker) {
-        marker = L.marker([0, 0], {icon: blueIcon}).addTo(map);
-      }
-
-      navigator.geolocation.watchPosition(
-        pos => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const timestamp = Date.now();
-
-          marker.setLatLng([lat, lng]).setIcon(blueIcon).bindPopup("<b>Tôi</b>").openPopup();
-          map.setView([lat, lng], 16);
-
-          db.ref("locations/" + username).set({ lat, lng, timestamp });
-
-          document.getElementById("info").innerText =
-            `✅ Đang chia sẻ vị trí: ${lat.toFixed(5)}, ${lng.toFixed(5)} lúc ${new Date(timestamp).toLocaleTimeString()}`;
-        },
-        err => {
-          console.error("Lỗi GPS:", err);
-          alert("Không lấy được vị trí: " + err.message);
-        },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-      );
-    }
-
-    function startView() {
-      if (!map) initMap();
-      const username = document.getElementById("username").value.trim();
-      if (!username) return alert("Nhập tên người dùng");
-
-      document.getElementById("info").innerText = "Đang xem vị trí của " + username;
-
-      let viewerLat = null, viewerLng = null;
-
-      function renderInfo(data) {
-        const latlng = [data.lat, data.lng];
-
-        // Marker màu đỏ cho vị trí người chia sẻ
-        if (!marker) {
-          marker = L.marker(latlng, {icon: redIcon}).addTo(map);
-        }
-        marker.setLatLng(latlng).setIcon(redIcon).bindPopup("<b>" + username + "</b>").openPopup();
-        map.setView(latlng, 16);
-
-        let infoHtml = 
-          `📍 Lat: ${data.lat.toFixed(5)}, Lng: ${data.lng.toFixed(5)}<br>
-           ⏱ ${new Date(data.timestamp).toLocaleTimeString()}<br>
-           <a href="https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}" target="_blank">🗺 Chỉ đường đến đây</a>`;
-
-        if (viewerLat !== null && viewerLng !== null) {
-          const distanceKm = getDistanceKm(viewerLat, viewerLng, data.lat, data.lng).toFixed(2);
-          infoHtml =
-            `📍 Lat: ${data.lat.toFixed(5)}, Lng: ${data.lng.toFixed(5)}<br>
-             ⏱ ${new Date(data.timestamp).toLocaleTimeString()}<br>
-             🧭 Cách bạn khoảng: <strong>${distanceKm} km</strong><br>
-             <a href="https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}" target="_blank">🗺 Chỉ đường đến đây</a>`;
-        }
-        document.getElementById("info").innerHTML = infoHtml;
-      }
-
-      navigator.geolocation.getCurrentPosition(viewerPos => {
-        viewerLat = viewerPos.coords.latitude;
-        viewerLng = viewerPos.coords.longitude;
-
-        // Marker màu xanh cho vị trí của mình (chỉ 1 marker duy nhất)
-        if (!myLocationMarker) {
-          myLocationMarker = L.marker([viewerLat, viewerLng], { icon: blueIcon }).addTo(map);
-        }
-        myLocationMarker.setLatLng([viewerLat, viewerLng]).setIcon(blueIcon).bindPopup("<b>Tôi</b>");
-
-        db.ref("locations/" + username).on("value", snap => {
-          const data = snap.val();
-          if (data) {
-            renderInfo(data);
-          } else {
-            document.getElementById("info").innerText = "Không có dữ liệu vị trí cho người dùng này.";
-          }
+        // Debug toggle
+        $('#debugToggle').on('click', function(e) {
+            e.preventDefault();
+            $('#debugInfo').slideToggle();
+            $(this).text($(this).text().includes('Hiện') ? '🐛 Ẩn debug info' : '🐛 Hiện debug info');
         });
-      }, err => {
-        // Nếu không lấy được vị trí người xem, vẫn cho phép xem vị trí người chia sẻ
-        db.ref("locations/" + username).on("value", snap => {
-          const data = snap.val();
-          if (data) {
-            renderInfo(data);
-          } else {
-            document.getElementById("info").innerText = "Không có dữ liệu vị trí cho người dùng này.";
-          }
+
+        // Test proxy button
+        $('#testProxyBtn').on('click', async function() {
+            debugLog.clear();
+            const $btn = $(this);
+            $btn.prop('disabled', true).html('⏳ Testing...');
+            
+            const isWorking = await parser.testProxy();
+            
+            if (isWorking) {
+                showModal('✅ Proxy hoạt động tốt', 'Proxy đang hoạt động bình thường. Bạn có thể nhập link IPA.', 'success');
+            } else {
+                showModal('❌ Lỗi Proxy', 'Proxy không hoạt động. Vui lòng kiểm tra file proxy.php và cấu hình server.', 'danger');
+            }
+            
+            $btn.prop('disabled', false).html('🔧 Test Proxy');
+            $('#debugInfo').show();
         });
-      }, { enableHighAccuracy: true, timeout: 10000 });
-    }
 
-    function getDistanceKm(lat1, lng1, lat2, lng2) {
-      const R = 6371;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLng = (lng2 - lng1) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLng/2) * Math.sin(dLng/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
-    }
+        // Copy buttons
+        $(document).on('click', '.copy-btn', function() {
+            const target = $(this).data('copy');
+            const text = $(`#${target}`).text();
+            
+            // Copy to clipboard
+            const $temp = $('<input>');
+            $('body').append($temp);
+            $temp.val(text).select();
+            document.execCommand('copy');
+            $temp.remove();
+            
+            // Visual feedback
+            $(this).text('✓ Copied!').removeClass('btn-outline-secondary').addClass('btn-success');
+            setTimeout(() => {
+                $(this).text('Copy').removeClass('btn-success').addClass('btn-outline-secondary');
+            }, 2000);
+        });
 
-    function toggleGuide() {
-      const guide = document.getElementById("guide");
-      guide.style.display = guide.style.display === "block" ? "none" : "block";
-    }
+        // Form submit
+        $('#ipaForm').on('submit', async function(e) {
+            e.preventDefault();
+            
+            const url = $('#ipaLink').val().trim();
+            const $btn = $(this).find('button[type="submit"]');
+            const $spinner = $btn.find('.spinner-border');
+            const $btnText = $btn.find('.btn-text');
+            
+            if (!url) {
+                showModal('⚠️ Cảnh báo', 'Vui lòng nhập link IPA', 'warning');
+                return;
+            }
+            
+            // Validate URL format
+            if (!url.match(/^https?:\/\//i)) {
+                showModal('⚠️ URL không hợp lệ', 'URL phải bắt đầu bằng http:// hoặc https://', 'warning');
+                return;
+            }
+            
+            // Hiển thị loading
+            $btn.prop('disabled', true);
+            $spinner.show();
+            $btnText.text('Đang xử lý...');
+            $('#infoResult').hide();
+            $('.progress-container').show();
+            $('.progress-bar').css('width', '0%').text('0%');
 
-    function closeGuide() {
-      document.getElementById("guide").style.display = "none";
-    }
+            try {
+                const info = await parser.parseIPA(url);
+                
+                // Hiển thị kết quả
+                $('#appName').text(info.appName);
+                $('#appVersion').text(info.version);
+                $('#bundleId').text(info.bundleId);
+                $('#buildVersion').text(info.buildVersion);
+                $('#minVersion').text(info.minVersion);
+                
+                $('#infoResult').fadeIn();
+                
+                // Thông báo thành công
+                setTimeout(() => {
+                    showModal('✅ Thành công', 
+                        `<div class="text-center">
+                            <h5>${info.appName}</h5>
+                            <p class="mb-0">Version: <strong>${info.version}</strong></p>
+                            <p class="mb-0"><code>${info.bundleId}</code></p>
+                        </div>`, 
+                        'success');
+                }, 500);
+                
+            } catch (error) {
+                console.error(error);
+                
+                let errorMsg = `<p><strong>Lỗi:</strong> ${error.message}</p>`;
+                let suggestions = `
+                    <hr>
+                    <h6>💡 Các bước khắc phục:</h6>
+                    <ol class="text-left small mb-0">
+                        <li>Kiểm tra link IPA có mở được trong trình duyệt không</li>
+                        <li>Đảm bảo link là <strong>direct download link</strong></li>
+                        <li>Thử với link từ archive.org hoặc github.com</li>
+                        <li>Kiểm tra file proxy.php đã upload đúng chưa</li>
+                        <li>Nhấn nút "Test Proxy" để kiểm tra</li>
+                    </ol>
+                `;
+                
+                showModal('❌ Lỗi', errorMsg + suggestions, 'danger');
+                $('#debugInfo').show();
+                
+            } finally {
+                $btn.prop('disabled', false);
+                $spinner.hide();
+                $btnText.text('Lấy Thông Tin');
+                setTimeout(() => $('.progress-container').fadeOut(), 1000);
+            }
+        });
 
-    window.onload = initMap;
-  </script>
+        function showModal(title, message, type) {
+            $('#modalTitle').html(title);
+            $('#modalBody').html(`<div class="alert alert-${type} mb-0">${message}</div>`);
+            $('#messageModal').modal('show');
+        }
+    });
+</script>
+```
+
 </body>
 </html>
