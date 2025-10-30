@@ -73,7 +73,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let map, marker;
+    let map, marker, viewerMarker;
 
     function initMap() {
       map = L.map('map').setView([10.8, 106.6], 13);
@@ -118,20 +118,50 @@
       if (!username) return alert("Nhập tên người dùng");
 
       document.getElementById("info").innerText = "Đang xem vị trí của " + username;
-      db.ref("locations/" + username).on("value", snap => {
-        const data = snap.val();
-        if (data) {
-          const latlng = [data.lat, data.lng];
-          marker.setLatLng(latlng).bindPopup("Vị trí của " + username).openPopup();
-          map.setView(latlng, 16);
-          document.getElementById("info").innerHTML = 
-            `📍 Lat: ${data.lat.toFixed(5)}, Lng: ${data.lng.toFixed(5)}<br>
-             ⏱ ${new Date(data.timestamp).toLocaleTimeString()}<br>
-             <a href="https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}" target="_blank">🧭 Chỉ đường đến đây</a>`;
+
+      navigator.geolocation.getCurrentPosition(viewerPos => {
+        const viewerLat = viewerPos.coords.latitude;
+        const viewerLng = viewerPos.coords.longitude;
+
+        if (!viewerMarker) {
+          viewerMarker = L.marker([viewerLat, viewerLng], { color: 'blue' }).addTo(map);
         } else {
-          document.getElementById("info").innerText = "Không có dữ liệu vị trí cho người dùng này.";
+          viewerMarker.setLatLng([viewerLat, viewerLng]);
         }
-      });
+
+        db.ref("locations/" + username).on("value", snap => {
+          const data = snap.val();
+          if (data) {
+            const latlng = [data.lat, data.lng];
+            marker.setLatLng(latlng).bindPopup("Vị trí của " + username).openPopup();
+            map.setView(latlng, 16);
+
+            const distanceKm = getDistanceKm(viewerLat, viewerLng, data.lat, data.lng).toFixed(2);
+
+            document.getElementById("info").innerHTML = 
+              `📍 Lat: ${data.lat.toFixed(5)}, Lng: ${data.lng.toFixed(5)}<br>
+               ⏱ ${new Date(data.timestamp).toLocaleTimeString()}<br>
+               🧭 Cách bạn khoảng: <strong>${distanceKm} km</strong><br>
+               <a href="https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}" target="_blank">🗺 Chỉ đường đến đây</a>`;
+          } else {
+            document.getElementById("info").innerText = "Không có dữ liệu vị trí cho người dùng này.";
+          }
+        });
+      }, err => {
+        console.error("Lỗi GPS người xem:", err);
+        alert("Không lấy được vị trí của bạn để tính khoảng cách.");
+      }, { enableHighAccuracy: true, timeout: 10000 });
+    }
+
+    function getDistanceKm(lat1, lng1, lat2, lng2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng/2) * Math.sin(dLng/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
     }
 
     function toggleGuide() {
