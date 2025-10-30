@@ -60,18 +60,29 @@
   <div id="map"></div>
 
   <script>
+    // Firebase cấu hình
     const firebaseConfig = {
       apiKey: "AIzaSyDbAhdrKAiv_0VFj8nS2b9-aM6nwbtZXaA",
       authDomain: "mapgps-6fa8a.firebaseapp.com",
       databaseURL: "https://mapgps-6fa8a-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "mapgps-6fa8a",
-      storageBucket: "mapgps-6fa8a.firebasestorage.app",
+      storageBucket: "mapgps-6fa8a.appspot.com",
       messagingSenderId: "237570405681",
       appId: "1:237570405681:web:583749449110d7e1896c10",
       measurementId: "G-9S5MMD1DJE"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+    // Icon marker màu xanh cho người xem
+    const blueIcon = new L.Icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
 
     let map, marker, viewerMarker;
 
@@ -85,6 +96,7 @@
     }
 
     function startShare() {
+      if (!map) initMap();
       const username = document.getElementById("username").value.trim();
       if (!username) return alert("Nhập tên người dùng");
 
@@ -114,17 +126,41 @@
     }
 
     function startView() {
+      if (!map) initMap();
       const username = document.getElementById("username").value.trim();
       if (!username) return alert("Nhập tên người dùng");
 
       document.getElementById("info").innerText = "Đang xem vị trí của " + username;
 
+      let viewerLat = null, viewerLng = null;
+
+      function renderInfo(data) {
+        const latlng = [data.lat, data.lng];
+        marker.setLatLng(latlng).bindPopup("Vị trí của " + username).openPopup();
+        map.setView(latlng, 16);
+
+        let infoHtml = 
+          `📍 Lat: ${data.lat.toFixed(5)}, Lng: ${data.lng.toFixed(5)}<br>
+           ⏱ ${new Date(data.timestamp).toLocaleTimeString()}<br>
+           <a href="https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}" target="_blank">🗺 Chỉ đường đến đây</a>`;
+
+        if (viewerLat !== null && viewerLng !== null) {
+          const distanceKm = getDistanceKm(viewerLat, viewerLng, data.lat, data.lng).toFixed(2);
+          infoHtml =
+            `📍 Lat: ${data.lat.toFixed(5)}, Lng: ${data.lng.toFixed(5)}<br>
+             ⏱ ${new Date(data.timestamp).toLocaleTimeString()}<br>
+             🧭 Cách bạn khoảng: <strong>${distanceKm} km</strong><br>
+             <a href="https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}" target="_blank">🗺 Chỉ đường đến đây</a>`;
+        }
+        document.getElementById("info").innerHTML = infoHtml;
+      }
+
       navigator.geolocation.getCurrentPosition(viewerPos => {
-        const viewerLat = viewerPos.coords.latitude;
-        const viewerLng = viewerPos.coords.longitude;
+        viewerLat = viewerPos.coords.latitude;
+        viewerLng = viewerPos.coords.longitude;
 
         if (!viewerMarker) {
-          viewerMarker = L.marker([viewerLat, viewerLng], { color: 'blue' }).addTo(map);
+          viewerMarker = L.marker([viewerLat, viewerLng], { icon: blueIcon }).addTo(map);
         } else {
           viewerMarker.setLatLng([viewerLat, viewerLng]);
         }
@@ -132,24 +168,21 @@
         db.ref("locations/" + username).on("value", snap => {
           const data = snap.val();
           if (data) {
-            const latlng = [data.lat, data.lng];
-            marker.setLatLng(latlng).bindPopup("Vị trí của " + username).openPopup();
-            map.setView(latlng, 16);
-
-            const distanceKm = getDistanceKm(viewerLat, viewerLng, data.lat, data.lng).toFixed(2);
-
-            document.getElementById("info").innerHTML = 
-              `📍 Lat: ${data.lat.toFixed(5)}, Lng: ${data.lng.toFixed(5)}<br>
-               ⏱ ${new Date(data.timestamp).toLocaleTimeString()}<br>
-               🧭 Cách bạn khoảng: <strong>${distanceKm} km</strong><br>
-               <a href="https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}" target="_blank">🗺 Chỉ đường đến đây</a>`;
+            renderInfo(data);
           } else {
             document.getElementById("info").innerText = "Không có dữ liệu vị trí cho người dùng này.";
           }
         });
       }, err => {
-        console.error("Lỗi GPS người xem:", err);
-        alert("Không lấy được vị trí của bạn để tính khoảng cách.");
+        // Nếu không lấy được vị trí người xem, vẫn cho phép xem vị trí người chia sẻ
+        db.ref("locations/" + username).on("value", snap => {
+          const data = snap.val();
+          if (data) {
+            renderInfo(data);
+          } else {
+            document.getElementById("info").innerText = "Không có dữ liệu vị trí cho người dùng này.";
+          }
+        });
       }, { enableHighAccuracy: true, timeout: 10000 });
     }
 
@@ -165,7 +198,8 @@
     }
 
     function toggleGuide() {
-      document.getElementById("guide").style.display = "block";
+      const guide = document.getElementById("guide");
+      guide.style.display = guide.style.display === "block" ? "none" : "block";
     }
 
     function closeGuide() {
