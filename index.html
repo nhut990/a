@@ -3,7 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bản đồ chia sẻ vị trí</title>
+<title>Bản đồ chia sẻ vị trí (Leaflet)</title>
+
+<!-- Thư viện bản đồ Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <style>
   html, body {
     margin: 0;
@@ -31,34 +36,62 @@
 </head>
 <body>
 
-<h2>🌏 Chia sẻ vị trí theo thời gian thực</h2>
-<div id="info">Nhấn nút bên dưới để bắt đầu chia sẻ vị trí</div>
-<button onclick="startShare()">📍 Bắt đầu chia sẻ vị trí</button>
+<h2>📍 Chia sẻ vị trí theo thời gian thực</h2>
+<div id="info">Nhấn nút để bắt đầu chia sẻ vị trí</div>
+<button onclick="startShare()">Bắt đầu chia sẻ</button>
 <div id="map"></div>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-// === Cấu hình Firebase của bạn ===
+// ==== Cấu hình Firebase ====
 const firebaseConfig = {
   databaseURL: "https://mapgps-6fa8a-default-rtdb.asia-southeast1.firebasedatabase.app/"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// === Tên người chia sẻ (có thể sửa theo từng người) ===
-const USERNAME = "nhut"; // ví dụ: "van", "nhut", "y"
+// ==== Tên người chia sẻ ====
+const USERNAME = "nhut"; // sửa thành tên khác nếu là người khác
 
-// === Bắt đầu chia sẻ vị trí ===
+let map, marker;
+
+// ==== Khởi tạo bản đồ Leaflet ====
+function initMap() {
+  map = L.map('map').setView([10.8, 106.6], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+  }).addTo(map);
+
+  marker = L.marker([10.8, 106.6]).addTo(map)
+    .bindPopup("Vị trí hiện tại").openPopup();
+
+  // Lắng nghe vị trí từ Firebase
+  firebase.database().ref("locations/" + USERNAME).on("value", snap => {
+    const data = snap.val();
+    if (data) {
+      const latlng = [data.lat, data.lng];
+      marker.setLatLng(latlng);
+      map.setView(latlng, 15);
+      document.getElementById("info").innerHTML = 
+        `📍 Lat: ${data.lat.toFixed(5)}, Lng: ${data.lng.toFixed(5)}<br>
+         ⏱ ${new Date(data.timestamp).toLocaleTimeString()}<br>
+         <a href="https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}" target="_blank">🧭 Chỉ đường đến đây</a>`;
+    }
+  });
+}
+
+// ==== Bắt đầu chia sẻ vị trí ====
 function startShare() {
+  document.getElementById("info").innerText = "Đang chia sẻ vị trí...";
   if (!navigator.geolocation) {
-    alert("Thiết bị của bạn không hỗ trợ định vị GPS");
+    alert("Thiết bị không hỗ trợ định vị GPS");
     return;
   }
 
-  document.getElementById("info").innerText = "Đang chia sẻ vị trí...";
-  
   navigator.geolocation.watchPosition(
     pos => {
       const lat = pos.coords.latitude;
@@ -71,38 +104,9 @@ function startShare() {
   );
 }
 
-// === Hiển thị bản đồ & theo dõi vị trí ===
-let map, marker;
-
-function initMap() {
-  map = new google.maps.Map(document.getElementById("map"), {
-    center: { lat: 10.8, lng: 106.6 },
-    zoom: 14,
-  });
-
-  marker = new google.maps.Marker({
-    map,
-    title: "Vị trí hiện tại"
-  });
-
-  // Lắng nghe dữ liệu vị trí từ Firebase
-  firebase.database().ref("locations/" + USERNAME).on("value", snap => {
-    const data = snap.val();
-    if (data) {
-      const latLng = new google.maps.LatLng(data.lat, data.lng);
-      marker.setPosition(latLng);
-      map.setCenter(latLng);
-      document.getElementById("info").innerHTML =
-        `📍 Vị trí hiện tại:<br>Lat: ${data.lat.toFixed(5)}, Lng: ${data.lng.toFixed(5)}<br>
-         ⏱ Cập nhật: ${new Date(data.timestamp).toLocaleTimeString()}<br><br>
-         <a href="https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}" target="_blank">🧭 Chỉ đường đến đây</a>`;
-    }
-  });
-}
+// Khởi tạo bản đồ sau khi tải xong
+window.onload = initMap;
 </script>
-
-<!-- Google Maps API -->
-<script async defer src="https://maps.googleapis.com/maps/api/js?callback=initMap"></script>
 
 </body>
 </html>
