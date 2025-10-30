@@ -85,14 +85,42 @@
     });
 
     let map, marker, viewerMarker;
+    let baseLayers;
 
     function initMap() {
-      map = L.map('map').setView([10.8, 106.6], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      // Lớp bản đồ đường phố (OpenStreetMap)
+      const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap'
-      }).addTo(map);
-      marker = L.marker([10.8, 106.6]).addTo(map);
+      });
+
+      // Lớp bản đồ vệ tinh (Esri World Imagery)
+      const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+      });
+
+      baseLayers = {
+        "Đường phố": streetLayer,
+        "Vệ tinh": satelliteLayer
+      };
+
+      // Việt Nam bounds (tọa độ góc Tây Bắc và Đông Nam)
+      const vietnamBounds = L.latLngBounds([8.3, 102.0], [23.4, 110.0]);
+
+      map = L.map('map', {
+        layers: [streetLayer]
+      });
+
+      // Fit map to Vietnam
+      map.fitBounds(vietnamBounds);
+
+      // Thêm control chuyển đổi lớp bản đồ
+      L.control.layers(baseLayers).addTo(map);
+
+      // KHÔNG tạo marker mặc định ở Hồ Chí Minh nữa!
+      marker = null;
+      viewerMarker = null;
     }
 
     function startShare() {
@@ -102,6 +130,11 @@
 
       document.getElementById("info").innerText = "Đang chia sẻ liên tục...";
       if (!navigator.geolocation) return alert("Thiết bị không hỗ trợ GPS");
+
+      // Nếu chưa có marker, tạo marker mới
+      if (!marker) {
+        marker = L.marker([0, 0]).addTo(map);
+      }
 
       navigator.geolocation.watchPosition(
         pos => {
@@ -136,6 +169,11 @@
 
       function renderInfo(data) {
         const latlng = [data.lat, data.lng];
+
+        // Nếu chưa có marker, tạo marker mới
+        if (!marker) {
+          marker = L.marker(latlng).addTo(map);
+        }
         marker.setLatLng(latlng).bindPopup("Vị trí của " + username).openPopup();
         map.setView(latlng, 16);
 
@@ -208,6 +246,5 @@
 
     window.onload = initMap;
   </script>
-
 </body>
 </html>
