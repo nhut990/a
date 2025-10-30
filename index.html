@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Bộ trống giả lập — Cực nhạy</title>
+<title>Bộ trống giả lập — Cực nhạy (iPhone OK)</title>
 <style>
   :root{
     --bg:#0b0f14;
@@ -15,35 +15,20 @@
   html,body{
     height:100%;
     margin:0;
-    font-family:system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
     background:linear-gradient(180deg,var(--bg),#071019 80%);
     color:#e6eef6;
+    font-family:system-ui,Segoe UI,Roboto,Arial;
     -webkit-font-smoothing:antialiased;
   }
-  .app{
-    max-width:980px;
-    margin:12px auto;
-    padding:10px;
-  }
-  header{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    margin-bottom:10px;
-  }
-  header h1{
-    font-size:18px;
-    margin:0;
-  }
+  .app{ max-width:960px; margin:auto; padding:12px; }
+  h1{ font-size:18px; margin:10px 0; text-align:center; }
   .grid{
     display:grid;
     grid-template-columns: repeat(3, 1fr);
-    gap:10px;
+    gap:12px;
   }
-  /* mobile tall single column for very narrow screens */
-  @media (max-width:520px){
+  @media (max-width:500px){
     .grid{ grid-template-columns: repeat(2,1fr); }
-    .app{ padding:6px; }
   }
   .pad{
     background:var(--panel);
@@ -54,510 +39,191 @@
     justify-content:center;
     position:relative;
     overflow:hidden;
-    touch-action: none; /* important for pointer events responsiveness */
+    touch-action: none;
     user-select:none;
-    box-shadow: 0 6px 18px rgba(2,8,23,0.6);
-    border: 1px solid rgba(255,255,255,0.03);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.5);
   }
   .pad .label{
-    position:absolute;
-    left:10px;
-    top:10px;
-    font-size:12px;
-    color:var(--muted);
+    position:absolute; left:10px; top:10px; font-size:12px; color:var(--muted);
   }
-  .pad .hit{
-    font-weight:700;
-    font-size:22px;
-    pointer-events:none;
-    transform:translateY(6px);
-  }
-  .pad:active, .pad.active{
-    box-shadow: 0 6px 28px rgba(255,184,107,0.12);
-    transform: translateY(0);
-  }
+  .pad:active,.pad.active{ background:#16232e; box-shadow:0 0 18px rgba(255,184,107,0.2);}
   .ripple{
     position:absolute;
     border-radius:999px;
     transform:translate(-50%,-50%) scale(0.001);
-    opacity:0.9;
+    opacity:0.8;
     pointer-events:none;
-    transition: transform 360ms cubic-bezier(.15,.9,.2,1), opacity 420ms;
-    background: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.12), rgba(255,255,255,0.02));
+    transition:transform 0.4s ease-out, opacity 0.5s ease-out;
+    background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), rgba(255,255,255,0.02));
   }
-  .controls{
-    margin-top:12px;
-    display:flex;
-    gap:8px;
-    align-items:center;
-    flex-wrap:wrap;
-  }
-  .btn{
+  button{
     background:var(--glass);
-    color:var(--muted);
+    color:#ddd;
+    border:1px solid rgba(255,255,255,0.05);
     border-radius:8px;
-    padding:8px 12px;
-    font-size:13px;
-    border:1px solid rgba(255,255,255,0.03);
-  }
-  .meter{
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
-  .meter .bar{
-    height:8px;
-    width:120px;
-    background:rgba(255,255,255,0.06);
-    border-radius:6px;
-    overflow:hidden;
-  }
-  .meter .bar > i{
+    padding:8px 14px;
+    font-size:14px;
+    margin:10px auto;
     display:block;
-    height:100%;
-    width:0%;
-    background:linear-gradient(90deg, #ffd6a5, #ffb86b);
-    transition: width 80ms linear;
   }
-  footer{
-    margin-top:14px;
-    font-size:12px;
-    color:var(--muted);
-  }
+  footer{ margin-top:14px; font-size:12px; color:var(--muted); text-align:center; }
 </style>
 </head>
 <body>
 <div class="app">
-  <header>
-    <h1>Bộ trống giả lập — Cực nhạy</h1>
-    <div style="flex:1"></div>
-    <div style="font-size:12px;color:var(--muted)">Đa chạm • Tương thích mobile</div>
-  </header>
+  <h1>🥁 Bộ trống giả lập — Cực nhạy (iPhone OK)</h1>
+  <button id="enableAudio">Bật âm (chạm 1 lần để kích hoạt âm thanh)</button>
 
-  <main>
-    <div class="grid" id="pads">
-      <div class="pad" data-drum="kick" id="pad-kick">
-        <div class="label">Kick</div>
-        <div class="hit">KICK</div>
-      </div>
-      <div class="pad" data-drum="snare" id="pad-snare">
-        <div class="label">Snare</div>
-        <div class="hit">SNARE</div>
-      </div>
-      <div class="pad" data-drum="hat" id="pad-hat">
-        <div class="label">Hi-Hat</div>
-        <div class="hit">HAT</div>
-      </div>
+  <div class="grid" id="pads">
+    <div class="pad" data-drum="kick"><div class="label">Kick</div>KICK</div>
+    <div class="pad" data-drum="snare"><div class="label">Snare</div>SNARE</div>
+    <div class="pad" data-drum="hat"><div class="label">Hi-Hat</div>HAT</div>
+    <div class="pad" data-drum="tom1"><div class="label">Tom 1</div>TOM1</div>
+    <div class="pad" data-drum="tom2"><div class="label">Tom 2</div>TOM2</div>
+    <div class="pad" data-drum="crash"><div class="label">Crash</div>CRASH</div>
+  </div>
 
-      <div class="pad" data-drum="tom1" id="pad-tom1">
-        <div class="label">Tom High</div>
-        <div class="hit">TOM1</div>
-      </div>
-      <div class="pad" data-drum="tom2" id="pad-tom2">
-        <div class="label">Tom Mid</div>
-        <div class="hit">TOM2</div>
-      </div>
-      <div class="pad" data-drum="crash" id="pad-crash">
-        <div class="label">Crash</div>
-        <div class="hit">CRASH</div>
-      </div>
-    </div>
-
-    <div class="controls">
-      <button class="btn" id="enableAudio">Bật âm (chạm để cho phép)</button>
-      <div class="meter">
-        <div style="font-size:12px;color:var(--muted)">VOLUME</div>
-        <div class="bar"><i id="volBar"></i></div>
-      </div>
-      <button class="btn" id="toggleVisual">Tắt hiệu ứng</button>
-    </div>
-
-    <footer>
-      Lưu ý: Trên thiết bị hỗ trợ Pointer Events, lực đánh dùng <code>event.pressure</code>. Nếu trình duyệt không hỗ trợ, mã sẽ suy đoán lực dựa trên tốc độ chạm — nhanh = mạnh.
-    </footer>
-  </main>
+  <footer>
+    Nếu không nghe âm thanh, hãy chạm nút "Bật âm" một lần.<br/>
+    Sau đó chạm pad bất kỳ để chơi.
+  </footer>
 </div>
 
 <script>
 (() => {
-  // --- Audio setup ---
   const AudioContext = window.AudioContext || window.webkitAudioContext;
-  let ctx = null;
-  let masterGain = null;
-  let visualEnabled = true;
+  let ctx, masterGain;
   let volume = 0.9;
 
-  // initialize on first user interaction
-  function ensureAudio() {
-    if (ctx) return;
-    ctx = new AudioContext();
-    masterGain = ctx.createGain();
-    masterGain.gain.value = volume;
-    masterGain.connect(ctx.destination);
-  }
-
-  // quick utility: create noise buffer
-  function makeNoiseBuffer(duration = 1.0) {
-    const sampleRate = ctx.sampleRate;
-    const buffer = ctx.createBuffer(1, sampleRate * duration, sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < data.length; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 1.3);
+  function initAudio() {
+    if (!ctx) {
+      ctx = new AudioContext();
+      masterGain = ctx.createGain();
+      masterGain.gain.value = volume;
+      masterGain.connect(ctx.destination);
+      console.log("🔊 Audio initialized");
     }
-    return buffer;
+    if (ctx.state === "suspended") ctx.resume();
   }
 
-  const noiseBufferCache = {};
+  // iPhone cần ít nhất một chạm thật
+  ['touchstart','mousedown','pointerdown'].forEach(ev=>{
+    document.body.addEventListener(ev,()=>initAudio(),{once:true});
+  });
 
-  // --- Drum synths (no external samples) ---
-  function playKick(strength = 1) {
+  document.getElementById('enableAudio').addEventListener('click', async ()=>{
+    initAudio();
+    if (ctx.state === 'suspended') await ctx.resume();
+    const btn = document.getElementById('enableAudio');
+    btn.textContent = 'Âm đã bật ✔';
+    btn.disabled = true;
+  });
+
+  // --- Các âm trống synth ---
+  function playKick(s=1){
     const now = ctx.currentTime;
-    // oscillator sweep
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(150 * Math.max(0.6, 1.2 - strength * 0.6), now);
-    osc.frequency.exponentialRampToValueAtTime(50, now + 0.08 + strength * 0.06);
-
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.8 * strength, now + 0.006);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45 + strength * 0.25);
-
-    osc.connect(gain);
-    gain.connect(masterGain);
-
-    osc.start(now);
-    osc.stop(now + 0.7 + strength * 0.4);
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(150, now);
+    o.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+    g.gain.setValueAtTime(1*s, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    o.connect(g).connect(masterGain);
+    o.start(now); o.stop(now+0.4);
   }
-
-  function playSnare(strength = 1) {
+  function playSnare(s=1){
     const now = ctx.currentTime;
     const noise = ctx.createBufferSource();
-    if (!noiseBufferCache.snare) noiseBufferCache.snare = makeNoiseBuffer(1.0);
-    noise.buffer = noiseBufferCache.snare;
-
-    const noiseFilter = ctx.createBiquadFilter();
-    noiseFilter.type = 'bandpass';
-    noiseFilter.frequency.value = 1800;
-    noiseFilter.Q.value = 0.7;
-
-    const noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.0001, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.7 * strength, now + 0.002);
-    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25 + 0.12 * strength);
-
-    noise.connect(noiseFilter);
-    noiseFilter.connect(noiseGain);
-    noiseGain.connect(masterGain);
-
-    // body (tone)
-    const osc = ctx.createOscillator();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(220, now);
-    const oscGain = ctx.createGain();
-    oscGain.gain.setValueAtTime(0.0001, now);
-    oscGain.gain.exponentialRampToValueAtTime(0.25 * strength, now + 0.003);
-    oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
-
-    osc.connect(oscGain);
-    oscGain.connect(masterGain);
-
-    noise.start(now);
-    noise.stop(now + 0.35 + 0.1 * strength);
-    osc.start(now);
-    osc.stop(now + 0.26 + 0.06 * strength);
+    const buffer = ctx.createBuffer(1, ctx.sampleRate*0.2, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<data.length;i++){ data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,1.4);}
+    noise.buffer=buffer;
+    const noiseFilter=ctx.createBiquadFilter();
+    noiseFilter.type='bandpass';
+    noiseFilter.frequency.value=1800;
+    const noiseGain=ctx.createGain();
+    noiseGain.gain.setValueAtTime(1*s, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, now+0.25);
+    noise.connect(noiseFilter).connect(noiseGain).connect(masterGain);
+    noise.start(now); noise.stop(now+0.3);
+  }
+  function playHat(s=1){
+    const now=ctx.currentTime;
+    const noise=ctx.createBufferSource();
+    const buffer=ctx.createBuffer(1, ctx.sampleRate*0.05, ctx.sampleRate);
+    const data=buffer.getChannelData(0);
+    for(let i=0;i<data.length;i++){data[i]=Math.random()*2-1;}
+    noise.buffer=buffer;
+    const hp=ctx.createBiquadFilter();
+    hp.type='highpass';
+    hp.frequency.value=6000;
+    const g=ctx.createGain();
+    g.gain.setValueAtTime(1*s, now);
+    g.gain.exponentialRampToValueAtTime(0.01, now+0.08);
+    noise.connect(hp).connect(g).connect(masterGain);
+    noise.start(now); noise.stop(now+0.1);
+  }
+  function playTom(freq=300,s=1){
+    const now=ctx.currentTime;
+    const o=ctx.createOscillator();
+    const g=ctx.createGain();
+    o.type='sine';
+    o.frequency.setValueAtTime(freq, now);
+    o.frequency.exponentialRampToValueAtTime(freq*0.6, now+0.25);
+    g.gain.setValueAtTime(1*s, now);
+    g.gain.exponentialRampToValueAtTime(0.01, now+0.3);
+    o.connect(g).connect(masterGain);
+    o.start(now); o.stop(now+0.4);
+  }
+  function playCrash(s=1){
+    const now=ctx.currentTime;
+    const n=ctx.createBufferSource();
+    const buffer=ctx.createBuffer(1, ctx.sampleRate*1.5, ctx.sampleRate);
+    const d=buffer.getChannelData(0);
+    for(let i=0;i<d.length;i++){d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,0.6);}
+    n.buffer=buffer;
+    const f=ctx.createBiquadFilter();
+    f.type='highpass';
+    f.frequency.value=5000;
+    const g=ctx.createGain();
+    g.gain.setValueAtTime(1*s, now);
+    g.gain.exponentialRampToValueAtTime(0.01, now+1.2);
+    n.connect(f).connect(g).connect(masterGain);
+    n.start(now); n.stop(now+1.4);
   }
 
-  function playHat(strength = 1, open = false) {
-    const now = ctx.currentTime;
-    const src = ctx.createBufferSource();
-    if (!noiseBufferCache.hat) noiseBufferCache.hat = makeNoiseBuffer(0.5);
-    src.buffer = noiseBufferCache.hat;
-
-    const hp = ctx.createBiquadFilter();
-    hp.type = 'highpass';
-    hp.frequency.value = 5000;
-    hp.Q.value = 0.3;
-
-    const band = ctx.createBiquadFilter();
-    band.type = 'bandpass';
-    band.frequency.value = 8000;
-    band.Q.value = 0.4;
-
-    const g = ctx.createGain();
-    const len = open ? (0.35 + 0.3 * strength) : (0.06 + 0.04 * (1-strength));
-    g.gain.setValueAtTime(0.0001, now);
-    g.gain.exponentialRampToValueAtTime(0.5 * strength, now + 0.001);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + len);
-
-    src.connect(hp);
-    hp.connect(band);
-    band.connect(g);
-    g.connect(masterGain);
-
-    src.start(now);
-    src.stop(now + len + 0.02);
-  }
-
-  function playCrash(strength = 1) {
-    const now = ctx.currentTime;
-    const src = ctx.createBufferSource();
-    if (!noiseBufferCache.crash) noiseBufferCache.crash = makeNoiseBuffer(2.0);
-    src.buffer = noiseBufferCache.crash;
-
-    const hp = ctx.createBiquadFilter();
-    hp.type = 'highpass';
-    hp.frequency.value = 6500;
-
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, now);
-    g.gain.exponentialRampToValueAtTime(0.9 * strength, now + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + 1.4 + 0.8 * strength);
-
-    src.connect(hp);
-    hp.connect(g);
-    g.connect(masterGain);
-
-    src.start(now);
-    src.stop(now + 2.2 + strength * 1.2);
-  }
-
-  function playTom(freq = 300, strength = 1) {
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq * (1 + 0.1 * (1 - strength)), now);
-    osc.frequency.exponentialRampToValueAtTime(freq * 0.6, now + 0.12 + 0.05 * (1-strength));
-
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, now);
-    g.gain.exponentialRampToValueAtTime(0.7 * strength, now + 0.004);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.4 + 0.35 * strength);
-
-    osc.connect(g);
-    g.connect(masterGain);
-
-    osc.start(now);
-    osc.stop(now + 0.8 + 0.4 * strength);
-  }
-
-  // --- Controls & UI ---
-  const pads = document.querySelectorAll('.pad');
-  const enableBtn = document.getElementById('enableAudio');
-  const volBar = document.getElementById('volBar');
-  const toggleVisual = document.getElementById('toggleVisual');
-
-  function setVolume(v) {
-    volume = v;
-    if (masterGain) masterGain.gain.value = v;
-    volBar.style.width = Math.max(2, Math.round(v * 100)) + '%';
-  }
-  setVolume(volume);
-
-  enableBtn.addEventListener('pointerdown', async (e) => {
-    ensureAudio();
-    if (ctx.state === 'suspended') {
-      await ctx.resume();
-    }
-    enableBtn.textContent = 'Âm đã bật';
-    enableBtn.disabled = true;
-  });
-
-  toggleVisual.addEventListener('click', () => {
-    visualEnabled = !visualEnabled;
-    toggleVisual.textContent = visualEnabled ? 'Tắt hiệu ứng' : 'Bật hiệu ứng';
-  });
-
-  // helper: create ripple
-  function rippleAt(pad, x, y, intensity=1) {
-    if (!visualEnabled) return;
-    const r = document.createElement('div');
-    r.className = 'ripple';
-    const size = Math.max(pad.clientWidth, pad.clientHeight) * (0.9 + intensity * 0.8);
-    r.style.width = r.style.height = size + 'px';
-    r.style.left = x + 'px';
-    r.style.top = y + 'px';
-    r.style.opacity = Math.min(0.95, 0.45 + intensity*0.5);
+  // Ripple hiệu ứng
+  function rippleAt(pad,x,y){
+    const r=document.createElement('div');
+    r.className='ripple';
+    const size=Math.max(pad.clientWidth,pad.clientHeight);
+    r.style.width=r.style.height=size+'px';
+    r.style.left=x+'px'; r.style.top=y+'px';
     pad.appendChild(r);
-    // force reflow
-    requestAnimationFrame(() => {
-      r.style.transform = 'translate(-50%,-50%) scale(1)';
-      r.style.opacity = Math.max(0.12, 0.35 - intensity*0.18);
-    });
-    setTimeout(()=> {
-      r.style.opacity = '0';
-      r.style.transform = 'translate(-50%,-50%) scale(1.6)';
-      setTimeout(()=> r.remove(), 420);
-    }, 50);
+    requestAnimationFrame(()=>r.style.transform='translate(-50%,-50%) scale(1)');
+    setTimeout(()=>{r.style.opacity='0'; setTimeout(()=>r.remove(),400);},100);
   }
 
-  // velocity estimator: try event.pressure first; otherwise use tap speed or area
-  const pointerState = {}; // track pointerdown times/positions
-  function estimateStrength(ev, padEl) {
-    // prefer pointer.pressure if available (0..1)
-    if (ev.pressure && ev.pressure > 0.01) {
-      // map [0.02..1] -> [0.2..1]
-      const p = Math.min(1, ev.pressure);
-      return 0.2 + 0.8 * p;
-    }
-    // fallback: estimate from speed of pointer movement between down/up
-    const s = pointerState[ev.pointerId];
-    if (s && s.startTime) {
-      const dt = Math.max(6, (performance.now() - s.startTime)); // ms
-      // faster tap (smaller dt) -> stronger
-      const t = Math.min(1, 120 / dt); // 120ms -> ~1, 240ms -> 0.5
-      // also factor by relative position (hit near center stronger)
-      const rect = padEl.getBoundingClientRect();
-      const cx = rect.left + rect.width/2;
-      const cy = rect.top + rect.height/2;
-      const dx = (ev.clientX - cx) / (rect.width/2);
-      const dy = (ev.clientY - cy) / (rect.height/2);
-      const dist = Math.min(1, Math.sqrt(dx*dx + dy*dy));
-      const centerFactor = 1 - dist; // closer to center => stronger
-      return Math.min(1, Math.max(0.12, 0.14 + 0.86*(0.6*t + 0.4*centerFactor)));
-    }
-    return 0.6; // default medium
-  }
-
-  // play mapping
-  function triggerDrum(name, strength) {
-    if (!ctx) return;
-    switch(name){
-      case 'kick': playKick(strength); break;
-      case 'snare': playSnare(strength); break;
-      case 'hat': playHat(strength, false); break;
-      case 'crash': playCrash(strength); break;
-      case 'tom1': playTom(480, strength); break;
-      case 'tom2': playTom(320, strength); break;
-      default: playSnare(strength);
-    }
-  }
-
-  // pointer handlers
-  pads.forEach(pad => {
-    pad.addEventListener('pointerdown', (ev) => {
-      ev.preventDefault();
-      ensureAudio();
-      const id = ev.pointerId;
-      pointerState[id] = {
-        startTime: performance.now(),
-        startX: ev.clientX,
-        startY: ev.clientY
-      };
-      pad.setPointerCapture && pad.setPointerCapture(id);
+  // Gắn sự kiện
+  document.querySelectorAll('.pad').forEach(pad=>{
+    pad.addEventListener('pointerdown', e=>{
+      initAudio();
+      const rect=pad.getBoundingClientRect();
+      rippleAt(pad, e.clientX-rect.left, e.clientY-rect.top);
+      const drum=pad.dataset.drum;
+      switch(drum){
+        case'kick':playKick();break;
+        case'snare':playSnare();break;
+        case'hat':playHat();break;
+        case'tom1':playTom(450);break;
+        case'tom2':playTom(300);break;
+        case'crash':playCrash();break;
+      }
       pad.classList.add('active');
-
-      // immediate feedback: create ripple at pointer pos
-      const rect = pad.getBoundingClientRect();
-      const localX = ev.clientX - rect.left;
-      const localY = ev.clientY - rect.top;
-
-      const strength = estimateStrength(ev, pad);
-      rippleAt(pad, localX, localY, strength);
-      const drum = pad.dataset.drum;
-      // tiny scheduling: play immediately (low-latency)
-      triggerDrum(drum, strength);
-    });
-
-    pad.addEventListener('pointerup', (ev) => {
-      ev.preventDefault();
-      const id = ev.pointerId;
-      const s = pointerState[id];
-      const padEl = pad;
-      const strength = estimateStrength(ev, padEl);
-      // optionally, play another sound on release (for open hat)
-      if (pad.dataset.drum === 'hat') {
-        // if release delayed => open hat
-        const dt = s ? (performance.now() - s.startTime) : 0;
-        if (dt > 120) {
-          playHat(strength, true);
-        }
-      }
-      pad.classList.remove('active');
-      if (s) delete pointerState[id];
-      pad.releasePointerCapture && pad.releasePointerCapture(id);
-    });
-
-    pad.addEventListener('pointercancel', (ev) => {
-      const id = ev.pointerId;
-      pad.classList.remove('active');
-      if (pointerState[id]) delete pointerState[id];
-      pad.releasePointerCapture && pad.releasePointerCapture(id);
-    });
-
-    // allow quick "flick" velocity estimation by tracking movement
-    pad.addEventListener('pointermove', (ev) => {
-      const s = pointerState[ev.pointerId];
-      if (s) {
-        const dx = ev.clientX - s.startX;
-        const dy = ev.clientY - s.startY;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        // if large flick while holding, update startTime to reflect fast action
-        if (dist > 30) {
-          s.startTime = performance.now() - 20; // treat as quick
-        }
-      }
-    });
-
-    // keyboard accessibility: space/enter triggers via click
-    pad.addEventListener('keydown', (e) => {
-      if (e.key === ' ' || e.key === 'Enter') {
-        e.preventDefault();
-        const strength = 0.8;
-        rippleAt(pad, pad.clientWidth/2, pad.clientHeight/2, strength);
-        triggerDrum(pad.dataset.drum, strength);
-      }
+      setTimeout(()=>pad.classList.remove('active'),150);
     });
   });
-
-  // additional: listen to wheel on pads to change volume quickly (desktop)
-  document.addEventListener('wheel', (e) => {
-    if (e.ctrlKey) return;
-    const delta = -e.deltaY * 0.0008;
-    setVolume(Math.min(1, Math.max(0.05, volume + delta)));
-  }, {passive:true});
-
-  // small helper: map keyboard keys to drums for quick testing
-  const keyMap = {
-    'z':'kick','x':'snare','c':'hat','v':'tom1','b':'tom2','n':'crash'
-  };
-  const keyState = {};
-  window.addEventListener('keydown', (e) => {
-    const k = e.key.toLowerCase();
-    if (keyMap[k] && !keyState[k]) {
-      keyState[k]=true;
-      ensureAudio();
-      triggerDrum(keyMap[k], 0.9);
-      const padEl = document.querySelector(`[data-drum="${keyMap[k]}"]`);
-      if (padEl){
-        padEl.classList.add('active');
-        rippleAt(padEl, padEl.clientWidth/2, padEl.clientHeight/2, 0.9);
-      }
-    }
-  });
-  window.addEventListener('keyup', (e) => {
-    const k = e.key.toLowerCase();
-    if (keyMap[k]) {
-      keyState[k]=false;
-      const padEl = document.querySelector(`[data-drum="${keyMap[k]}"]`);
-      if (padEl) padEl.classList.remove('active');
-    }
-  });
-
-  // unlock audio on first touch anywhere (helpful for iOS Safari)
-  function unlockAudioOnFirstTouch(e){
-    ensureAudio();
-    if (ctx && ctx.state === 'suspended') ctx.resume();
-    document.removeEventListener('touchstart', unlockAudioOnFirstTouch);
-    enableBtn.textContent = 'Âm sẵn sàng';
-    enableBtn.disabled = true;
-  }
-  document.addEventListener('touchstart', unlockAudioOnFirstTouch, {passive:true});
-
-  // polite hint to user: if iOS has latency settings, can't do much programmatically
-  // but this synth uses WebAudio to keep latency tiny.
-
 })();
 </script>
 </body>
