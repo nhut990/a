@@ -1,112 +1,129 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bản đồ chia sẻ vị trí (Leaflet)</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chia sẻ vị trí thời gian thực</title>
 
-<!-- Thư viện bản đồ Leaflet -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-<style>
-  html, body {
-    margin: 0;
-    height: 100%;
-    background: #f2f2f2;
-    font-family: sans-serif;
-    text-align: center;
-  }
-  #map {
-    width: 100%;
-    height: 80vh;
-  }
-  #info {
-    padding: 10px;
-  }
-  button {
-    padding: 10px 20px;
-    font-size: 16px;
-    border: none;
-    border-radius: 6px;
-    background: #4CAF50;
-    color: white;
-  }
-</style>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #f2f2f2;
+      text-align: center;
+    }
+    #map {
+      height: 70vh;
+      width: 100%;
+    }
+    #controls {
+      padding: 10px;
+    }
+    input {
+      padding: 8px;
+      font-size: 16px;
+      width: 200px;
+      margin-right: 10px;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 16px;
+      margin: 5px;
+      border: none;
+      border-radius: 6px;
+      background: #4CAF50;
+      color: white;
+    }
+    #info {
+      padding: 10px;
+    }
+  </style>
 </head>
 <body>
 
-<h2>📍 Chia sẻ vị trí theo thời gian thực</h2>
-<div id="info">Nhấn nút để bắt đầu chia sẻ vị trí</div>
-<button onclick="startShare()">Bắt đầu chia sẻ</button>
-<div id="map"></div>
+  <h2>📍 Chia sẻ & xem vị trí thời gian thực</h2>
+  <div id="controls">
+    <input id="username" placeholder="Tên người dùng">
+    <button onclick="startShare()">Tôi muốn chia sẻ vị trí</button>
+    <button onclick="startView()">Tôi muốn xem vị trí người khác</button>
+  </div>
+  <div id="info">Nhập tên và chọn chế độ</div>
+  <div id="map"></div>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      databaseURL: "https://mapgps-6fa8a-default-rtdb.asia-southeast1.firebasedatabase.app/"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-<script>
-// ==== Cấu hình Firebase ====
-const firebaseConfig = {
-  databaseURL: "https://mapgps-6fa8a-default-rtdb.asia-southeast1.firebasedatabase.app/"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+    let map, marker;
 
-// ==== Tên người chia sẻ ====
-const USERNAME = "nhut"; // sửa thành tên khác nếu là người khác
+    function initMap() {
+      map = L.map('map').setView([10.8, 106.6], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
 
-let map, marker;
-
-// ==== Khởi tạo bản đồ Leaflet ====
-function initMap() {
-  map = L.map('map').setView([10.8, 106.6], 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
-  }).addTo(map);
-
-  marker = L.marker([10.8, 106.6]).addTo(map)
-    .bindPopup("Vị trí hiện tại").openPopup();
-
-  // Lắng nghe vị trí từ Firebase
-  firebase.database().ref("locations/" + USERNAME).on("value", snap => {
-    const data = snap.val();
-    if (data) {
-      const latlng = [data.lat, data.lng];
-      marker.setLatLng(latlng);
-      map.setView(latlng, 15);
-      document.getElementById("info").innerHTML = 
-        `📍 Lat: ${data.lat.toFixed(5)}, Lng: ${data.lng.toFixed(5)}<br>
-         ⏱ ${new Date(data.timestamp).toLocaleTimeString()}<br>
-         <a href="https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}" target="_blank">🧭 Chỉ đường đến đây</a>`;
+      marker = L.marker([10.8, 106.6]).addTo(map)
+        .bindPopup("Vị trí hiện tại").openPopup();
     }
-  });
-}
 
-// ==== Bắt đầu chia sẻ vị trí ====
-function startShare() {
-  document.getElementById("info").innerText = "Đang chia sẻ vị trí...";
-  if (!navigator.geolocation) {
-    alert("Thiết bị không hỗ trợ định vị GPS");
-    return;
-  }
+    function startShare() {
+      const username = document.getElementById("username").value.trim();
+      if (!username) return alert("Vui lòng nhập tên người dùng");
 
-  navigator.geolocation.watchPosition(
-    pos => {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      const timestamp = Date.now();
-      firebase.database().ref("locations/" + USERNAME).set({ lat, lng, timestamp });
-    },
-    err => alert("Không lấy được vị trí: " + err.message),
-    { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
-  );
-}
+      document.getElementById("info").innerText = "Đang chia sẻ vị trí...";
+      if (!navigator.geolocation) {
+        alert("Thiết bị không hỗ trợ định vị GPS");
+        return;
+      }
 
-// Khởi tạo bản đồ sau khi tải xong
-window.onload = initMap;
-</script>
+      navigator.geolocation.watchPosition(
+        pos => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const timestamp = Date.now();
+          db.ref("locations/" + username).set({ lat, lng, timestamp });
+        },
+        err => alert("Không lấy được vị trí: " + err.message),
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+      );
+    }
+
+    function startView() {
+      const username = document.getElementById("username").value.trim();
+      if (!username) return alert("Vui lòng nhập tên người dùng");
+
+      document.getElementById("info").innerText = "Đang xem vị trí của " + username;
+      db.ref("locations/" + username).on("value", snap => {
+        const data = snap.val();
+        if (data) {
+          const latlng = [data.lat, data.lng];
+          marker.setLatLng(latlng);
+          map.setView(latlng, 15);
+          document.getElementById("info").innerHTML = 
+            `📍 Lat: ${data.lat.toFixed(5)}, Lng: ${data.lng.toFixed(5)}<br>
+             ⏱ ${new Date(data.timestamp).toLocaleTimeString()}<br>
+             <a href="https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}" target="_blank">🧭 Chỉ đường đến đây</a>`;
+        } else {
+          document.getElementById("info").innerText = "Không có dữ liệu vị trí cho người dùng này.";
+        }
+      });
+    }
+
+    window.onload = initMap;
+  </script>
 
 </body>
 </html>
