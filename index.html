@@ -17,7 +17,7 @@
     body { font-family: sans-serif; text-align: center; background: #f2f2f2; }
     #map { height: 70vh; }
     input, button { padding: 10px; font-size: 16px; margin: 5px; }
-    button { background: #4CAF50; color: white; border: none; border-radius: 6px; }
+    button { background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; }
     #info { padding: 10px; }
   </style>
 </head>
@@ -27,11 +27,11 @@
   <input id="username" placeholder="Tên người dùng">
   <button onclick="startShare()">Tôi muốn chia sẻ vị trí</button>
   <button onclick="startView()">Tôi muốn xem vị trí người khác</button>
+  <button onclick="copyInfo()">📋 Sao chép thông tin</button>
   <div id="info">Nhập tên và chọn chế độ</div>
   <div id="map"></div>
 
   <script>
-    // ✅ Firebase cấu hình đầy đủ
     const firebaseConfig = {
       apiKey: "AIzaSyDbAhdrKAiv_0VFj8nS2b9-aM6nwbtZXaA",
       authDomain: "mapgps-6fa8a.firebaseapp.com",
@@ -67,9 +67,15 @@
           const lng = pos.coords.longitude;
           const timestamp = Date.now();
           console.log("📍 Vị trí lấy được:", lat, lng);
+
+          // Cập nhật bản đồ cho người chia sẻ
+          marker.setLatLng([lat, lng]);
+          map.setView([lat, lng], 15);
+
+          // Gửi lên Firebase
           db.ref("locations/" + username).set({ lat, lng, timestamp })
             .then(() => {
-              document.getElementById("info").innerText = "✅ Đã gửi vị trí lên Firebase!";
+              document.getElementById("info").innerText = `✅ Đã gửi vị trí lên Firebase!\n📍 Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
             })
             .catch(err => {
               console.error("❌ Lỗi ghi Firebase:", err);
@@ -103,6 +109,13 @@
           document.getElementById("info").innerText = "Không có dữ liệu vị trí cho người dùng này.";
         }
       });
+    }
+
+    function copyInfo() {
+      const infoText = document.getElementById("info").innerText;
+      navigator.clipboard.writeText(infoText)
+        .then(() => alert("✅ Đã sao chép thông tin!"))
+        .catch(() => alert("❌ Không thể sao chép"));
     }
 
     window.onload = initMap;
