@@ -3,10 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Test chia sẻ vị trí</title>
+  <title>Chia sẻ vị trí thời gian thực</title>
 
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -20,15 +23,24 @@
 </head>
 <body>
 
-  <h2>📍 Test chia sẻ vị trí</h2>
+  <h2>📍 Chia sẻ & xem vị trí thời gian thực</h2>
   <input id="username" placeholder="Tên người dùng">
-  <button onclick="startShare()">Chia sẻ vị trí</button>
-  <div id="info">Nhấn nút để bắt đầu</div>
+  <button onclick="startShare()">Tôi muốn chia sẻ vị trí</button>
+  <button onclick="startView()">Tôi muốn xem vị trí người khác</button>
+  <div id="info">Nhập tên và chọn chế độ</div>
   <div id="map"></div>
 
   <script>
+    // ✅ Firebase cấu hình đầy đủ
     const firebaseConfig = {
-      databaseURL: "https://mapops-6fa6a-default-rtdb.asia-southeast1.firebasedatabase.app"
+      apiKey: "AIzaSyDbAhdrKAiv_0VFj8nS2b9-aM6nwbtZXaA",
+      authDomain: "mapgps-6fa8a.firebaseapp.com",
+      databaseURL: "https://mapgps-6fa8a-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "mapgps-6fa8a",
+      storageBucket: "mapgps-6fa8a.firebasestorage.app",
+      messagingSenderId: "237570405681",
+      appId: "1:237570405681:web:583749449110d7e1896c10",
+      measurementId: "G-9S5MMD1DJE"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -70,6 +82,27 @@
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
+    }
+
+    function startView() {
+      const username = document.getElementById("username").value.trim();
+      if (!username) return alert("Nhập tên người dùng");
+
+      document.getElementById("info").innerText = "Đang xem vị trí của " + username;
+      db.ref("locations/" + username).on("value", snap => {
+        const data = snap.val();
+        if (data) {
+          const latlng = [data.lat, data.lng];
+          marker.setLatLng(latlng);
+          map.setView(latlng, 15);
+          document.getElementById("info").innerHTML = 
+            `📍 Lat: ${data.lat.toFixed(5)}, Lng: ${data.lng.toFixed(5)}<br>
+             ⏱ ${new Date(data.timestamp).toLocaleTimeString()}<br>
+             <a href="https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}" target="_blank">🧭 Chỉ đường đến đây</a>`;
+        } else {
+          document.getElementById("info").innerText = "Không có dữ liệu vị trí cho người dùng này.";
+        }
+      });
     }
 
     window.onload = initMap;
