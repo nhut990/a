@@ -27,7 +27,6 @@
   <input id="username" placeholder="Tên người dùng">
   <button onclick="startShare()">Tôi muốn chia sẻ vị trí</button>
   <button onclick="startView()">Tôi muốn xem vị trí người khác</button>
-  <button onclick="copyInfo()">📋 Sao chép thông tin</button>
   <div id="info">Nhập tên và chọn chế độ</div>
   <div id="map"></div>
 
@@ -53,40 +52,37 @@
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap'
       }).addTo(map);
-      marker = L.marker([10.8, 106.6]).addTo(map).bindPopup("Vị trí hiện tại").openPopup();
+      marker = L.marker([10.8, 106.6]).addTo(map);
     }
 
     function startShare() {
       const username = document.getElementById("username").value.trim();
       if (!username) return alert("Nhập tên người dùng");
 
-      document.getElementById("info").innerText = "Đang chia sẻ...";
-      navigator.geolocation.getCurrentPosition(
+      document.getElementById("info").innerText = "Đang chia sẻ liên tục...";
+      if (!navigator.geolocation) return alert("Thiết bị không hỗ trợ GPS");
+
+      navigator.geolocation.watchPosition(
         pos => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
           const timestamp = Date.now();
-          console.log("📍 Vị trí lấy được:", lat, lng);
 
-          // Cập nhật bản đồ cho người chia sẻ
-          marker.setLatLng([lat, lng]);
-          map.setView([lat, lng], 15);
+          // Cập nhật bản đồ
+          marker.setLatLng([lat, lng]).bindPopup("Vị trí hiện tại").openPopup();
+          map.setView([lat, lng], 16);
 
           // Gửi lên Firebase
-          db.ref("locations/" + username).set({ lat, lng, timestamp })
-            .then(() => {
-              document.getElementById("info").innerText = `✅ Đã gửi vị trí lên Firebase!\n📍 Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
-            })
-            .catch(err => {
-              console.error("❌ Lỗi ghi Firebase:", err);
-              alert("Không ghi được dữ liệu");
-            });
+          db.ref("locations/" + username).set({ lat, lng, timestamp });
+
+          document.getElementById("info").innerText =
+            `✅ Đang chia sẻ vị trí: ${lat.toFixed(5)}, ${lng.toFixed(5)} lúc ${new Date(timestamp).toLocaleTimeString()}`;
         },
         err => {
-          console.error("❌ Lỗi GPS:", err);
+          console.error("Lỗi GPS:", err);
           alert("Không lấy được vị trí: " + err.message);
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
       );
     }
 
@@ -99,8 +95,8 @@
         const data = snap.val();
         if (data) {
           const latlng = [data.lat, data.lng];
-          marker.setLatLng(latlng);
-          map.setView(latlng, 15);
+          marker.setLatLng(latlng).bindPopup("Vị trí của " + username).openPopup();
+          map.setView(latlng, 16);
           document.getElementById("info").innerHTML = 
             `📍 Lat: ${data.lat.toFixed(5)}, Lng: ${data.lng.toFixed(5)}<br>
              ⏱ ${new Date(data.timestamp).toLocaleTimeString()}<br>
@@ -109,13 +105,6 @@
           document.getElementById("info").innerText = "Không có dữ liệu vị trí cho người dùng này.";
         }
       });
-    }
-
-    function copyInfo() {
-      const infoText = document.getElementById("info").innerText;
-      navigator.clipboard.writeText(infoText)
-        .then(() => alert("✅ Đã sao chép thông tin!"))
-        .catch(() => alert("❌ Không thể sao chép"));
     }
 
     window.onload = initMap;
