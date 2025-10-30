@@ -19,7 +19,17 @@
     input, button { padding: 10px; font-size: 16px; margin: 5px; }
     button { background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; }
     #info, #guide { padding: 10px; }
-    #guide { display: none; background: #fff; border: 1px solid #ccc; border-radius: 6px; margin: 10px; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto; }
+    #guide {
+      display: none;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin: 10px auto;
+      text-align: left;
+      max-width: 600px;
+    }
+    #guide h3 { margin-top: 0; }
+    #guide ul { padding-left: 20px; }
   </style>
 </head>
 <body>
@@ -29,6 +39,7 @@
   <button onclick="startShare()">Tôi muốn chia sẻ vị trí</button>
   <button onclick="startView()">Tôi muốn xem vị trí người khác</button>
   <button onclick="toggleGuide()">📘 Hướng dẫn sử dụng</button>
+
   <div id="guide">
     <h3>📘 Cách sử dụng</h3>
     <p><strong>A chia sẻ vị trí cho B:</strong></p>
@@ -42,7 +53,9 @@
       <li>A cần cấp quyền truy cập vị trí chính xác cho trình duyệt.</li>
       <li>A phải giữ trang web luôn mở. Nếu tắt màn hình hoặc chuyển tab, việc chia sẻ sẽ tạm dừng.</li>
     </ul>
+    <button onclick="closeGuide()">Đóng hướng dẫn</button>
   </div>
+
   <div id="info">Nhập tên và chọn chế độ</div>
   <div id="map"></div>
 
@@ -122,8 +135,11 @@
     }
 
     function toggleGuide() {
-      const guide = document.getElementById("guide");
-      guide.style.display = guide.style.display === "none" ? "block" : "none";
+      document.getElementById("guide").style.display = "block";
+    }
+
+    function closeGuide() {
+      document.getElementById("guide").style.display = "none";
     }
 
     window.onload = initMap;
