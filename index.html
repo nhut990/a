@@ -30,6 +30,32 @@
     }
     #guide h3 { margin-top: 0; }
     #guide ul { padding-left: 20px; }
+    /* Nút vị trí của tôi */
+    #locateMeBtn {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 1000;
+      width: 46px;
+      height: 46px;
+      background: #fff;
+      border: 2px solid #2196F3;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #locateMeBtn:hover {
+      background: #e3f2fd;
+    }
+    #locateMeBtn svg {
+      width: 28px;
+      height: 28px;
+      fill: #2196F3;
+    }
+    .leaflet-control-container { position: relative; }
   </style>
 </head>
 <body>
@@ -52,12 +78,22 @@
     <ul>
       <li>A cần cấp quyền truy cập vị trí chính xác cho trình duyệt.</li>
       <li>A phải giữ trang web luôn mở. Nếu tắt màn hình hoặc chuyển tab, việc chia sẻ sẽ tạm dừng.</li>
+      <li>Bất cứ lúc nào, có thể bấm nút tròn góc dưới bản đồ để xem vị trí của chính mình.</li>
     </ul>
     <button onclick="closeGuide()">Đóng hướng dẫn</button>
   </div>
 
   <div id="info">Nhập tên và chọn chế độ</div>
-  <div id="map"></div>
+  <div style="position:relative;">
+    <div id="map"></div>
+    <button id="locateMeBtn" title="Xem vị trí của tôi" onclick="showMyLocation()">
+      <!-- SVG icon vị trí -->
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="8" stroke="none"/>
+        <circle cx="12" cy="12" r="2" fill="#fff"/>
+      </svg>
+    </button>
+  </div>
 
   <script>
     // Firebase cấu hình
@@ -74,7 +110,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Icon marker màu xanh cho người xem
+    // Icon marker màu xanh cho chính mình
     const blueIcon = new L.Icon({
       iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
       shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -84,7 +120,17 @@
       shadowSize: [41, 41]
     });
 
-    let map, marker, viewerMarker;
+    // Icon marker màu đỏ cho đối phương
+    const redIcon = new L.Icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+
+    let map, marker, myLocationMarker;
     let baseLayers;
 
     function initMap() {
@@ -118,9 +164,29 @@
       // Thêm control chuyển đổi lớp bản đồ
       L.control.layers(baseLayers).addTo(map);
 
-      // KHÔNG tạo marker mặc định ở Hồ Chí Minh nữa!
       marker = null;
-      viewerMarker = null;
+      myLocationMarker = null;
+    }
+
+    // Hiển thị vị trí hiện tại của chính mình (không chia sẻ, không lưu lên DB)
+    function showMyLocation() {
+      if (!map) initMap();
+      if (!navigator.geolocation) {
+        alert("Thiết bị không hỗ trợ GPS");
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        if (!myLocationMarker) {
+          myLocationMarker = L.marker([lat, lng], {icon: blueIcon}).addTo(map);
+        }
+        myLocationMarker.setLatLng([lat, lng]).setIcon(blueIcon).bindPopup("<b>Tôi</b>").openPopup();
+        map.setView([lat, lng], 16);
+        document.getElementById("info").innerText = `Vị trí của tôi: ${lat.toFixed(5)}, ${lng.toFixed(5)} lúc ${new Date().toLocaleTimeString()}`;
+      }, err => {
+        alert("Không lấy được vị trí: " + err.message);
+      }, { enableHighAccuracy: true, timeout: 10000 });
     }
 
     function startShare() {
@@ -131,9 +197,9 @@
       document.getElementById("info").innerText = "Đang chia sẻ liên tục...";
       if (!navigator.geolocation) return alert("Thiết bị không hỗ trợ GPS");
 
-      // Nếu chưa có marker, tạo marker mới
+      // Nếu chưa có marker, tạo marker mới với icon màu xanh
       if (!marker) {
-        marker = L.marker([0, 0]).addTo(map);
+        marker = L.marker([0, 0], {icon: blueIcon}).addTo(map);
       }
 
       navigator.geolocation.watchPosition(
@@ -142,7 +208,7 @@
           const lng = pos.coords.longitude;
           const timestamp = Date.now();
 
-          marker.setLatLng([lat, lng]).bindPopup("Vị trí hiện tại").openPopup();
+          marker.setLatLng([lat, lng]).setIcon(blueIcon).bindPopup("<b>Tôi</b>").openPopup();
           map.setView([lat, lng], 16);
 
           db.ref("locations/" + username).set({ lat, lng, timestamp });
@@ -170,11 +236,11 @@
       function renderInfo(data) {
         const latlng = [data.lat, data.lng];
 
-        // Nếu chưa có marker, tạo marker mới
+        // Marker màu đỏ cho vị trí người chia sẻ
         if (!marker) {
-          marker = L.marker(latlng).addTo(map);
+          marker = L.marker(latlng, {icon: redIcon}).addTo(map);
         }
-        marker.setLatLng(latlng).bindPopup("Vị trí của " + username).openPopup();
+        marker.setLatLng(latlng).setIcon(redIcon).bindPopup("<b>" + username + "</b>").openPopup();
         map.setView(latlng, 16);
 
         let infoHtml = 
@@ -197,11 +263,11 @@
         viewerLat = viewerPos.coords.latitude;
         viewerLng = viewerPos.coords.longitude;
 
-        if (!viewerMarker) {
-          viewerMarker = L.marker([viewerLat, viewerLng], { icon: blueIcon }).addTo(map);
-        } else {
-          viewerMarker.setLatLng([viewerLat, viewerLng]);
+        // Marker màu xanh cho vị trí của mình (chỉ 1 marker duy nhất)
+        if (!myLocationMarker) {
+          myLocationMarker = L.marker([viewerLat, viewerLng], { icon: blueIcon }).addTo(map);
         }
+        myLocationMarker.setLatLng([viewerLat, viewerLng]).setIcon(blueIcon).bindPopup("<b>Tôi</b>");
 
         db.ref("locations/" + username).on("value", snap => {
           const data = snap.val();
