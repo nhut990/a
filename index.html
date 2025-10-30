@@ -2,555 +2,563 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Piano ảo (clone)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Bộ trống giả lập — Cực nhạy</title>
 <style>
   :root{
-    --white:#fff;
-    --black:#111;
-    --border:#bbb;
-    --active-white:#f0f8ff;
-    --active-black:#333;
-    --key-height:220px; /* desktop */
-    --black-height:135px;
+    --bg:#0b0f14;
+    --panel:#0f1720;
+    --accent:#ffb86b;
+    --muted:#98a0aa;
+    --glass: rgba(255,255,255,0.04);
   }
-  html,body{height:100%;margin:0;font-family:system-ui,-apple-system; background:#0f1720; display:flex; align-items:center; justify-content:center;}
-  .wrap{
-    width:98%;
-    max-width:1100px;
-    background:linear-gradient(180deg,#0b1220 0%, #07101a 100%);
-    padding:12px;
-    border-radius:12px;
-    box-shadow:0 8px 30px rgba(2,6,23,.6);
+  html,body{
+    height:100%;
+    margin:0;
+    font-family:system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
+    background:linear-gradient(180deg,var(--bg),#071019 80%);
+    color:#e6eef6;
+    -webkit-font-smoothing:antialiased;
   }
-
-  /* piano viewport is horizontally scrollable on small widths */
-  .piano-viewport{
-    overflow-x:auto;
-    -webkit-overflow-scrolling:touch;
-    padding-bottom:6px;
+  .app{
+    max-width:980px;
+    margin:12px auto;
+    padding:10px;
   }
-
-  /* keyboard */
-  .keyboard{
-    position:relative;
-    height:var(--key-height);
+  header{
     display:flex;
-    align-items:flex-end;
-    user-select:none;
-    -webkit-user-select:none;
-  }
-
-  /* white keys container (flex) */
-  .white-keys{
-    display:flex;
-    position:relative;
-    z-index:1;
-  }
-  .key.white{
-    width:70px; /* will scale */
-    min-width:46px;
-    height:var(--key-height);
-    box-sizing:border-box;
-    border:1px solid var(--border);
-    border-bottom-left-radius:6px;
-    border-bottom-right-radius:6px;
-    background:linear-gradient(#fff,#f7f7f7);
-    margin-right:0;
-    display:flex;
-    align-items:flex-end;
-    justify-content:center;
-    box-shadow: inset 0 -8px 18px rgba(0,0,0,0.04);
-    transition:background .08s, transform .03s;
-    touch-action: none;
-  }
-  .key.white.active{
-    background:var(--active-white);
-    transform: translateY(6px);
-    box-shadow: none;
-  }
-
-  /* black keys are absolutely positioned over whites */
-  .black-keys{
-    position:absolute;
-    left:0;
-    top:0;
-    height:var(--key-height);
-    z-index:2;
-    display:block;
-    pointer-events:none; /* allow pointer events on actual black key elements below */
-  }
-  .key.black{
-    position:absolute;
-    width:46px;
-    height:var(--black-height);
-    background:linear-gradient(#111,#0b0b0b);
-    border-radius: 0 0 6px 6px;
-    box-shadow:0 6px 12px rgba(0,0,0,0.55);
-    border:1px solid rgba(255,255,255,0.03);
-    transform-origin:bottom center;
-    pointer-events:auto;
-    transition: transform .03s, background .04s;
-  }
-  .key.black.active{
-    background:linear-gradient(var(--active-black),#222);
-    transform: translateY(6px);
-  }
-
-  /* small control row */
-  .controls{
-    display:flex;
-    gap:10px;
     align-items:center;
+    gap:12px;
     margin-bottom:10px;
   }
+  header h1{
+    font-size:18px;
+    margin:0;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:10px;
+  }
+  /* mobile tall single column for very narrow screens */
+  @media (max-width:520px){
+    .grid{ grid-template-columns: repeat(2,1fr); }
+    .app{ padding:6px; }
+  }
+  .pad{
+    background:var(--panel);
+    border-radius:12px;
+    min-height:110px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    overflow:hidden;
+    touch-action: none; /* important for pointer events responsiveness */
+    user-select:none;
+    box-shadow: 0 6px 18px rgba(2,8,23,0.6);
+    border: 1px solid rgba(255,255,255,0.03);
+  }
+  .pad .label{
+    position:absolute;
+    left:10px;
+    top:10px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .pad .hit{
+    font-weight:700;
+    font-size:22px;
+    pointer-events:none;
+    transform:translateY(6px);
+  }
+  .pad:active, .pad.active{
+    box-shadow: 0 6px 28px rgba(255,184,107,0.12);
+    transform: translateY(0);
+  }
+  .ripple{
+    position:absolute;
+    border-radius:999px;
+    transform:translate(-50%,-50%) scale(0.001);
+    opacity:0.9;
+    pointer-events:none;
+    transition: transform 360ms cubic-bezier(.15,.9,.2,1), opacity 420ms;
+    background: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.12), rgba(255,255,255,0.02));
+  }
+  .controls{
+    margin-top:12px;
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
   .btn{
-    background:rgba(255,255,255,0.06);
-    color:#fff;
-    padding:8px 12px;
+    background:var(--glass);
+    color:var(--muted);
     border-radius:8px;
-    border:1px solid rgba(255,255,255,0.04);
-    font-size:14px;
-  }
-  .info{
-    color:#cbd5e1;
-    margin-left:auto;
+    padding:8px 12px;
     font-size:13px;
+    border:1px solid rgba(255,255,255,0.03);
   }
-
-  /* responsive tweaks for phones (portrait) */
-  @media (max-width:600px){
-    :root{
-      --key-height:180px;
-      --black-height:110px;
-    }
-    .key.white{width:56px;}
-    .key.black{width:34px;}
+  .meter{
+    display:flex;
+    align-items:center;
+    gap:8px;
   }
-  /* ensure keyboard keys show with no text (we omitted labels) */
-  .label{display:none;}
+  .meter .bar{
+    height:8px;
+    width:120px;
+    background:rgba(255,255,255,0.06);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .meter .bar > i{
+    display:block;
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg, #ffd6a5, #ffb86b);
+    transition: width 80ms linear;
+  }
+  footer{
+    margin-top:14px;
+    font-size:12px;
+    color:var(--muted);
+  }
 </style>
 </head>
 <body>
-  <div class="wrap" role="application" aria-label="Piano ảo">
-    <div class="controls">
-      <button id="octDown" class="btn" title="Giảm quãng">Oct -</button>
-      <button id="octUp" class="btn" title="Tăng quãng">Oct +</button>
-      <button id="toggleLabels" class="btn" title="Hiện/ẩn tên nốt (bị tắt theo yêu cầu)">Ghi chú</button>
-      <button id="sustainBtn" class="btn" title="Sustain (giữ)">Sustain</button>
-      <div class="info">Chạm phím hoặc dùng bàn phím để chơi. (Nút Ghi chú tắt tên nốt)</div>
+<div class="app">
+  <header>
+    <h1>Bộ trống giả lập — Cực nhạy</h1>
+    <div style="flex:1"></div>
+    <div style="font-size:12px;color:var(--muted)">Đa chạm • Tương thích mobile</div>
+  </header>
+
+  <main>
+    <div class="grid" id="pads">
+      <div class="pad" data-drum="kick" id="pad-kick">
+        <div class="label">Kick</div>
+        <div class="hit">KICK</div>
+      </div>
+      <div class="pad" data-drum="snare" id="pad-snare">
+        <div class="label">Snare</div>
+        <div class="hit">SNARE</div>
+      </div>
+      <div class="pad" data-drum="hat" id="pad-hat">
+        <div class="label">Hi-Hat</div>
+        <div class="hit">HAT</div>
+      </div>
+
+      <div class="pad" data-drum="tom1" id="pad-tom1">
+        <div class="label">Tom High</div>
+        <div class="hit">TOM1</div>
+      </div>
+      <div class="pad" data-drum="tom2" id="pad-tom2">
+        <div class="label">Tom Mid</div>
+        <div class="hit">TOM2</div>
+      </div>
+      <div class="pad" data-drum="crash" id="pad-crash">
+        <div class="label">Crash</div>
+        <div class="hit">CRASH</div>
+      </div>
     </div>
 
-    <div class="piano-viewport">
-      <div id="keyboard" class="keyboard" aria-hidden="false"></div>
+    <div class="controls">
+      <button class="btn" id="enableAudio">Bật âm (chạm để cho phép)</button>
+      <div class="meter">
+        <div style="font-size:12px;color:var(--muted)">VOLUME</div>
+        <div class="bar"><i id="volBar"></i></div>
+      </div>
+      <button class="btn" id="toggleVisual">Tắt hiệu ứng</button>
     </div>
-  </div>
+
+    <footer>
+      Lưu ý: Trên thiết bị hỗ trợ Pointer Events, lực đánh dùng <code>event.pressure</code>. Nếu trình duyệt không hỗ trợ, mã sẽ suy đoán lực dựa trên tốc độ chạm — nhanh = mạnh.
+    </footer>
+  </main>
+</div>
 
 <script>
-/*
-  Piano ảo - bản tự viết lại
-  - Tạo phím trắng và đen, đặt đúng vị trí (không "ngược")
-  - Hỗ trợ nhiều nốt cùng lúc
-  - Hỗ trợ bàn phím máy tính + cảm ứng
-  - Âm thanh tạo bằng WebAudio (ADSR) — không dùng sample
-*/
+(() => {
+  // --- Audio setup ---
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  let ctx = null;
+  let masterGain = null;
+  let visualEnabled = true;
+  let volume = 0.9;
 
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let masterGain = audioCtx.createGain();
-masterGain.gain.value = 0.9;
-masterGain.connect(audioCtx.destination);
-
-let sustainOn = false;
-
-// Note to frequency helper (A4=440)
-function noteToFreq(noteNumber){
-  // MIDI note number to frequency
-  return 440 * Math.pow(2,(noteNumber - 69)/12);
-}
-
-// layout of one octave (C to B) - white keys and which positions have black keys
-const octavePattern = [
-  {name:'C', isBlack:false, semitone:0},
-  {name:'C#', isBlack:true, semitone:1},
-  {name:'D', isBlack:false, semitone:2},
-  {name:'D#', isBlack:true, semitone:3},
-  {name:'E', isBlack:false, semitone:4},
-  {name:'F', isBlack:false, semitone:5},
-  {name:'F#', isBlack:true, semitone:6},
-  {name:'G', isBlack:false, semitone:7},
-  {name:'G#', isBlack:true, semitone:8},
-  {name:'A', isBlack:false, semitone:9},
-  {name:'A#', isBlack:true, semitone:10},
-  {name:'B', isBlack:false, semitone:11}
-];
-
-// Build keyboard: choose number of octaves and base octave
-let baseOctave = 4; // middle C ~ C4 (MIDI 60) ; we will allow octave shift
-let octaveCount = 3; // default 3 octaves
-const keyboardEl = document.getElementById('keyboard');
-
-function buildKeyboard(){
-  keyboardEl.innerHTML = '';
-  // containers
-  const whiteContainer = document.createElement('div');
-  whiteContainer.className = 'white-keys';
-  const blackLayer = document.createElement('div');
-  blackLayer.className = 'black-keys';
-  keyboardEl.appendChild(whiteContainer);
-  keyboardEl.appendChild(blackLayer);
-
-  // For positioning black keys absolutely we need to track x offsets
-  // We'll create keys left-to-right from low to high note
-  const whiteKeyWidth = getComputedStyle(document.documentElement).getPropertyValue('--white-key-width') || null;
-
-  // Build sequence of keys
-  let whiteIndex = 0;
-  const totalNotes = octaveCount * 12;
-  const keysMeta = []; // store meta for positioning
-
-  for(let oct=0; oct<octaveCount; oct++){
-    for(let i=0;i<12;i++){
-      const pat = octavePattern[i];
-      const midi = 12*(baseOctave + oct) + pat.semitone;
-      const isBlack = pat.isBlack;
-      if(!isBlack){
-        // create white key element
-        const w = document.createElement('div');
-        w.className = 'key white';
-        w.dataset['midi'] = midi;
-        // accessible label but hidden visually
-        const lbl = document.createElement('div');
-        lbl.className = 'label';
-        lbl.textContent = pat.name + (baseOctave+oct);
-        w.appendChild(lbl);
-        whiteContainer.appendChild(w);
-        keysMeta.push({el:w, midi, isBlack:false, whiteIndex});
-        whiteIndex++;
-      } else {
-        // store for later absolute placement
-        keysMeta.push({el:null, midi, isBlack:true});
-      }
-    }
+  // initialize on first user interaction
+  function ensureAudio() {
+    if (ctx) return;
+    ctx = new AudioContext();
+    masterGain = ctx.createGain();
+    masterGain.gain.value = volume;
+    masterGain.connect(ctx.destination);
   }
 
-  // After whites appended we can compute left offsets and add black keys positioned between whites
-  const whiteEls = Array.from(whiteContainer.children);
-  // compute left offsets
-  whiteEls.forEach((we, idx) => {
-    const left = we.offsetLeft;
-    const width = we.offsetWidth;
-    // find if there is a black key to the right between this white and next white
-    // But simpler: iterate pattern again to position blacks relative to white key index
+  // quick utility: create noise buffer
+  function makeNoiseBuffer(duration = 1.0) {
+    const sampleRate = ctx.sampleRate;
+    const buffer = ctx.createBuffer(1, sampleRate * duration, sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 1.3);
+    }
+    return buffer;
+  }
+
+  const noiseBufferCache = {};
+
+  // --- Drum synths (no external samples) ---
+  function playKick(strength = 1) {
+    const now = ctx.currentTime;
+    // oscillator sweep
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150 * Math.max(0.6, 1.2 - strength * 0.6), now);
+    osc.frequency.exponentialRampToValueAtTime(50, now + 0.08 + strength * 0.06);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.8 * strength, now + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45 + strength * 0.25);
+
+    osc.connect(gain);
+    gain.connect(masterGain);
+
+    osc.start(now);
+    osc.stop(now + 0.7 + strength * 0.4);
+  }
+
+  function playSnare(strength = 1) {
+    const now = ctx.currentTime;
+    const noise = ctx.createBufferSource();
+    if (!noiseBufferCache.snare) noiseBufferCache.snare = makeNoiseBuffer(1.0);
+    noise.buffer = noiseBufferCache.snare;
+
+    const noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.value = 1800;
+    noiseFilter.Q.value = 0.7;
+
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.0001, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.7 * strength, now + 0.002);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25 + 0.12 * strength);
+
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(masterGain);
+
+    // body (tone)
+    const osc = ctx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(220, now);
+    const oscGain = ctx.createGain();
+    oscGain.gain.setValueAtTime(0.0001, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.25 * strength, now + 0.003);
+    oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+
+    osc.connect(oscGain);
+    oscGain.connect(masterGain);
+
+    noise.start(now);
+    noise.stop(now + 0.35 + 0.1 * strength);
+    osc.start(now);
+    osc.stop(now + 0.26 + 0.06 * strength);
+  }
+
+  function playHat(strength = 1, open = false) {
+    const now = ctx.currentTime;
+    const src = ctx.createBufferSource();
+    if (!noiseBufferCache.hat) noiseBufferCache.hat = makeNoiseBuffer(0.5);
+    src.buffer = noiseBufferCache.hat;
+
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 5000;
+    hp.Q.value = 0.3;
+
+    const band = ctx.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.value = 8000;
+    band.Q.value = 0.4;
+
+    const g = ctx.createGain();
+    const len = open ? (0.35 + 0.3 * strength) : (0.06 + 0.04 * (1-strength));
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.5 * strength, now + 0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + len);
+
+    src.connect(hp);
+    hp.connect(band);
+    band.connect(g);
+    g.connect(masterGain);
+
+    src.start(now);
+    src.stop(now + len + 0.02);
+  }
+
+  function playCrash(strength = 1) {
+    const now = ctx.currentTime;
+    const src = ctx.createBufferSource();
+    if (!noiseBufferCache.crash) noiseBufferCache.crash = makeNoiseBuffer(2.0);
+    src.buffer = noiseBufferCache.crash;
+
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 6500;
+
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.9 * strength, now + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 1.4 + 0.8 * strength);
+
+    src.connect(hp);
+    hp.connect(g);
+    g.connect(masterGain);
+
+    src.start(now);
+    src.stop(now + 2.2 + strength * 1.2);
+  }
+
+  function playTom(freq = 300, strength = 1) {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq * (1 + 0.1 * (1 - strength)), now);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.6, now + 0.12 + 0.05 * (1-strength));
+
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.7 * strength, now + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.4 + 0.35 * strength);
+
+    osc.connect(g);
+    g.connect(masterGain);
+
+    osc.start(now);
+    osc.stop(now + 0.8 + 0.4 * strength);
+  }
+
+  // --- Controls & UI ---
+  const pads = document.querySelectorAll('.pad');
+  const enableBtn = document.getElementById('enableAudio');
+  const volBar = document.getElementById('volBar');
+  const toggleVisual = document.getElementById('toggleVisual');
+
+  function setVolume(v) {
+    volume = v;
+    if (masterGain) masterGain.gain.value = v;
+    volBar.style.width = Math.max(2, Math.round(v * 100)) + '%';
+  }
+  setVolume(volume);
+
+  enableBtn.addEventListener('pointerdown', async (e) => {
+    ensureAudio();
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+    }
+    enableBtn.textContent = 'Âm đã bật';
+    enableBtn.disabled = true;
   });
 
-  // To position black keys correctly we will iterate again across octaves and generate absolute positions.
-  // We'll use a simpler approach: for each black semitone, position it between the surrounding white keys by index.
-  // Find mapping of white key indices to DOM elements
-  const whiteMap = [];
-  let wi = 0;
-  for(let oct=0; oct<octaveCount; oct++){
-    for(let i=0;i<12;i++){
-      if(!octavePattern[i].isBlack){
-        whiteMap.push(whiteEls[wi++]);
-      }
+  toggleVisual.addEventListener('click', () => {
+    visualEnabled = !visualEnabled;
+    toggleVisual.textContent = visualEnabled ? 'Tắt hiệu ứng' : 'Bật hiệu ứng';
+  });
+
+  // helper: create ripple
+  function rippleAt(pad, x, y, intensity=1) {
+    if (!visualEnabled) return;
+    const r = document.createElement('div');
+    r.className = 'ripple';
+    const size = Math.max(pad.clientWidth, pad.clientHeight) * (0.9 + intensity * 0.8);
+    r.style.width = r.style.height = size + 'px';
+    r.style.left = x + 'px';
+    r.style.top = y + 'px';
+    r.style.opacity = Math.min(0.95, 0.45 + intensity*0.5);
+    pad.appendChild(r);
+    // force reflow
+    requestAnimationFrame(() => {
+      r.style.transform = 'translate(-50%,-50%) scale(1)';
+      r.style.opacity = Math.max(0.12, 0.35 - intensity*0.18);
+    });
+    setTimeout(()=> {
+      r.style.opacity = '0';
+      r.style.transform = 'translate(-50%,-50%) scale(1.6)';
+      setTimeout(()=> r.remove(), 420);
+    }, 50);
+  }
+
+  // velocity estimator: try event.pressure first; otherwise use tap speed or area
+  const pointerState = {}; // track pointerdown times/positions
+  function estimateStrength(ev, padEl) {
+    // prefer pointer.pressure if available (0..1)
+    if (ev.pressure && ev.pressure > 0.01) {
+      // map [0.02..1] -> [0.2..1]
+      const p = Math.min(1, ev.pressure);
+      return 0.2 + 0.8 * p;
+    }
+    // fallback: estimate from speed of pointer movement between down/up
+    const s = pointerState[ev.pointerId];
+    if (s && s.startTime) {
+      const dt = Math.max(6, (performance.now() - s.startTime)); // ms
+      // faster tap (smaller dt) -> stronger
+      const t = Math.min(1, 120 / dt); // 120ms -> ~1, 240ms -> 0.5
+      // also factor by relative position (hit near center stronger)
+      const rect = padEl.getBoundingClientRect();
+      const cx = rect.left + rect.width/2;
+      const cy = rect.top + rect.height/2;
+      const dx = (ev.clientX - cx) / (rect.width/2);
+      const dy = (ev.clientY - cy) / (rect.height/2);
+      const dist = Math.min(1, Math.sqrt(dx*dx + dy*dy));
+      const centerFactor = 1 - dist; // closer to center => stronger
+      return Math.min(1, Math.max(0.12, 0.14 + 0.86*(0.6*t + 0.4*centerFactor)));
+    }
+    return 0.6; // default medium
+  }
+
+  // play mapping
+  function triggerDrum(name, strength) {
+    if (!ctx) return;
+    switch(name){
+      case 'kick': playKick(strength); break;
+      case 'snare': playSnare(strength); break;
+      case 'hat': playHat(strength, false); break;
+      case 'crash': playCrash(strength); break;
+      case 'tom1': playTom(480, strength); break;
+      case 'tom2': playTom(320, strength); break;
+      default: playSnare(strength);
     }
   }
 
-  // Create black keys and position them using offsets of adjacent white keys
-  // For each octave and semitone index that is black, compute approximate left: between surrounding whites.
-  let whiteCounter = 0;
-  for(let oct=0; oct<octaveCount; oct++){
-    for(let i=0;i<12;i++){
-      const pat = octavePattern[i];
-      const midi = 12*(baseOctave + oct) + pat.semitone;
-      if(pat.isBlack){
-        // which whites surround it? Determine by pattern:
-        // Black keys exist between: C(white) & D(white) => C#; D & E => D#; F & G => F#; G & A => G#; A & B => A#
-        // So find index of left white in the global whiteMap
-        // We'll compute an approximate white index by counting whites up to this position
-        // Build a small helper to map local pattern to offset
-        let leftWhiteLocalIndex = null;
-        // Count how many whites before this semitone within octave
-        let countWhitesBefore = 0;
-        for(let j=0;j<i;j++){
-          if(!octavePattern[j].isBlack) countWhitesBefore++;
+  // pointer handlers
+  pads.forEach(pad => {
+    pad.addEventListener('pointerdown', (ev) => {
+      ev.preventDefault();
+      ensureAudio();
+      const id = ev.pointerId;
+      pointerState[id] = {
+        startTime: performance.now(),
+        startX: ev.clientX,
+        startY: ev.clientY
+      };
+      pad.setPointerCapture && pad.setPointerCapture(id);
+      pad.classList.add('active');
+
+      // immediate feedback: create ripple at pointer pos
+      const rect = pad.getBoundingClientRect();
+      const localX = ev.clientX - rect.left;
+      const localY = ev.clientY - rect.top;
+
+      const strength = estimateStrength(ev, pad);
+      rippleAt(pad, localX, localY, strength);
+      const drum = pad.dataset.drum;
+      // tiny scheduling: play immediately (low-latency)
+      triggerDrum(drum, strength);
+    });
+
+    pad.addEventListener('pointerup', (ev) => {
+      ev.preventDefault();
+      const id = ev.pointerId;
+      const s = pointerState[id];
+      const padEl = pad;
+      const strength = estimateStrength(ev, padEl);
+      // optionally, play another sound on release (for open hat)
+      if (pad.dataset.drum === 'hat') {
+        // if release delayed => open hat
+        const dt = s ? (performance.now() - s.startTime) : 0;
+        if (dt > 120) {
+          playHat(strength, true);
         }
-        // global left white index:
-        leftWhiteLocalIndex = oct * 7 + countWhitesBefore; // 7 whites per octave
-        const leftWhiteEl = whiteMap[leftWhiteLocalIndex];
-        const rightWhiteEl = whiteMap[leftWhiteLocalIndex+1];
-
-        const blackEl = document.createElement('div');
-        blackEl.className = 'key black';
-        blackEl.dataset['midi'] = midi;
-
-        // compute left position: take leftWhiteEl offsetLeft + width - half black width
-        // but offsetLeft available only after layout; use getBoundingClientRect
-        // We'll set a temp transform based on left position later in a requestAnimationFrame after layout
-        blackLayer.appendChild(blackEl);
       }
-    }
-  }
+      pad.classList.remove('active');
+      if (s) delete pointerState[id];
+      pad.releasePointerCapture && pad.releasePointerCapture(id);
+    });
 
-  // After adding elements, position black keys precisely using DOM geometry
-  requestAnimationFrame(()=> {
-    const blackEls = Array.from(blackLayer.children);
-    blackEls.forEach((bel, idx) => {
-      const midi = +bel.dataset.midi;
-      // find its surrounding whites
-      // find index of the white to the left (the nearest smaller midi white)
-      // find all white nodes with midi and pick the max with midi < this midi
-      const whites = Array.from(whiteContainer.children).map(n => ({el:n, midi:+n.dataset.midi}));
-      let leftWhite = null;
-      for(let i=0;i<whites.length;i++){
-        if(whites[i].midi < midi) leftWhite = whites[i];
-        else break;
+    pad.addEventListener('pointercancel', (ev) => {
+      const id = ev.pointerId;
+      pad.classList.remove('active');
+      if (pointerState[id]) delete pointerState[id];
+      pad.releasePointerCapture && pad.releasePointerCapture(id);
+    });
+
+    // allow quick "flick" velocity estimation by tracking movement
+    pad.addEventListener('pointermove', (ev) => {
+      const s = pointerState[ev.pointerId];
+      if (s) {
+        const dx = ev.clientX - s.startX;
+        const dy = ev.clientY - s.startY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        // if large flick while holding, update startTime to reflect fast action
+        if (dist > 30) {
+          s.startTime = performance.now() - 20; // treat as quick
+        }
       }
-      if(!leftWhite) leftWhite = whites[0];
-      const leftRect = leftWhite.el.getBoundingClientRect();
-      const nextIndex = whites.findIndex(w=>w.el===leftWhite.el)+1;
-      const rightWhite = whites[nextIndex] || whites[whites.length-1];
-      const rightRect = rightWhite.el.getBoundingClientRect();
-      const containerRect = keyboardEl.getBoundingClientRect();
-      // compute center between whites
-      const centerX = ((leftRect.left + rightRect.left) / 2) - containerRect.left + (rightRect.width/2);
-      // offset so black key centers between
-      const blw = bel.offsetWidth;
-      const leftPos = centerX - blw/2;
-      bel.style.left = (leftPos) + 'px';
-      // vertical position (top) is 0 by css
+    });
+
+    // keyboard accessibility: space/enter triggers via click
+    pad.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        const strength = 0.8;
+        rippleAt(pad, pad.clientWidth/2, pad.clientHeight/2, strength);
+        triggerDrum(pad.dataset.drum, strength);
+      }
     });
   });
 
-  // Attach event listeners to all keys (white and black)
-  const allKeys = Array.from(whiteContainer.children).concat(Array.from(blackLayer.children));
-  allKeys.forEach(k => {
-    k.addEventListener('touchstart', ev => { ev.preventDefault(); noteOn(k.dataset.midi); k.classList.add('active');});
-    k.addEventListener('touchend', ev => { ev.preventDefault(); noteOff(k.dataset.midi); k.classList.remove('active');});
-    k.addEventListener('mousedown', ev => { ev.preventDefault(); noteOn(k.dataset.midi); k.classList.add('active');});
-    k.addEventListener('mouseup',  ev => { ev.preventDefault(); noteOff(k.dataset.midi); k.classList.remove('active');});
-    k.addEventListener('mouseleave', ev => { ev.preventDefault(); noteOff(k.dataset.midi); k.classList.remove('active');});
-  });
-}
+  // additional: listen to wheel on pads to change volume quickly (desktop)
+  document.addEventListener('wheel', (e) => {
+    if (e.ctrlKey) return;
+    const delta = -e.deltaY * 0.0008;
+    setVolume(Math.min(1, Math.max(0.05, volume + delta)));
+  }, {passive:true});
 
-// Polyphony map: midi -> voice
-const activeVoices = new Map();
-
-function playTone(midi, velocity=0.98){
-  if(activeVoices.has(midi)) return; // already playing
-  const freq = noteToFreq(midi);
-  // Create richer timbre by layering oscillators + filter + gain envelope
-  const outGain = audioCtx.createGain();
-  outGain.gain.value = 0;
-  outGain.connect(masterGain);
-
-  const osc1 = audioCtx.createOscillator();
-  osc1.type = 'sine';
-  osc1.frequency.value = freq;
-
-  const osc2 = audioCtx.createOscillator();
-  osc2.type = 'sawtooth';
-  osc2.frequency.value = freq * 0.999; // slight detune
-
-  const osc3 = audioCtx.createOscillator();
-  osc3.type = 'square';
-  osc3.frequency.value = freq * 2; // octave harmonic
-
-  const biquad = audioCtx.createBiquadFilter();
-  biquad.type = 'lowpass';
-  biquad.frequency.value = 4000;
-  biquad.Q.value = 0.6;
-
-  osc1.connect(outGain);
-  osc2.connect(outGain);
-  osc3.connect(outGain);
-  outGain.connect(biquad);
-  biquad.connect(masterGain);
-
-  const now = audioCtx.currentTime;
-  // ADSR (attack, decay, sustain, release)
-  const attack = 0.005;
-  const decay = 0.25;
-  const sustainLevel = 0.6;
-  const release = 0.6;
-
-  // start oscillators
-  osc1.start(now);
-  osc2.start(now);
-  osc3.start(now);
-
-  // envelope
-  outGain.gain.cancelScheduledValues(now);
-  outGain.gain.setValueAtTime(0.0001, now);
-  outGain.gain.linearRampToValueAtTime(velocity, now + attack);
-  outGain.gain.exponentialRampToValueAtTime(Math.max(0.001, velocity * sustainLevel), now + attack + decay);
-
-  // store voice
-  activeVoices.set(midi, {osc1, osc2, osc3, outGain, biquad, release});
-  return;
-}
-
-function stopTone(midi){
-  const voice = activeVoices.get(midi);
-  if(!voice) return;
-  const now = audioCtx.currentTime;
-  if(sustainOn){
-    // if sustain engaged, delay release until sustain disabled
-    voice.sustained = true;
-    return;
-  }
-  // release envelope
-  voice.outGain.gain.cancelScheduledValues(now);
-  voice.outGain.gain.setValueAtTime(voice.outGain.gain.value, now);
-  voice.outGain.gain.exponentialRampToValueAtTime(0.0001, now + voice.release);
-  // stop oscillators after release
-  voice.osc1.stop(now + voice.release + 0.05);
-  voice.osc2.stop(now + voice.release + 0.05);
-  voice.osc3.stop(now + voice.release + 0.05);
-  // cleanup after done
-  setTimeout(()=> {
-    try{ voice.outGain.disconnect(); voice.biquad.disconnect(); }catch(e){}
-    activeVoices.delete(midi);
-  }, (voice.release + 0.1) * 1000);
-}
-
-// external API used by UI
-function noteOn(midi){
-  // resume audioCtx on first interaction (required on mobile)
-  if(audioCtx.state === 'suspended') audioCtx.resume();
-  playTone(+midi, 0.95);
-}
-function noteOff(midi){
-  stopTone(+midi);
-}
-
-// keyboard mapping: map physical keys to midi numbers
-// We'll map a comfortable block: row "z x c v b n m , ." as white keys lower, and row "a s d f g h j k l ; ' " upper etc.
-// But to keep it simple and convenient for many layouts, use classic mapping:
-const keyMap = {
-  // lower row (white): z x c v b n m , . /
-  'z': -12, 'x': -11, 'c': -10, 'v': -9, 'b': -8, 'n': -7, 'm': -6, ',': -5, '.': -4, '/': -3,
-  // next row (white): a s d f g h j k l ; '
-  'a': 0, 's': 1, 'd': 2, 'f': 3, 'g': 4, 'h': 5, 'j': 6, 'k': 7, 'l': 8, ';':9, '\'':10,
-  // top row for black keys
-  'q': -11, '2': -10, 'w': -9, '3': -8, 'e': -7, 'r': -6, '5': -5, 't': -4, '6': -3, 'y': -2, '7': -1
-};
-// Interpret mapping as offsets from A4 (69) plus base offset. We'll compute mapping to midi when pressed.
-
-const baseKeyMidi = 60; // default base C4 (MIDI 60) for middle of keyboard mapping
-
-// Track currently pressed physical keys to avoid retrigger spam
-const pressedPhysical = new Set();
-
-document.addEventListener('keydown', ev => {
-  if(ev.repeat) return;
-  // ensure resume audio context
-  if(audioCtx.state === 'suspended') audioCtx.resume();
-  const k = ev.key.toLowerCase();
-  if(k === ' '){ ev.preventDefault(); return; } // space reserved maybe
-  if(keyMap.hasOwnProperty(k)){
-    if(pressedPhysical.has(k)) return;
-    pressedPhysical.add(k);
-    // compute midi: baseKeyMidi + mapped offset
-    const midi = baseKeyMidi + keyMap[k];
-    noteOn(midi);
-    // highlight element if exists
-    const el = document.querySelector(`[data-midi="${midi}"]`);
-    if(el) el.classList.add('active');
-  }
-  // octave controls with z/x? We'll use ArrowUp/Down for octave
-  if(ev.key === 'ArrowUp'){ shiftOctave(1); }
-  if(ev.key === 'ArrowDown'){ shiftOctave(-1); }
-});
-
-document.addEventListener('keyup', ev => {
-  const k = ev.key.toLowerCase();
-  if(keyMap.hasOwnProperty(k)){
-    pressedPhysical.delete(k);
-    const midi = baseKeyMidi + keyMap[k];
-    noteOff(midi);
-    const el = document.querySelector(`[data-midi="${midi}"]`);
-    if(el) el.classList.remove('active');
-  }
-});
-
-// sustain toggle
-document.getElementById('sustainBtn').addEventListener('click', ()=>{
-  sustainOn = !sustainOn;
-  document.getElementById('sustainBtn').style.backgroundColor = sustainOn ? '#2b6cb0' : '';
-  if(!sustainOn){
-    // release all voices that were sustained
-    for(const [m, v] of Array.from(activeVoices.entries())){
-      if(v.sustained){
-        v.sustained = false;
-        stopTone(m);
+  // small helper: map keyboard keys to drums for quick testing
+  const keyMap = {
+    'z':'kick','x':'snare','c':'hat','v':'tom1','b':'tom2','n':'crash'
+  };
+  const keyState = {};
+  window.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    if (keyMap[k] && !keyState[k]) {
+      keyState[k]=true;
+      ensureAudio();
+      triggerDrum(keyMap[k], 0.9);
+      const padEl = document.querySelector(`[data-drum="${keyMap[k]}"]`);
+      if (padEl){
+        padEl.classList.add('active');
+        rippleAt(padEl, padEl.clientWidth/2, padEl.clientHeight/2, 0.9);
       }
     }
-  }
-});
-
-// octave shift controls
-document.getElementById('octUp').addEventListener('click', ()=> shiftOctave(1));
-document.getElementById('octDown').addEventListener('click', ()=> shiftOctave(-1));
-function shiftOctave(delta){
-  baseOctave += delta;
-  // clamp
-  if(baseOctave < 0) baseOctave = 0;
-  if(baseOctave > 7) baseOctave = 7;
-  rebuildKeyboardPreserve();
-}
-
-// Ghi chú (nhãn) toggle (hidden by default per user wish)
-document.getElementById('toggleLabels').addEventListener('click', ()=>{
-  const labels = document.querySelectorAll('.label');
-  labels.forEach(l=> l.style.display = l.style.display === 'none' ? 'block' : 'none');
-});
-
-// rebuild keyboard while preserving active voices if any
-function rebuildKeyboardPreserve(){
-  // stop existing active keys visually
-  document.querySelectorAll('.key.active').forEach(k=>k.classList.remove('active'));
-  buildKeyboard();
-}
-
-// Build initially
-buildKeyboard();
-
-// ensure keyboard is sized for portrait: scale white key width to fit visible area if many keys
-function fitKeys(){
-  // optional: scale white key width so that N white keys fit within viewport min width
-  const viewportWidth = document.querySelector('.piano-viewport').clientWidth;
-  const whiteKeys = document.querySelectorAll('.white-keys .key.white').length;
-  // desired key width: at least 40, at most 90
-  const desired = Math.max(40, Math.min(90, Math.floor(viewportWidth / Math.min(whiteKeys, 7))));
-  document.querySelectorAll('.white-keys .key.white').forEach(k => k.style.width = desired + 'px');
-  // reposition blacks after resizing
-  requestAnimationFrame(()=> {
-    const blackEls = document.querySelectorAll('.black-keys .key.black');
-    blackEls.forEach(bel => {
-      const midi = +bel.dataset.midi;
-      const whites = Array.from(document.querySelectorAll('.white-keys .key.white')).map(n => ({el:n, midi:+n.dataset.midi}));
-      let leftWhite = null;
-      for(let i=0;i<whites.length;i++){
-        if(whites[i].midi < midi) leftWhite = whites[i];
-        else break;
-      }
-      if(!leftWhite) leftWhite = whites[0];
-      const leftRect = leftWhite.el.getBoundingClientRect();
-      const nextIndex = whites.findIndex(w=>w.el===leftWhite.el)+1;
-      const rightWhite = whites[nextIndex] || whites[whites.length-1];
-      const rightRect = rightWhite.el.getBoundingClientRect();
-      const containerRect = keyboardEl.getBoundingClientRect();
-      const centerX = ((leftRect.left + rightRect.left) / 2) - containerRect.left + (rightRect.width/2);
-      const blw = bel.offsetWidth;
-      const leftPos = centerX - blw/2;
-      bel.style.left = (leftPos) + 'px';
-    });
   });
-}
-window.addEventListener('resize', fitKeys);
-setTimeout(fitKeys, 300);
+  window.addEventListener('keyup', (e) => {
+    const k = e.key.toLowerCase();
+    if (keyMap[k]) {
+      keyState[k]=false;
+      const padEl = document.querySelector(`[data-drum="${keyMap[k]}"]`);
+      if (padEl) padEl.classList.remove('active');
+    }
+  });
 
+  // unlock audio on first touch anywhere (helpful for iOS Safari)
+  function unlockAudioOnFirstTouch(e){
+    ensureAudio();
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+    document.removeEventListener('touchstart', unlockAudioOnFirstTouch);
+    enableBtn.textContent = 'Âm sẵn sàng';
+    enableBtn.disabled = true;
+  }
+  document.addEventListener('touchstart', unlockAudioOnFirstTouch, {passive:true});
+
+  // polite hint to user: if iOS has latency settings, can't do much programmatically
+  // but this synth uses WebAudio to keep latency tiny.
+
+})();
 </script>
 </body>
 </html>
