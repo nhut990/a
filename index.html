@@ -1,156 +1,89 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Bộ trống giả lập — Cực nhạy (iPhone OK)</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bộ trống cực nhạy</title>
 <style>
-  :root{
-    --bg:#0b0f14;
-    --panel:#0f1720;
-    --muted:#98a0aa;
+  body {
+    background: #111;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+    font-family: Arial, sans-serif;
   }
-  html,body{
-    height:100%;
-    margin:0;
-    background:linear-gradient(180deg,var(--bg),#071019 80%);
-    color:#e6eef6;
-    font-family:system-ui,Segoe UI,Roboto,Arial;
-    -webkit-font-smoothing:antialiased;
-    -webkit-user-select:none;
-    user-select:none;
-    touch-action:manipulation;
+  button {
+    width: 45%;
+    height: 20%;
+    margin: 2%;
+    font-size: 2em;
+    border: none;
+    border-radius: 12px;
+    background: #222;
+    color: #fff;
+    box-shadow: 0 0 15px #000 inset;
+    transition: background 0.1s;
   }
-  .app{ max-width:960px; margin:auto; padding:12px; }
-  h1{ font-size:18px; margin:10px 0; text-align:center; }
-  .grid{
-    display:grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap:12px;
+  button:active {
+    background: #555;
+    transform: scale(0.98);
   }
-  @media (max-width:500px){
-    .grid{ grid-template-columns: repeat(2,1fr); }
-  }
-  .pad{
-    background:var(--panel);
-    border-radius:12px;
-    min-height:110px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    position:relative;
-    overflow:hidden;
-    -webkit-user-select:none;
-    user-select:none;
-    touch-action:none;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.5);
-  }
-  .pad .label{
-    position:absolute; left:10px; top:10px; font-size:12px; color:var(--muted);
-  }
-  .pad:active,.pad.active{ background:#16232e; box-shadow:0 0 18px rgba(255,184,107,0.2);}
-  .ripple{
-    position:absolute;
-    border-radius:999px;
-    transform:translate(-50%,-50%) scale(0.001);
-    opacity:0.8;
-    pointer-events:none;
-    transition:transform 0.4s ease-out, opacity 0.5s ease-out;
-    background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), rgba(255,255,255,0.02));
-  }
-  button{
-    background:rgba(255,255,255,0.05);
-    color:#ddd;
-    border:1px solid rgba(255,255,255,0.1);
-    border-radius:8px;
-    padding:8px 14px;
-    font-size:14px;
-    margin:10px auto;
-    display:block;
-  }
-  footer{ margin-top:14px; font-size:12px; color:var(--muted); text-align:center; }
 </style>
 </head>
 <body>
-<div class="app">
-  <h1>🥁 Bộ trống giả lập — Cực nhạy (iPhone OK)</h1>
-  <button id="enableAudio">Bật âm (chạm 1 lần để kích hoạt âm thanh)</button>
 
-  <div class="grid" id="pads">
-    <div class="pad" data-drum="kick"><div class="label">Kick</div>KICK</div>
-    <div class="pad" data-drum="snare"><div class="label">Snare</div>SNARE</div>
-    <div class="pad" data-drum="hat"><div class="label">Hi-Hat</div>HAT</div>
-    <div class="pad" data-drum="tom1"><div class="label">Tom 1</div>TOM1</div>
-    <div class="pad" data-drum="tom2"><div class="label">Tom 2</div>TOM2</div>
-    <div class="pad" data-drum="crash"><div class="label">Crash</div>CRASH</div>
-  </div>
-
-  <footer>
-    Nếu không nghe âm thanh, hãy chạm nút "Bật âm" một lần.<br/>
-    Sau đó chạm pad bất kỳ để chơi.
-  </footer>
-</div>
+<button data-sound="kick">Kick</button>
+<button data-sound="snare">Snare</button>
+<button data-sound="hihat">Hi-Hat</button>
+<button data-sound="tom1">Tom 1</button>
+<button data-sound="tom2">Tom 2</button>
+<button data-sound="crash">Crash</button>
 
 <script>
-(() => {
-  const AudioContext = window.AudioContext || window.webkitAudioContext;
-  let ctx, masterGain;
-  function initAudio() {
-    if (!ctx) {
-      ctx = new AudioContext();
-      masterGain = ctx.createGain();
-      masterGain.gain.value = 0.9;
-      masterGain.connect(ctx.destination);
-    }
-    if (ctx.state === "suspended") ctx.resume();
-  }
-  document.getElementById('enableAudio').addEventListener('click', async ()=>{
-    initAudio();
-    if (ctx.state === 'suspended') await ctx.resume();
-    const btn=document.getElementById('enableAudio');
-    btn.textContent='Âm đã bật ✔';
-    btn.disabled=true;
+const sounds = {
+  kick: new Audio('https://cdn.jsdelivr.net/gh/itsron717/drumkit/sounds/kick.wav'),
+  snare: new Audio('https://cdn.jsdelivr.net/gh/itsron717/drumkit/sounds/snare.wav'),
+  hihat: new Audio('https://cdn.jsdelivr.net/gh/itsron717/drumkit/sounds/hihat.wav'),
+  tom1: new Audio('https://cdn.jsdelivr.net/gh/itsron717/drumkit/sounds/tom1.wav'),
+  tom2: new Audio('https://cdn.jsdelivr.net/gh/itsron717/drumkit/sounds/tom2.wav'),
+  crash: new Audio('https://cdn.jsdelivr.net/gh/itsron717/drumkit/sounds/crash.wav')
+};
+
+// Đảm bảo mỗi lần bấm tạo instance mới => không bị delay
+function playSound(name) {
+  const audio = sounds[name].cloneNode();
+  audio.play();
+}
+
+// Gán sự kiện chạm cho các nút
+document.querySelectorAll("button").forEach(btn => {
+  btn.addEventListener("touchstart", e => {
+    e.preventDefault();
+    playSound(btn.dataset.sound);
   });
-
-  // Synth âm trống
-  function playKick(){const n=ctx.currentTime,o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(150,n);o.frequency.exponentialRampToValueAtTime(50,n+.3);g.gain.setValueAtTime(1,n);g.gain.exponentialRampToValueAtTime(.001,n+.3);o.connect(g).connect(masterGain);o.start(n);o.stop(n+.4);}
-  function playSnare(){const n=ctx.currentTime,noise=ctx.createBufferSource(),b=ctx.createBuffer(1,ctx.sampleRate*.2,ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++){d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,1.4);}noise.buffer=b;const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=1800;const g=ctx.createGain();g.gain.setValueAtTime(1,n);g.gain.exponentialRampToValueAtTime(.01,n+.25);noise.connect(f).connect(g).connect(masterGain);noise.start(n);noise.stop(n+.3);}
-  function playHat(){const n=ctx.currentTime,noise=ctx.createBufferSource(),b=ctx.createBuffer(1,ctx.sampleRate*.05,ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++){d[i]=Math.random()*2-1;}noise.buffer=b;const f=ctx.createBiquadFilter();f.type='highpass';f.frequency.value=6000;const g=ctx.createGain();g.gain.setValueAtTime(1,n);g.gain.exponentialRampToValueAtTime(.01,n+.08);noise.connect(f).connect(g).connect(masterGain);noise.start(n);noise.stop(n+.1);}
-  function playTom(freq=300){const n=ctx.currentTime,o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(freq,n);o.frequency.exponentialRampToValueAtTime(freq*.6,n+.25);g.gain.setValueAtTime(1,n);g.gain.exponentialRampToValueAtTime(.01,n+.3);o.connect(g).connect(masterGain);o.start(n);o.stop(n+.4);}
-  function playCrash(){const n=ctx.currentTime,src=ctx.createBufferSource(),b=ctx.createBuffer(1,ctx.sampleRate*1.5,ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++){d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,.6);}src.buffer=b;const f=ctx.createBiquadFilter();f.type='highpass';f.frequency.value=5000;const g=ctx.createGain();g.gain.setValueAtTime(1,n);g.gain.exponentialRampToValueAtTime(.01,n+1.2);src.connect(f).connect(g).connect(masterGain);src.start(n);src.stop(n+1.4);}
-
-  // Hiệu ứng chạm
-  function ripple(pad,x,y){
-    const r=document.createElement('div');
-    r.className='ripple';
-    const s=Math.max(pad.clientWidth,pad.clientHeight);
-    r.style.width=r.style.height=s+'px';
-    r.style.left=x+'px';r.style.top=y+'px';
-    pad.appendChild(r);
-    requestAnimationFrame(()=>r.style.transform='translate(-50%,-50%) scale(1)');
-    setTimeout(()=>{r.style.opacity='0';setTimeout(()=>r.remove(),400);},100);
-  }
-
-  document.querySelectorAll('.pad').forEach(pad=>{
-    pad.addEventListener('pointerdown', e=>{
-      e.preventDefault();
-      initAudio();
-      const rect=pad.getBoundingClientRect();
-      ripple(pad,e.clientX-rect.left,e.clientY-rect.top);
-      const d=pad.dataset.drum;
-      switch(d){
-        case'kick':playKick();break;
-        case'snare':playSnare();break;
-        case'hat':playHat();break;
-        case'tom1':playTom(450);break;
-        case'tom2':playTom(300);break;
-        case'crash':playCrash();break;
-      }
-      pad.classList.add('active');
-      setTimeout(()=>pad.classList.remove('active'),150);
-    },{passive:false});
+  btn.addEventListener("mousedown", e => {
+    playSound(btn.dataset.sound);
   });
-})();
+});
+
+// Vô hiệu zoom double-tap
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function (event) {
+  const now = (new Date()).getTime();
+  if (now - lastTouchEnd <= 300) {
+    event.preventDefault();
+  }
+  lastTouchEnd = now;
+}, false);
 </script>
+
 </body>
 </html>
