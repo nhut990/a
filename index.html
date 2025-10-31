@@ -2,12 +2,13 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Tạo link cài đặt iOS OTA (.plist)</title>
+  <title>Tạo link cài đặt iOS (.plist) từ file tải lên</title>
   <style>
     body { font-family: system-ui, Arial, sans-serif; background: #f7f7f9; color: #222; padding: 24px; }
     h1 { font-size: 1.3rem; }
     label { display:block; margin:10px 0 2px;}
     input[type="text"] { width: 100%; max-width: 480px; padding: 8px; border-radius: 6px; border:1px solid #bbb; margin-bottom: 10px;}
+    input[type="file"] { margin-bottom: 14px;}
     button { padding:10px 18px; border-radius:6px; background:#1976d2; color:#fff; border:none; font-size:1rem; cursor:pointer;}
     button:disabled { opacity:0.6; cursor:not-allowed;}
     .result { background: #fff; border-radius: 8px; margin-top: 18px; padding: 16px 20px; border: 1px solid #eee;}
@@ -16,10 +17,14 @@
     .install-link {display:inline-block; margin-top:8px; font-weight: bold; color:#1976d2;}
     .plist-link {display:inline-block; margin-top:8px;}
     .footer{margin-top:40px;text-align:center;color:#555;font-size:0.95rem;}
+    pre{background:#f5f5f5;padding:8px;border-radius:6px;max-width:100%;overflow:auto;}
   </style>
 </head>
 <body>
-  <h1>Tạo link cài đặt iOS (itms-services)</h1>
+  <h1>Tạo link cài đặt iOS (.plist) từ file tải lên</h1>
+  <label>Chọn file .plist mẫu trên máy bạn:</label>
+  <input type="file" accept=".plist,application/xml,text/xml" id="plistFile">
+
   <label>Nhập Link iPA:</label>
   <input type="text" id="ipaUrl" placeholder="https://.../yourapp.ipa">
 
@@ -36,21 +41,20 @@
 
   <div id="result" class="result" style="display:none"></div>
   <div class="note">
-    * File .plist được tạo trên trình duyệt, bạn cần upload lên host HTTPS của bạn để link cài đặt dùng cho thiết bị khác.<br>
-    * Link cài đặt <b>itms-services://</b> chỉ hoạt động trên thiết bị iOS.
+    * Sau khi tải file .plist, bạn cần upload lên host HTTPS của bạn (vd: github.io, firebase, vps...)<br>
+    * Link cài đặt <b>itms-services://...</b> chỉ hoạt động trên iPhone/iPad.<br>
+    * Nếu bạn đã up file lên host, thay link <b>url=...</b> bằng link public file .plist của bạn.<br>
+    * File .plist mẫu cần có các biến <b>__IPA_URL__, __BUNDLE_ID__, __VERSION__, __APP_NAME__</b>
   </div>
   <div class="footer">
     © 2025 - by Minh Nhut
   </div>
 <script>
-const PLIST_TEMPLATE_URL = "https://raw.githubusercontent.com/nhut990/files/refs/heads/main/hinh/Test_taocaidat.plist";
-
 function escapeXml(str) {
-  // Đảm bảo an toàn XML
   return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");
 }
-
 document.getElementById('generateBtn').onclick = async function() {
+  const plistInput = document.getElementById('plistFile');
   const ipaUrl = document.getElementById('ipaUrl').value.trim();
   const bundleId = document.getElementById('bundleId').value.trim();
   const version = document.getElementById('version').value.trim();
@@ -59,26 +63,28 @@ document.getElementById('generateBtn').onclick = async function() {
   result.style.display = "none";
   result.innerHTML = "";
 
+  if(!plistInput.files[0]) {
+    alert("Vui lòng chọn file .plist mẫu trên máy bạn!");
+    return;
+  }
   if(!ipaUrl || !bundleId || !version || !appName) {
     alert("Vui lòng nhập đầy đủ thông tin!");
     return;
   }
 
-  result.innerHTML = "Đang tạo file .plist, vui lòng đợi...";
+  result.innerHTML = "Đang đọc file .plist mẫu, vui lòng đợi...";
   result.style.display = "block";
 
-  // Lấy file .plist mẫu
-  let template;
-  try {
-    const resp = await fetch(PLIST_TEMPLATE_URL);
-    template = await resp.text();
-  } catch(e) {
-    result.innerHTML = "Không thể tải file .plist mẫu!";
-    return;
-  }
+  // Đọc file plist mẫu
+  const fileText = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = e => reject(e);
+    reader.readAsText(plistInput.files[0]);
+  });
 
-  // Thay thế các biến placeholder trong template
-  let plist = template
+  // Thay thế các biến placeholder
+  let plist = fileText
     .replace(/__IPA_URL__/g, escapeXml(ipaUrl))
     .replace(/__BUNDLE_ID__/g, escapeXml(bundleId))
     .replace(/__VERSION__/g, escapeXml(version))
@@ -88,21 +94,22 @@ document.getElementById('generateBtn').onclick = async function() {
   const plistBlob = new Blob([plist], {type:"application/xml"});
   const plistUrl = URL.createObjectURL(plistBlob);
 
-  // itms-services link (blob: chỉ dùng được trên máy bạn, không dùng cho thiết bị khác)
-  const itmsLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`;
+  // Gợi ý link cài đặt (người dùng cần thay thành link host public sau khi upload)
+  const fakeHost = "https://yourhost.com/path/to/your.plist";
+  const itmsSample = `itms-services://?action=download-manifest&url=${encodeURIComponent(fakeHost)}`;
 
-  // Hiển thị kết quả
   result.innerHTML = `
     <label>File .plist đã tạo:</label><br>
     <a class="plist-link" href="${plistUrl}" download="${appName.replace(/\s+/g,"_") || "app"}.plist">Tải file .plist về</a>
-    <br>
-    <label>Link cài đặt (dùng cho iOS):</label><br>
-    <a class="install-link" href="${itmsLink}">${itmsLink}</a>
-    <div class="note">* Để cài đặt trên thiết bị khác, hãy upload file .plist này lên host HTTPS công khai và thay link <b>url=...</b> thành link file .plist của bạn.<br>
-    VD: <code>itms-services://?action=download-manifest&url=https://domain.com/path/file.plist</code></div>
+    <br><br>
+    <label>Link cài đặt (dùng cho iOS, sửa lại đường dẫn sau khi upload):</label>
+    <pre style="font-size:1.08em;">${itmsSample}</pre>
+    <div class="note">* Sau khi tải file .plist về, hãy upload lên host công khai (github.io, vps, firebase, v.v.)<br>
+    * Thay <b>https://yourhost.com/path/to/your.plist</b> bằng link public thực tế của file .plist bạn vừa up.<br>
+    * Link <b>itms-services://...</b> chỉ hoạt động trên Safari/iOS.</div>
     <br>
     <details>
-      <summary>Xem nội dung file .plist</summary>
+      <summary>Xem nội dung file .plist đã tạo</summary>
       <pre style="max-width:700px;overflow:auto;background:#f6f6f8;border:1px solid #eee;border-radius:8px;padding:10px;font-size:0.97em">${plist.replace(/[<>&]/g, c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))}</pre>
     </details>
   `;
