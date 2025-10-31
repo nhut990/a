@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Tạo link cài đặt iOS (.plist) từ file upload</title>
+  <title>Tạo link cài đặt iOS (.plist) từ file tải lên</title>
   <style>
     body { font-family: system-ui, Arial, sans-serif; background:#f7f7f9; color:#222; padding:24px; }
     h1 { font-size: 1.3rem; }
@@ -45,15 +45,12 @@
     * Sau khi tải file .plist, bạn cần upload lên host HTTPS của bạn (github.io, firebase, vps...)<br>
     * Link cài đặt <b>itms-services://...</b> chỉ hoạt động trên iPhone/iPad.<br>
     * Nếu bạn đã up file lên host, thay link <b>url=...</b> bằng link public file .plist của bạn.<br>
-    * File .plist mẫu cần có các biến <b>__IPA_URL__, __BUNDLE_ID__, __VERSION__, __APP_NAME__</b>
+    * File .plist mẫu nên dùng đúng 4 cụm từ: <b>Nhập Link iPA</b>, <b>Nhập Bundle ID</b>, <b>Nhập Phiên Bản</b>, <b>Nhập Tên App</b>
   </div>
   <div class="footer">
     © 2025 - by Minh Nhut
   </div>
 <script>
-function escapeXml(str) {
-  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");
-}
 document.getElementById('generateBtn').onclick = async function() {
   const plistInput = document.getElementById('plistFile');
   const ipaUrl = document.getElementById('ipaUrl').value.trim();
@@ -84,24 +81,12 @@ document.getElementById('generateBtn').onclick = async function() {
     reader.readAsText(plistInput.files[0]);
   });
 
-  // Kiểm tra đủ placeholder chưa
-  let warn = "";
-  if (!fileText.includes("__IPA_URL__")) warn += "<div class='warning'>Thiếu __IPA_URL__ trong file mẫu!</div>";
-  if (!fileText.includes("__BUNDLE_ID__")) warn += "<div class='warning'>Thiếu __BUNDLE_ID__ trong file mẫu!</div>";
-  if (!fileText.includes("__VERSION__")) warn += "<div class='warning'>Thiếu __VERSION__ trong file mẫu!</div>";
-  if (!fileText.includes("__APP_NAME__")) warn += "<div class='warning'>Thiếu __APP_NAME__ trong file mẫu!</div>";
-
-  // Thay thế các biến placeholder
+  // Thay thế các cụm từ placeholder tiếng Việt
   let plist = fileText
-    .replace(/__IPA_URL__/g, escapeXml(ipaUrl))
-    .replace(/__BUNDLE_ID__/g, escapeXml(bundleId))
-    .replace(/__VERSION__/g, escapeXml(version))
-    .replace(/__APP_NAME__/g, escapeXml(appName));
-
-  // Nếu còn placeholder, báo lỗi
-  if (plist.includes("__IPA_URL__") || plist.includes("__BUNDLE_ID__") || plist.includes("__VERSION__") || plist.includes("__APP_NAME__")) {
-    warn += "<div class='warning'>Cảnh báo: Một số placeholder vẫn chưa được thay thế. Kiểm tra lại file mẫu và nhập đúng thông tin.</div>";
-  }
+    .replace(/Nhập Link iPA/g, ipaUrl)
+    .replace(/Nhập Bundle ID/g, bundleId)
+    .replace(/Nhập Phiên Bản/g, version)
+    .replace(/Nhập Tên App/g, appName);
 
   // Tạo Blob và objectURL cho .plist
   const plistBlob = new Blob([plist], {type:"application/xml"});
@@ -111,7 +96,7 @@ document.getElementById('generateBtn').onclick = async function() {
   const fakeHost = "https://yourhost.com/path/to/your.plist";
   const itmsSample = `itms-services://?action=download-manifest&url=${encodeURIComponent(fakeHost)}`;
 
-  result.innerHTML = warn + `
+  result.innerHTML = `
     <label>File .plist đã tạo:</label><br>
     <a class="plist-link" href="${plistUrl}" download="${appName.replace(/\s+/g,"_") || "app"}.plist">Tải file .plist về</a>
     <br><br>
