@@ -17,7 +17,11 @@
   select,button{
     padding:8px;border-radius:6px;border:1px solid #cfcfcf;background:white
   }
-  button{cursor:pointer}
+  button{cursor:pointer;transition:opacity .2s}
+  button:disabled{
+    opacity:0.5;
+    cursor:not-allowed;
+  }
   video{width:100%;max-width:560px;border-radius:8px;background:#000}
   .controls{display:flex;gap:8px;flex-wrap:wrap}
   .meter{width:220px;height:22px;border-radius:6px;background:#eee;overflow:hidden;position:relative}
@@ -106,16 +110,10 @@
   const recTimer=document.getElementById('recTimer');
 
   let currentStream=null;
-  let audioContextCam=null;
-  let analyserCam=null;
-  let rafCam=null;
-  let audioContextRec=null;
-  let analyserRec=null;
-  let rafRec=null;
-  let mediaRecorder=null;
-  let recordedChunks=[];
-  let recTimerInterval=null;
-  let recordingStart=null;
+  let audioContextCam=null, analyserCam=null, rafCam=null;
+  let audioContextRec=null, analyserRec=null, rafRec=null;
+  let mediaRecorder=null, recordedChunks=[];
+  let recTimerInterval=null, recordingStart=null;
 
   async function updateDeviceList(){
     const devices=await navigator.mediaDevices.enumerateDevices();
@@ -127,6 +125,7 @@
 
   async function startPreview(){
     stopPreview();
+    startPreviewBtn.disabled=true; // 🔒 làm mờ nút khi đang preview
     try{
       const constraints={
         audio: micSelect.value?{deviceId:{exact:micSelect.value}}:true,
@@ -139,6 +138,7 @@
       setupAudioMeterCam(currentStream);
     }catch(err){
       alert('Không thể truy cập camera/micro: '+err.message);
+      startPreviewBtn.disabled=false; // khôi phục lại nếu lỗi
     }
   }
 
@@ -147,6 +147,7 @@
     if(videoPreview){videoPreview.pause();videoPreview.srcObject=null;}
     disconnectAudioMeterCam();
     stopPreviewBtn.disabled=true;
+    startPreviewBtn.disabled=false; // ✅ khôi phục nút sáng lại
   }
 
   cameraSelect.addEventListener('change',()=>{if(currentStream)startPreview();});
@@ -163,8 +164,7 @@
     const data=new Uint8Array(analyserCam.fftSize);
     function update(){
       analyserCam.getByteTimeDomainData(data);
-      let sum=0;
-      for(let i=0;i<data.length;i++){const v=(data[i]-128)/128;sum+=v*v;}
+      let sum=0;for(let i=0;i<data.length;i++){const v=(data[i]-128)/128;sum+=v*v;}
       const rms=Math.sqrt(sum/data.length);
       const db=20*Math.log10(rms||1e-8);
       const pct=Math.min(100,Math.max(0,rms*300));
@@ -195,8 +195,7 @@
     const data=new Uint8Array(analyserRec.fftSize);
     function update(){
       analyserRec.getByteTimeDomainData(data);
-      let sum=0;
-      for(let i=0;i<data.length;i++){const v=(data[i]-128)/128;sum+=v*v;}
+      let sum=0;for(let i=0;i<data.length;i++){const v=(data[i]-128)/128;sum+=v*v;}
       const rms=Math.sqrt(sum/data.length);
       const db=20*Math.log10(rms||1e-8);
       const pct=Math.min(100,Math.max(0,rms*300));
