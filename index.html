@@ -14,11 +14,17 @@
   }
   h1{font-size:1.2rem;margin:0 0 10px}
   .row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-  select,button{
-    padding:8px;border-radius:6px;border:1px solid #cfcfcf;background:white
+  select,button,a.btn{
+    padding:8px 12px;
+    border-radius:6px;
+    border:1px solid #cfcfcf;
+    background:white;
+    text-decoration:none;
+    color:#111;
+    display:inline-block;
   }
   button{cursor:pointer}
-  button:disabled{opacity:0.5;cursor:not-allowed}
+  button:disabled,.btn:disabled{opacity:0.5;cursor:not-allowed;pointer-events:none}
   video{width:100%;max-width:560px;border-radius:8px;background:#000}
   .controls{display:flex;gap:8px;flex-wrap:wrap}
   .meter{width:200px;height:24px;border-radius:6px;background:#eee;overflow:hidden;position:relative}
@@ -28,7 +34,6 @@
   .note{font-size:0.85rem;color:#444;margin-top:8px}
   audio{display:block;margin-top:8px}
   .timer{padding:6px 8px;border-radius:6px;background:#fff;border:1px solid #ddd}
-  .note b{color:#000}
   hr{margin:14px 0;border:0;border-top:1px solid #ddd}
 </style>
 </head>
@@ -57,12 +62,12 @@
 
     <div class="note">
       ⚠️ <b>Lưu ý:</b> Trình duyệt có thể yêu cầu quyền truy cập <b>camera</b> và <b>micro</b>. 
-      Tính năng này chỉ hoạt động khi bạn <b>chọn Cho phép</b>.
+      Hãy <b>cho phép</b> để sử dụng tính năng này.
     </div>
 
     <div class="row" style="align-items:center;margin-top:12px">
       <div class="small">Mức âm thanh (camera/micro):</div>
-      <div class="meter" title="Audio level (camera)"><div class="level" id="meterLevel"></div></div>
+      <div class="meter"><div class="level" id="meterLevel"></div></div>
       <div class="timer" id="levelDb">— dB</div>
     </div>
 
@@ -70,7 +75,7 @@
 
     <div class="row" style="align-items:center">
       <div class="small">Mức âm thanh khi ghi âm:</div>
-      <div class="meter" title="Audio level (record)"><div class="level" id="recMeterLevel"></div></div>
+      <div class="meter"><div class="level" id="recMeterLevel"></div></div>
       <div class="timer" id="recLevelDb">— dB</div>
     </div>
 
@@ -78,7 +83,7 @@
       <button id="startRecBtn">Bắt đầu Ghi âm</button>
       <button id="stopRecBtn" disabled>Ngưng Ghi</button>
       <button id="playRecBtn" disabled>Phát Lại</button>
-      <a id="downloadLink" style="display:inline-block;padding:8px;border-radius:6px;text-decoration:none;border:1px solid #cfcfcf;background:#fff;color:#111" download="recording.webm">Tải về</a>
+      <a id="downloadLink" class="btn" download="recording.webm" disabled>Tải về</a>
       <div id="recTimer" class="timer">00:00</div>
     </div>
 
@@ -138,22 +143,17 @@
     };
     try{
       currentStream=await navigator.mediaDevices.getUserMedia(constraints);
-
-      // ✅ Lấy lại ID thật của camera đang dùng
       const activeVideoTrack=currentStream.getVideoTracks()[0];
       if(activeVideoTrack && activeVideoTrack.getSettings){
         const usedDeviceId=activeVideoTrack.getSettings().deviceId;
         if(usedDeviceId) cameraSelect.value=usedDeviceId;
       }
-
       if(currentStream.getVideoTracks().length){
         videoPreview.srcObject=currentStream;
-        videoPreview.muted=true;
         await videoPreview.play().catch(()=>{});
         stopPreviewBtn.disabled=false;
-        startPreviewBtn.disabled=true; // 🔸 Mờ đi khi đang xem preview
-      }else videoPreview.srcObject=null;
-
+        startPreviewBtn.disabled=true;
+      }
       setupAudioMeter(currentStream);
       await updateDeviceList();
     }catch(err){
@@ -166,7 +166,7 @@
     if(videoPreview){videoPreview.pause();videoPreview.srcObject=null;}
     disconnectAudioMeter();
     stopPreviewBtn.disabled=true;
-    startPreviewBtn.disabled=false; // 🔸 Sáng lại khi ngừng preview
+    startPreviewBtn.disabled=false;
   }
 
   function setupAudioMeter(stream){
@@ -236,6 +236,7 @@
     const constraints={audio: micSelect.value?{deviceId:{exact:micSelect.value}}:true};
     navigator.mediaDevices.getUserMedia(constraints).then(stream=>{
       recordedChunks=[];
+      downloadLink.setAttribute('disabled',''); // 🔸 Ẩn mờ nút "Tải về"
       const options={};
       if(MediaRecorder.isTypeSupported('audio/webm;codecs=opus'))options.mimeType='audio/webm;codecs=opus';
       else if(MediaRecorder.isTypeSupported('audio/ogg;codecs=opus'))options.mimeType='audio/ogg;codecs=opus';
@@ -246,6 +247,7 @@
         const url=URL.createObjectURL(blob);
         playback.src=url;
         playRecBtn.disabled=false;
+        downloadLink.removeAttribute('disabled'); // 🔸 Sáng lên khi có file
         downloadLink.href=url;
         downloadLink.download='recording.'+(blob.type.includes('ogg')?'ogg':'webm');
         stream.getTracks().forEach(t=>t.stop());
@@ -284,7 +286,6 @@
 
   navigator.mediaDevices&&navigator.mediaDevices.addEventListener&&navigator.mediaDevices.addEventListener('devicechange',updateDeviceList);
   await updateDeviceList();
-  window.addEventListener('beforeunload',()=>{stopPreview();});
 })();
 </script>
 </body>
