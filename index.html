@@ -1,178 +1,441 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>Tạo link cài đặt iOS (.plist) từ file tải lên</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <style>
-    body { font-family: system-ui, Arial, sans-serif; background:#f7f7f9; color:#222; padding:24px; }
-    h1 { font-size: 1.2rem; margin-bottom:16px;}
-    .form-wrap { background: #fff; border-radius: 12px; padding: 18px 18px 10px 18px; max-width: 450px; margin: 0 auto; box-shadow: 0 2px 8px #0001;}
-    label { display:block; margin:12px 0 5px; font-size:1rem;}
-    input[type="text"], input[type="file"] {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 10px;
-      border-radius: 7px;
-      border:1px solid #bbb;
-      margin-bottom: 5px;
-      font-size: 16px;
-      background: #f9fafe;
-      transition: border-color 0.2s;
-    }
-    input[type="text"]:focus, input[type="file"]:focus { border-color: #1976d2; outline:none;}
-    button {
-      width:100%;
-      padding:12px 0;
-      border-radius:7px;
-      background:#1976d2;
-      color:#fff;
-      border:none;
-      font-size: 16px;
-      font-weight:500;
-      margin: 18px 0 0 0;
-      cursor:pointer;
-      transition: background 0.2s;
-    }
-    button:disabled { opacity:0.65; cursor:not-allowed;}
-    .result {
-      background: #fff;
-      border-radius: 8px;
-      margin: 20px auto 0 auto;
-      padding: 15px 16px 8px 16px;
-      border: 1px solid #eee;
-      max-width: 450px;
-      word-break: break-word;
-    }
-    .result label {margin:0;}
-    .note {font-size:0.93rem; color:#555; margin:18px auto 0 auto; max-width:450px;}
-    .install-link, .plist-link {
-      display:inline-block;
-      margin-top:8px;
-      font-weight: bold;
-      color:#1976d2;
-      text-decoration: none;
-      word-break: break-all;
-    }
-    .footer{margin-top:38px;text-align:center;color:#555;font-size:0.96rem;}
-    pre{background:#f5f5f5;padding:8px;border-radius:6px;max-width:100%;overflow:auto;}
-    details{margin-top:1em;}
-    .plist-sample-link {
-      display: inline-block;
-      padding: 7px 14px;
-      background: #1976d2;
-      color: #fff;
-      border-radius: 6px;
-      text-decoration: none;
-      margin-bottom: 8px;
-      font-size: 15px;
-      font-weight: 500;
-    }
-    .plist-sample-link:hover {background: #125299;}
-    @media (max-width: 520px) {
-      body {padding:10px;}
-      .form-wrap, .result, .note {padding:12px 4vw;}
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Gửi file P2P bằng WebRTC (blob chunk)</title>
+<style>
+  :root{font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; font-size:16px}
+  body{margin:0;padding:16px;background:#fff;color:#111;line-height:1.4}
+  h1{font-size:20px;margin:0 0 12px}
+  p{margin:8px 0}
+  .box{border:1px solid #ddd;border-radius:10px;padding:12px;margin-bottom:12px;background:#f9f9f9}
+  label{display:block;margin:8px 0 4px;font-weight:600}
+  input[type=file]{font-size:16px}
+  textarea{width:100%;min-height:80px;padding:8px;font-size:14px;font-family:monospace;box-sizing:border-box;border-radius:8px}
+  button{display:inline-block;padding:10px 12px;margin:6px 6px 6px 0;font-size:16px;border-radius:10px;border:1px solid #007aff;background:#fff;color:#007aff}
+  button.primary{background:#007aff;color:#fff;border-color:#007aff}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .small{font-size:13px;color:#666}
+  progress{width:100%;height:18px;border-radius:8px}
+  .log{font-size:13px;color:#333;max-height:120px;overflow:auto;background:#fff;padding:6px;border-radius:6px;border:1px dashed #eee}
+  .meta{font-size:13px;color:#444;margin-top:6px}
+  @media(min-width:700px){
+    :root{font-size:18px}
+  }
+</style>
 </head>
 <body>
-  <h1>Tạo link cài đặt iOS (.plist) từ file tải lên</h1>
-  <div style="text-align:center;margin-bottom:10px;">
-    <a class="plist-sample-link" href="https://github.com/nhut990/files/raw/refs/heads/main/hinh/Test_taocaidat.plist" download="Test_taocaidat.plist" target="_blank">
-      📄 Tải file .plist mẫu
-    </a>
+
+<h1>Gửi file trực tiếp (P2P) bằng WebRTC — Dùng Blob & chunk</h1>
+
+<div class="box">
+  <strong>Hướng dẫn nhanh (3 bước):</strong>
+  <ol class="small">
+    <li>Mở trang này trên <strong>Máy A (Người gửi)</strong> và <strong>Máy B (Người nhận)</strong>.</li>
+    <li>Máy A nhấn <em>Tạo Offer</em> → copy nội dung (ô Offer) → dán vào ô Offer trên Máy B → Máy B nhấn <em>Tạo Answer</em> → copy Answer → dán lại vào ô Answer trên Máy A → nhấn <em>Kết nối (Set Remote)</em>.</li>
+    <li>Khi kênh dữ liệu mở, Máy A chọn file → nhấn Gửi. Máy B sẽ tự động tải file về.</li>
+  </ol>
+  <div class="meta">Mẹo: nếu hai máy cùng Wi-Fi, tốc độ rất nhanh. Nếu không kết nối được, thử đổi trình duyệt hoặc dùng mạng khác.</div>
+</div>
+
+<div class="box">
+  <label>1) Trạng thái</label>
+  <div class="row">
+    <div id="pcState" class="meta">PeerConnection: ❌ chưa tạo</div>
+    <div id="dcState" class="meta">DataChannel: ❌ chưa tạo</div>
   </div>
-  <form class="form-wrap" onsubmit="return false;">
-    <label>Chọn file .plist mẫu trên máy bạn:</label>
-    <input type="file" id="plistFile">
-
-    <label>Nhập Link iPA:</label>
-    <input type="text" id="ipaUrl" placeholder="https://.../yourapp.ipa" autocomplete="off" inputmode="url">
-
-    <label>Nhập Bundle ID:</label>
-    <input type="text" id="bundleId" placeholder="com.example.app" autocomplete="off">
-
-    <label>Nhập Phiên Bản:</label>
-    <input type="text" id="version" placeholder="1.0.0" autocomplete="off">
-
-    <label>Nhập Tên App:</label>
-    <input type="text" id="appName" placeholder="Tên ứng dụng" autocomplete="off">
-
-    <button id="generateBtn">Tạo file .plist & Link cài đặt</button>
-  </form>
-
-  <div id="result" class="result" style="display:none"></div>
-  <div class="note">
-    * Nếu bạn chưa có file mẫu, hãy tải file ở trên về rồi upload lại khi tạo plist.<br>
-    * Sau khi tải file .plist đã điền, bạn cần upload lên host HTTPS của bạn (github.io, firebase, vps...)<br>
-    * Link cài đặt <b>itms-services://...</b> chỉ hoạt động trên iPhone/iPad.<br>
-    * File .plist mẫu nên dùng đúng 4 cụm từ: <b>Nhập Link iPA</b>, <b>Nhập Bundle ID</b>, <b>Nhập Phiên Bản</b>, <b>Nhập Tên App</b>
+  <div style="margin-top:8px;">
+    <button id="createOffer" class="primary">Tạo Offer (Người gửi)</button>
+    <button id="createAnswer">Tạo Answer (Người nhận)</button>
+    <button id="setRemote">Kết nối (Set Remote)</button>
+    <button id="closeConn">Đóng kết nối</button>
   </div>
-  <div class="footer">
-    © 2025 - by Minh Nhut
+</div>
+
+<div class="box">
+  <label>2) Signaling (copy–paste giữa 2 máy)</label>
+  <div style="margin-bottom:6px"><strong>Offer</strong></div>
+  <textarea id="offerText" placeholder="Offer sẽ xuất hiện ở đây (copy từ máy gửi)"></textarea>
+  <div style="margin-top:8px"><strong>Answer</strong></div>
+  <textarea id="answerText" placeholder="Answer sẽ xuất hiện ở đây (copy từ máy nhận)"></textarea>
+</div>
+
+<div class="box">
+  <label>3) Chọn file để gửi (Máy gửi)</label>
+  <input type="file" id="fileInput" />
+  <div class="row" style="margin-top:8px">
+    <button id="sendFileBtn" class="primary" disabled>Gửi file</button>
+    <button id="cancelSend" disabled>Hủy gửi</button>
   </div>
+  <div style="margin-top:8px">
+    <progress id="sendProgress" value="0" max="100" hidden></progress>
+    <div id="sendInfo" class="small"></div>
+  </div>
+</div>
+
+<div class="box">
+  <label>4) Người nhận (tự động tải về khi nhận xong)</label>
+  <progress id="recvProgress" value="0" max="100" hidden></progress>
+  <div id="recvInfo" class="small">Chưa nhận file</div>
+</div>
+
+<div class="box">
+  <label>Log / Thông báo</label>
+  <div id="log" class="log"></div>
+</div>
+
 <script>
-document.getElementById('generateBtn').onclick = async function() {
-  const plistInput = document.getElementById('plistFile');
-  const ipaUrl = document.getElementById('ipaUrl').value.trim();
-  const bundleId = document.getElementById('bundleId').value.trim();
-  const version = document.getElementById('version').value.trim();
-  const appName = document.getElementById('appName').value.trim();
-  const result = document.getElementById('result');
-  result.style.display = "none";
-  result.innerHTML = "";
+/*
+  WebRTC P2P file transfer demo using DataChannel and chunking.
+  - Chunks size: 64KB (adjustable)
+  - Protocol:
+      1) Sender sends JSON metadata: {type:"meta", name, size, mime, chunkSize}
+      2) Receiver responds ready.
+      3) Sender sends chunks as ArrayBuffer.
+      4) Sender sends {type:"done"} to finish.
+*/
 
-  if(!plistInput.files[0]) {
-    alert("Vui lòng chọn file .plist mẫu trên máy bạn!");
-    return;
-  }
-  if(!ipaUrl || !bundleId || !version || !appName) {
-    alert("Vui lòng nhập đầy đủ thông tin!");
-    return;
-  }
-
-  result.innerHTML = "Đang đọc file .plist mẫu, vui lòng đợi...";
-  result.style.display = "block";
-
-  // Đọc file plist mẫu
-  const fileText = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => resolve(e.target.result);
-    reader.onerror = e => reject(e);
-    reader.readAsText(plistInput.files[0]);
-  });
-
-  // Thay thế các cụm từ placeholder tiếng Việt
-  let plist = fileText
-    .replace(/Nhập Link iPA/g, ipaUrl)
-    .replace(/Nhập Bundle ID/g, bundleId)
-    .replace(/Nhập Phiên Bản/g, version)
-    .replace(/Nhập Tên App/g, appName);
-
-  // Tạo Blob và objectURL cho .plist
-  const plistBlob = new Blob([plist], {type:"application/xml"});
-  const plistUrl = URL.createObjectURL(plistBlob);
-
-  // Gợi ý link cài đặt (người dùng cần thay thành link host public sau khi upload)
-  const fakeHost = "https://yourhost.com/path/to/your.plist";
-  const itmsSample = `itms-services://?action=download-manifest&url=${encodeURIComponent(fakeHost)}`;
-
-  result.innerHTML = `
-    <label>File .plist đã tạo:</label><br>
-    <a class="plist-link" href="${plistUrl}" download="${appName.replace(/\s+/g,"_") || "app"}.plist">Tải file .plist về</a>
-    <br>
-    <label>Link cài đặt (dùng cho iOS, sửa lại đường dẫn sau khi upload):</label><br>
-    <input type="text" value="${itmsSample}" readonly style="width:99%;max-width:99%;padding:7px;margin:7px 0 5px 0;font-size:15px;">
-    <a class="install-link" href="${itmsSample}">Cài đặt ngay (dùng thử trên iOS)</a>
-    <div class="note" style="margin-top:6px;">* Sau khi tải file .plist về, hãy upload lên host công khai (github.io, vps, firebase, v.v.)<br>
-    * Thay <b>https://yourhost.com/path/to/your.plist</b> bằng link public thực tế của file .plist bạn vừa up.<br>
-    * Link <b>itms-services://...</b> chỉ hoạt động trên Safari/iOS.</div>
-    <details>
-      <summary>Xem nội dung file .plist đã tạo</summary>
-      <pre style="max-width:700px;overflow:auto;background:#f6f6f8;border:1px solid #eee;border-radius:8px;padding:10px;font-size:0.97em">${plist.replace(/[<>&]/g, c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))}</pre>
-    </details>
-  `;
+const CHUNK_SIZE = 64 * 1024; // 64KB per chunk - ổn định cho mobile
+const pcConfig = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" }
+    // Nếu cần TURN, thêm ở đây
+  ]
 };
+
+let pc = null;
+let dataChannel = null;
+let isSender = false;
+let fileToSend = null;
+let fileReader = null;
+let sendAbort = false;
+
+const el = id => document.getElementById(id);
+const log = msg => {
+  const box = el('log');
+  const p = document.createElement('div');
+  p.textContent = new Date().toLocaleTimeString() + ' — ' + msg;
+  box.prepend(p);
+};
+
+function updateStatus(){
+  el('pcState').textContent = pc ? 'PeerConnection: ✅ tạo' : 'PeerConnection: ❌ chưa tạo';
+  el('dcState').textContent = dataChannel ? `DataChannel: ${dataChannel.readyState}` : 'DataChannel: ❌ chưa tạo';
+}
+
+function createPeerConnection(){
+  if (pc) return pc;
+  pc = new RTCPeerConnection(pcConfig);
+
+  pc.onicecandidate = e => {
+    if (e.candidate) return;
+    // ICE hoàn tất — localDescription có thể chứa ICE candidates (khi không có server)
+    log('ICE gathering finished');
+  };
+
+  pc.onconnectionstatechange = () => {
+    log('Connection state: ' + pc.connectionState);
+    updateStatus();
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    log('ICE connection: ' + pc.iceConnectionState);
+    updateStatus();
+  };
+
+  pc.ondatachannel = e => {
+    dataChannel = e.channel;
+    setupDataChannel();
+    log('Nhận DataChannel từ remote: ' + dataChannel.label);
+    updateStatus();
+  };
+
+  updateStatus();
+  return pc;
+}
+
+function setupDataChannel(){
+  if(!dataChannel) return;
+  dataChannel.binaryType = 'arraybuffer';
+  dataChannel.onopen = () => {
+    log('DataChannel mở: ' + dataChannel.readyState);
+    updateStatus();
+    el('sendFileBtn').disabled = false;
+  };
+  dataChannel.onclose = () => {
+    log('DataChannel đóng');
+    updateStatus();
+    el('sendFileBtn').disabled = true;
+  };
+  dataChannel.onerror = err => log('DataChannel error: ' + err);
+  dataChannel.onmessage = onMessage;
+}
+
+async function onMessage(evt){
+  try {
+    if (typeof evt.data === 'string') {
+      // Có thể nhận thông báo JSON
+      const msg = JSON.parse(evt.data);
+      if (msg.type === 'meta') {
+        // bắt đầu nhận file
+        receiveMeta(msg);
+      } else if (msg.type === 'done') {
+        finishReceive();
+      } else if (msg.type === 'ready') {
+        // sender: receiver đã sẵn sàng
+        log('Receiver đã sẵn sàng nhận file');
+        sendChunks(); // bắt đầu gửi
+      } else {
+        log('Chuỗi JSON nhận được: ' + evt.data);
+      }
+    } else if (evt.data instanceof ArrayBuffer) {
+      // dữ liệu chunk
+      handleChunk(evt.data);
+    } else {
+      log('Nhận dữ liệu khác: ' + typeof evt.data);
+    }
+  } catch (e) {
+    log('Lỗi onMessage: ' + e);
+  }
+}
+
+/* ======= Receiver side ======= */
+let recvBuffer = [];
+let recvMeta = null;
+let recvReceivedBytes = 0;
+
+function receiveMeta(meta){
+  recvMeta = meta;
+  recvBuffer = [];
+  recvReceivedBytes = 0;
+  el('recvInfo').textContent = `Đang chuẩn bị nhận: ${meta.name} (${Math.round(meta.size/1024)} KB)`;
+  el('recvProgress').max = meta.size;
+  el('recvProgress').value = 0;
+  el('recvProgress').hidden = false;
+  // gửi trả lời ready
+  dataChannel.send(JSON.stringify({type:'ready'}));
+  log('Gửi ready để báo nhận file');
+}
+
+function handleChunk(arrayBuffer){
+  recvBuffer.push(new Uint8Array(arrayBuffer));
+  recvReceivedBytes += arrayBuffer.byteLength;
+  el('recvProgress').value = recvReceivedBytes;
+  el('recvInfo').textContent = `Đang nhận ${recvMeta ? recvMeta.name : ''} — ${Math.round(recvReceivedBytes/1024)}/${Math.round(recvMeta.size/1024)} KB`;
+}
+
+function finishReceive(){
+  const received = new Blob(recvBuffer, { type: recvMeta.mime });
+  const url = URL.createObjectURL(received);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = recvMeta.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  el('recvInfo').textContent = `Hoàn tất: ${recvMeta.name} (${Math.round(recvMeta.size/1024)} KB)`;
+  el('recvProgress').hidden = true;
+  log('Nhận file xong: ' + recvMeta.name);
+  recvMeta = null;
+  recvBuffer = [];
+  recvReceivedBytes = 0;
+}
+
+/* ======= Sender side ======= */
+let filePos = 0;
+let totalChunks = 0;
+let lastChunkSize = 0;
+
+function prepareSend(file){
+  fileToSend = file;
+  filePos = 0;
+  totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+  lastChunkSize = file.size - (totalChunks-1)*CHUNK_SIZE;
+  el('sendInfo').textContent = `Chuẩn bị gửi: ${file.name} — ${Math.round(file.size/1024)} KB (${totalChunks} phần)`;
+  el('sendProgress').max = file.size;
+  el('sendProgress').value = 0;
+  el('sendProgress').hidden = false;
+  el('sendFileBtn').disabled = false;
+}
+
+function abortSend(){
+  sendAbort = true;
+  if (fileReader) fileReader.abort();
+  el('sendInfo').textContent = 'Đã hủy gửi';
+  el('sendProgress').hidden = true;
+  log('Sender: gửi bị hủy');
+}
+
+function sendMeta(){
+  if (!dataChannel || dataChannel.readyState !== 'open') return log('Kênh dữ liệu chưa mở');
+  const meta = {
+    type: 'meta',
+    name: fileToSend.name,
+    size: fileToSend.size,
+    mime: fileToSend.type || 'application/octet-stream',
+    chunkSize: CHUNK_SIZE
+  };
+  dataChannel.send(JSON.stringify(meta));
+  log('Gửi meta: ' + meta.name + ' — ' + meta.size + ' bytes');
+  // actual send starts when receiver responds 'ready'
+}
+
+function sendChunks(){
+  if (!fileToSend) return;
+  sendAbort = false;
+  filePos = 0;
+  fileReader = new FileReader();
+  fileReader.onerror = e => { log('FileReader error: ' + e); };
+  fileReader.onabort = () => log('FileReader aborted');
+  fileReader.onload = e => {
+    if (sendAbort) return;
+    const buffer = e.target.result;
+    // nếu dataChannel buffer đầy, chờ
+    try {
+      dataChannel.send(buffer);
+    } catch (err) {
+      log('Lỗi gửi chunk: ' + err);
+      return;
+    }
+    filePos += buffer.byteLength;
+    el('sendProgress').value = filePos;
+    el('sendInfo').textContent = `Đã gửi ${Math.round(filePos/1024)}/${Math.round(fileToSend.size/1024)} KB`;
+    if (filePos < fileToSend.size) {
+      sendSlice();
+    } else {
+      // xong
+      dataChannel.send(JSON.stringify({type:'done'}));
+      el('sendInfo').textContent = `Hoàn tất gửi: ${fileToSend.name}`;
+      el('sendProgress').hidden = true;
+      log('Sender: gửi hoàn thành');
+    }
+  };
+
+  function sendSlice(){
+    const end = Math.min(filePos + CHUNK_SIZE, fileToSend.size);
+    const slice = fileToSend.slice(filePos, end);
+    fileReader.readAsArrayBuffer(slice);
+  }
+
+  // bắt đầu gửi
+  sendSlice();
+}
+
+/* ======= Buttons & UI handlers ======= */
+
+el('createOffer').addEventListener('click', async () => {
+  isSender = true;
+  createPeerConnection();
+  dataChannel = pc.createDataChannel('file-transfer');
+  setupDataChannel();
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  // chờ ICE gather complete (simple approach: wait a bit) then output localDescription
+  await waitForIceGatheringComplete(pc);
+  el('offerText').value = JSON.stringify(pc.localDescription);
+  log('Offer đã tạo — copy ô Offer và gửi cho bên nhận');
+  updateStatus();
+});
+
+el('createAnswer').addEventListener('click', async () => {
+  isSender = false;
+  createPeerConnection();
+
+  const offerText = el('offerText').value.trim();
+  if (!offerText) { log('Không có Offer để xử lý'); return; }
+
+  try {
+    const offer = JSON.parse(offerText);
+    await pc.setRemoteDescription(offer);
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    await waitForIceGatheringComplete(pc);
+    el('answerText').value = JSON.stringify(pc.localDescription);
+    log('Answer đã tạo — copy ô Answer trả về cho người gửi');
+  } catch (e) {
+    log('Lỗi tạo Answer: ' + e);
+  }
+  updateStatus();
+});
+
+el('setRemote').addEventListener('click', async () => {
+  const txt = el('answerText').value.trim();
+  if (!txt) { log('Không có Answer để set remote'); return; }
+  try {
+    const answer = JSON.parse(txt);
+    await pc.setRemoteDescription(answer);
+    log('Đã set remote description (answer) — chờ kết nối');
+  } catch (e) {
+    log('Lỗi setRemote: ' + e);
+  }
+  updateStatus();
+});
+
+el('closeConn').addEventListener('click', () => {
+  if (dataChannel) {
+    try { dataChannel.close(); } catch(e){}
+    dataChannel = null;
+  }
+  if (pc) {
+    try { pc.close(); } catch(e){}
+    pc = null;
+  }
+  updateStatus();
+  log('Kết nối đã đóng bởi người dùng');
+});
+
+el('fileInput').addEventListener('change', (ev) => {
+  const f = ev.target.files[0];
+  if (!f) return;
+  prepareSend(f);
+});
+
+el('sendFileBtn').addEventListener('click', () => {
+  if (!dataChannel || dataChannel.readyState !== 'open') {
+    log('Kênh dữ liệu chưa mở, không thể gửi');
+    return;
+  }
+  if (!fileToSend) { log('Chưa chọn file để gửi'); return; }
+  // bắt đầu quá trình: gửi meta -> receiver trả ready -> sender gửi chunks
+  sendMeta();
+  el('sendFileBtn').disabled = true;
+  el('cancelSend').disabled = false;
+});
+
+el('cancelSend').addEventListener('click', () => {
+  abortSend();
+  el('cancelSend').disabled = true;
+  el('sendFileBtn').disabled = false;
+});
+
+/* ======= Utils ======= */
+
+function waitForIceGatheringComplete(pcInstance, timeoutMs = 3000){
+  return new Promise((resolve) => {
+    if (!pcInstance) return resolve();
+    if (pcInstance.iceGatheringState === 'complete') return resolve();
+    const check = () => {
+      if (pcInstance.iceGatheringState === 'complete') {
+        pcInstance.removeEventListener('icegatheringstatechange', check);
+        resolve();
+      }
+    };
+    pcInstance.addEventListener('icegatheringstatechange', check);
+    // fallback timeout
+    setTimeout(() => {
+      try { pcInstance.removeEventListener('icegatheringstatechange', check); } catch(e){}
+      resolve();
+    }, timeoutMs);
+  });
+}
+
+updateStatus();
+log('Trang sẵn sàng. Thực hiện theo hướng dẫn phía trên để kết nối 2 máy.');
+
 </script>
 </body>
 </html>
