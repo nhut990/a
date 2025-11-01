@@ -7,105 +7,28 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <!-- jsPDF & autoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f7fafd;
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
-    }
-    .container {
-      max-width: 440px;
-      margin: 40px auto;
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 2px 12px #0002;
-      padding: 32px 24px 32px 24px;
-    }
-    h2 {
-      text-align: center;
-      color: #1275d1;
-      font-size: 2em;
-      margin-bottom: 8px;
-    }
-    .event-name {
-      display: block;
-      font-size: 1.28em;
-      font-weight: bold;
-      text-align: center;
-      color: #e74c3c;
-      margin-bottom: 28px;
-      margin-top: 0;
-    }
-    label {
-      font-size: 1.1em;
-      margin-top: 18px;
-      display: block;
-      font-weight: 500;
-    }
-    input[type="text"] {
-      width: 100%;
-      padding: 12px 10px;
-      font-size: 1.1em;
-      margin-bottom: 8px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      margin-top: 4px;
-      box-sizing: border-box;
-    }
-    .btn-group {
-      margin-top: 18px;
-      text-align: center;
-    }
-    button {
-      font-size: 1.1em;
-      padding: 13px 26px;
-      margin: 0 7px;
-      background: #1275d1;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: background 0.2s;
-    }
-    button:hover, button:focus {
-      background: #0d60b6;
-    }
-    #status {
-      font-size: 1.04em;
-      margin: 15px 0 5px 0;
-      text-align: center;
-      min-height: 28px;
-      color: #333;
-    }
-    #list {
-      margin-top: 32px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 7px;
-    }
-    th, td {
-      border: 1px solid #d1e4f1;
-      padding: 7px 2px;
-      text-align: center;
-      font-size: 1.05em;
-    }
-    th {
-      background: #e3f0fa;
-      color: #1275d1;
-    }
-    @media (max-width: 540px) {
-      .container {
-        max-width: 96vw;
-        padding: 9vw 2vw;
-        margin: 6vw 1vw;
-      }
-      h2 { font-size: 1.25em; }
-    }
+    body { font-family: Arial, sans-serif; background: #f7fafd; margin: 0; padding: 0; min-height: 100vh;}
+    .container { max-width: 440px; margin: 40px auto; background: #fff; border-radius: 16px;
+      box-shadow: 0 2px 12px #0002; padding: 32px 24px 32px 24px;}
+    h2 { text-align: center; color: #1275d1; font-size: 2em; margin-bottom: 8px;}
+    .event-name { display: block; font-size: 1.28em; font-weight: bold; text-align: center; color: #e74c3c; margin-bottom: 28px; margin-top: 0;}
+    label { font-size: 1.1em; margin-top: 18px; display: block; font-weight: 500;}
+    input[type="text"] { width: 100%; padding: 12px 10px; font-size: 1.1em; margin-bottom: 8px; border-radius: 6px; border: 1px solid #ccc; margin-top: 4px; box-sizing: border-box;}
+    .btn-group { margin-top: 18px; text-align: center;}
+    button { font-size: 1.1em; padding: 13px 26px; margin: 0 7px; background: #1275d1; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s;}
+    button:hover, button:focus { background: #0d60b6;}
+    #status { font-size: 1.04em; margin: 15px 0 5px 0; text-align: center; min-height: 28px; color: #333;}
+    #list { margin-top: 32px;}
+    table { width: 100%; border-collapse: collapse; margin-top: 7px;}
+    th, td { border: 1px solid #d1e4f1; padding: 7px 2px; text-align: center; font-size: 1.05em;}
+    th { background: #e3f0fa; color: #1275d1;}
+    .pdf-btn-wrap {text-align:center;margin:14px 0;}
+    .pdf-btn-wrap button { background:#dc3545;color:white;}
+    @media (max-width: 540px) { .container { max-width: 96vw; padding: 9vw 2vw; margin: 6vw 1vw;} h2 { font-size: 1.25em; } }
   </style>
 </head>
 <body>
@@ -124,6 +47,9 @@
     </form>
     <div id="status"></div>
     <div id="list"></div>
+    <div class="pdf-btn-wrap">
+      <button onclick="exportPDF()">Tải PDF danh sách</button>
+    </div>
   </div>
   <script>
     // === Init Firebase ===
@@ -215,6 +141,42 @@
     function toTime(ts) {
       let d = new Date(ts*1000);
       return d.toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    }
+
+    // === Xuất PDF danh sách đã check-in ===
+    async function exportPDF() {
+      let snap = await db.ref(`events/${eventId}/checkins`).once('value');
+      let data = snap.val();
+      if (!data) {
+        alert("Chưa có ai check-in!");
+        return;
+      }
+      let rows = [];
+      Object.values(data).forEach(u => {
+        rows.push([
+          u.name || "",
+          u.checkin ? toTime(u.checkin) : "",
+          u.checkout ? toTime(u.checkout) : ""
+        ]);
+      });
+      // Sắp xếp theo thời gian check-in gần nhất trước
+      rows.sort((a,b) => b[1].localeCompare(a[1]));
+
+      const { jsPDF } = window.jspdf;
+      let doc = new jsPDF();
+      doc.setFont("Times", "normal");
+      doc.setFontSize(16);
+      doc.text("Danh sách điểm danh - BV nhân dân Gia Định", 105, 18, {align:"center"});
+      doc.setFontSize(11);
+      doc.text("Ngày xuất: " + new Date().toLocaleString('vi-VN'), 105, 26, {align:"center"});
+      doc.autoTable({
+        head: [["Họ tên", "Check-in", "Check-out"]],
+        body: rows,
+        startY: 32,
+        styles: {font:"Times",fontSize:11},
+        headStyles: {fillColor: [41,128,185], textColor: 255},
+      });
+      doc.save("danh-sach-diem-danh.pdf");
     }
 
     // === Hỗ trợ nhấn Enter để check-in ===
