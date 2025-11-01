@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
@@ -84,17 +85,31 @@
       font-weight: bold;
       font-size: 14px;
     }
-    #downloadBtn {
-      display: block;
-      width: 100%;
+    .action-buttons {
+      display: flex;
+      gap: 10px;
       margin-top: 30px;
-      font-size: 16px;
+    }
+    .action-buttons button {
+      flex: 1;
+      margin: 0;
       padding: 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #deleteAllBtn {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+    }
+    #deleteAllBtn:hover {
+      background-color: #c0392b;
+    }
+    #downloadBtn {
       background-color: #28a745;
       color: white;
       border: none;
-      border-radius: 6px;
-      cursor: pointer;
     }
     #downloadBtn:hover {
       background-color: #218838;
@@ -111,6 +126,9 @@
       font-weight: bold;
       text-align: center;
     }
+    .warning {
+      color: #e74c3c !important;
+    }
   </style>
 </head>
 <body>
@@ -122,7 +140,11 @@
   <h3>📌 Ghi chú đã lưu:</h3>
   <div id="noteList"></div>
 
-  <button id="downloadBtn" onclick="downloadNotes()">📥 Tải toàn bộ ghi chú</button>
+  <div class="action-buttons">
+    <button id="deleteAllBtn" onclick="deleteAllNotes()">🗑️ Xóa tất cả ghi chú</button>
+    <button id="downloadBtn" onclick="downloadNotes()">📥 Tải toàn bộ ghi chú</button>
+  </div>
+
   <div id="message"></div>
 
   <div id="footer">
@@ -146,6 +168,9 @@
           timestamp: new Date().toISOString()
         });
         document.getElementById("noteInput").value = "";
+        showMessage("✅ Đã lưu ghi chú thành công!", "green");
+      } else {
+        showMessage("⚠️ Vui lòng nhập nội dung ghi chú!", "orange");
       }
     }
 
@@ -166,17 +191,39 @@
         label.textContent = "✅ Đã xoá";
         cardElement.innerHTML = "";
         cardElement.appendChild(label);
-      } else {
-        alert("Sai mật khẩu. Không thể xóa ghi chú.");
+        showMessage("✅ Đã xóa ghi chú thành công!", "green");
+      } else if (password !== null) {
+        alert("❌ Sai mật khẩu. Không thể xóa ghi chú.");
+      }
+    }
+
+    function deleteAllNotes() {
+      if (noteCount === 0) {
+        showMessage("⚠️ Chưa có ghi chú để xóa.", "orange");
+        return;
+      }
+
+      const confirmDelete = confirm(`⚠️ BẠN CHẮC CHẮN MUỐN XÓA TẤT CẢ ${noteCount} GHI CHÚ?\n\nHành động này KHÔNG THỂ hoàn tác!`);
+      
+      if (confirmDelete) {
+        const password = prompt("Nhập mật khẩu để xác nhận xóa tất cả ghi chú:");
+        if (password === "898989") {
+          database.ref("notes").remove()
+            .then(() => {
+              showMessage("✅ Đã xóa tất cả ghi chú thành công!", "green");
+            })
+            .catch((error) => {
+              showMessage("❌ Lỗi khi xóa: " + error.message, "red");
+            });
+        } else if (password !== null) {
+          alert("❌ Sai mật khẩu. Không thể xóa ghi chú.");
+        }
       }
     }
 
     function downloadNotes() {
       if (noteCount === 0) {
-        document.getElementById("message").textContent = "⚠️ Chưa có ghi chú để tải.";
-        setTimeout(() => {
-          document.getElementById("message").textContent = "";
-        }, 3000);
+        showMessage("⚠️ Chưa có ghi chú để tải.", "orange");
         return;
       }
 
@@ -186,7 +233,7 @@
         snapshot.forEach(function(childSnapshot) {
           notesArray.push(childSnapshot.val());
         });
-        notesArray.reverse(); // Đảo ngược để ghi chú mới nằm trên đầu
+        notesArray.reverse();
 
         notesArray.forEach(function(data) {
           const time = formatDate(data.timestamp);
@@ -196,9 +243,20 @@
         const blob = new Blob(["\uFEFF" + content], { type: "text/plain;charset=utf-8" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "ghi_chu.txt";
+        const dateStr = new Date().toLocaleDateString('vi-VN').replace(/\//g, '-');
+        link.download = `ghi_chu_${dateStr}.txt`;
         link.click();
+        showMessage("✅ Đã tải xuống ghi chú thành công!", "green");
       });
+    }
+
+    function showMessage(text, color) {
+      const msgElement = document.getElementById("message");
+      msgElement.textContent = text;
+      msgElement.style.color = color;
+      setTimeout(() => {
+        msgElement.textContent = "";
+      }, 3000);
     }
 
     database.ref("notes").on("value", function(snapshot) {
@@ -214,8 +272,12 @@
         });
       });
 
-      notesArray.reverse(); // Ghi chú mới nằm trên đầu
+      notesArray.reverse();
       noteCount = notesArray.length;
+
+      if (noteCount === 0) {
+        noteList.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">Chưa có ghi chú nào. Hãy thêm ghi chú đầu tiên!</div>';
+      }
 
       notesArray.forEach(function(noteItem) {
         var data = noteItem.data;
@@ -247,5 +309,6 @@
       });
     });
   </script>
+
 </body>
 </html>
