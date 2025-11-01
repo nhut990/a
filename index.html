@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
@@ -7,35 +8,45 @@
 <style>
 body { font-family: Arial; background:#eef; text-align:center; margin:0; padding:0; }
 #login, #chat { max-width:400px; margin:20px auto; background:white; padding:15px; border-radius:10px; box-shadow:0 0 10px #999; }
-input, button { width:90%; padding:10px; margin:6px 0; font-size:16px; }
-#messages { height:300px; overflow-y:auto; border:1px solid #ccc; padding:10px; text-align:left; background:#fafafa; }
-.msg { margin:4px 0; }
+input, button { width:90%; padding:10px; margin:6px 0; font-size:16px; border:1px solid #ccc; border-radius:5px; }
+button { background:#4CAF50; color:white; cursor:pointer; border:none; }
+button:hover { background:#45a049; }
+button:disabled { background:#ccc; cursor:not-allowed; }
+#messages { height:300px; overflow-y:auto; border:1px solid #ccc; padding:10px; text-align:left; background:#fafafa; margin:10px 0; }
+.msg { margin:8px 0; padding:5px; }
 .me { color:blue; font-weight:bold; }
 .you { color:green; font-weight:bold; }
+#deleteRoom { background:#f44336; }
+#deleteRoom:hover { background:#da190b; }
+.loading { opacity:0.6; pointer-events:none; }
 </style>
 </head>
 <body>
 
 <div id="login">
   <h2>💬 Chat riêng Firebase</h2>
-  <input id="name" placeholder="Tên của bạn">
-  <input id="room" placeholder="Tên phòng">
+  <input id="name" placeholder="Tên của bạn" autocomplete="off">
+  <input id="room" placeholder="Tên phòng" autocomplete="off">
   <input id="pass" placeholder="Mật khẩu" type="password">
   <button id="create">Tạo phòng</button>
   <button id="join">Vào phòng</button>
+  <p style="font-size:12px; color:#666;">💡 Tên phòng và mật khẩu phân biệt hoa thường</p>
 </div>
 
 <div id="chat" style="display:none;">
   <h3 id="roomTitle"></h3>
   <div id="messages"></div>
-  <input id="msgBox" placeholder="Nhập tin nhắn...">
+  <input id="msgBox" placeholder="Nhập tin nhắn..." autocomplete="off">
   <button id="send">Gửi</button>
   <br><br>
-  <button id="deleteRoom" style="background:red;color:white;">Xoá phòng</button>
+  <button id="leave" style="background:#FF9800;">Rời phòng</button>
+  <button id="deleteRoom" style="background:#f44336;">Xoá phòng</button>
 </div>
 
 <!-- Firebase SDK -->
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 <script>
@@ -46,83 +57,226 @@ document.addEventListener("DOMContentLoaded", function() {
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  let myName, roomName, myPass, isCreator=false;
+  let myName, roomName, myPass, isCreator = false;
+  let messageListener = null; // Để quản lý listener
 
-  const log = console.log; // để debug nếu cần
+  // Hàm hash mật khẩu đơn giản (SHA-256)
+  async function hashPassword(password) {
+    const msgBuffer = new TextEncoder().encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
 
-  document.getElementById("create").onclick = async ()=>{
-    myName = name.value.trim();
-    roomName = room.value.trim();
-    myPass = pass.value.trim();
-    if(!myName || !roomName || !myPass) return alert("Nhập đủ thông tin!");
+  // Hàm escape HTML để tránh XSS
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
 
-    const rRef = db.ref("rooms/"+roomName);
-    const snap = await rRef.get();
-    if(snap.exists()) return alert("Phòng đã tồn tại!");
+  // Tạo phòng
+  document.getElementById("create").onclick = async () => {
+    const btn = document.getElementById("create");
+    try {
+      btn.disabled = true;
+      btn.textContent = "Đang tạo...";
 
-    await rRef.set({ password: myPass, messages: {} });
-    isCreator=true;
-    alert("✅ Phòng đã tạo thành công!");
-    startChat();
+      myName = document.getElementById("name").value.trim();
+      roomName = document.getElementById("room").value.trim();
+      myPass = document.getElementById("pass").value.trim();
+
+      if (!myName || !roomName || !myPass) {
+        alert("⚠️ Vui lòng nhập đủ thông tin!");
+        return;
+      }
+
+      if (myPass.length < 6) {
+        alert("⚠️ Mật khẩu phải có ít nhất 6 ký tự!");
+        return;
+      }
+
+      const rRef = db.ref("rooms/" + roomName);
+      const snap = await rRef.get();
+
+      if (snap.exists()) {
+        alert("⚠️ Phòng đã tồn tại! Vui lòng chọn tên khác.");
+        return;
+      }
+
+      // Hash mật khẩu trước khi lưu
+      const hashedPass = await hashPassword(myPass);
+      await rRef.set({ 
+        password: hashedPass,
+        creator: myName,
+        createdAt: new Date().toISOString(),
+        messages: {}
+      });
+
+      isCreator = true;
+      alert("✅ Phòng đã tạo thành công!");
+      startChat();
+
+    } catch (error) {
+      console.error("Lỗi tạo phòng:", error);
+      alert("❌ Lỗi: " + error.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Tạo phòng";
+    }
   };
 
-  document.getElementById("join").onclick = async ()=>{
-    myName = name.value.trim();
-    roomName = room.value.trim();
-    myPass = pass.value.trim();
-    if(!myName || !roomName || !myPass) return alert("Nhập đủ thông tin!");
-    const rRef = db.ref("rooms/"+roomName);
-    const snap = await rRef.get();
-    if(!snap.exists()) return alert("Phòng không tồn tại!");
-    if(snap.val().password !== myPass) return alert("Sai mật khẩu!");
-    alert("✅ Đã vào phòng thành công!");
-    startChat();
+  // Vào phòng
+  document.getElementById("join").onclick = async () => {
+    const btn = document.getElementById("join");
+    try {
+      btn.disabled = true;
+      btn.textContent = "Đang kết nối...";
+
+      myName = document.getElementById("name").value.trim();
+      roomName = document.getElementById("room").value.trim();
+      myPass = document.getElementById("pass").value.trim();
+
+      if (!myName || !roomName || !myPass) {
+        alert("⚠️ Vui lòng nhập đủ thông tin!");
+        return;
+      }
+
+      const rRef = db.ref("rooms/" + roomName);
+      const snap = await rRef.get();
+
+      if (!snap.exists()) {
+        alert("⚠️ Phòng không tồn tại!");
+        return;
+      }
+
+      const hashedPass = await hashPassword(myPass);
+      if (snap.val().password !== hashedPass) {
+        alert("❌ Sai mật khẩu!");
+        return;
+      }
+
+      isCreator = false; // Quan trọng: reset isCreator
+      alert("✅ Đã vào phòng thành công!");
+      startChat();
+
+    } catch (error) {
+      console.error("Lỗi vào phòng:", error);
+      alert("❌ Lỗi: " + error.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Vào phòng";
+    }
   };
 
-  function startChat(){
-    document.getElementById("login").style.display="none";
-    document.getElementById("chat").style.display="block";
-    document.getElementById("roomTitle").textContent="Phòng: "+roomName;
+  // Bắt đầu chat
+  function startChat() {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("chat").style.display = "block";
+    document.getElementById("roomTitle").textContent = "🏠 Phòng: " + roomName;
     loadMessages();
   }
 
-  document.getElementById("send").onclick = async ()=>{
-    const text = msgBox.value.trim();
-    if(!text) return;
-    const msgRef = db.ref("rooms/"+roomName+"/messages");
-    await msgRef.push({
-      sender: myName,
-      text: text,
-      time: new Date().toLocaleString()
-    });
-    msgBox.value="";
+  // Gửi tin nhắn
+  document.getElementById("send").onclick = sendMessage;
+  document.getElementById("msgBox").onkeypress = function(e) {
+    if (e.key === 'Enter') sendMessage();
   };
 
-  function loadMessages(){
-    const msgRef = db.ref("rooms/"+roomName+"/messages");
-    msgRef.on("value", (snap)=>{
-      const messages = document.getElementById("messages");
-      messages.innerHTML="";
-      snap.forEach(child=>{
-        const m=child.val();
-        const div=document.createElement("div");
-        div.className="msg";
-        div.innerHTML=`<span class='${m.sender===myName?"me":"you"}'>${m.sender}:</span> ${m.text}`;
-        messages.appendChild(div);
+  async function sendMessage() {
+    const msgBox = document.getElementById("msgBox");
+    const text = msgBox.value.trim();
+    if (!text) return;
+
+    try {
+      const msgRef = db.ref("rooms/" + roomName + "/messages");
+      await msgRef.push({
+        sender: myName,
+        text: text,
+        time: new Date().toISOString()
       });
-      messages.scrollTop=messages.scrollHeight;
+      msgBox.value = "";
+    } catch (error) {
+      console.error("Lỗi gửi tin:", error);
+      alert("❌ Không thể gửi tin nhắn: " + error.message);
+    }
+  }
+
+  // Load tin nhắn
+  function loadMessages() {
+    const msgRef = db.ref("rooms/" + roomName + "/messages");
+    
+    // Xóa listener cũ nếu có
+    if (messageListener) {
+      msgRef.off("value", messageListener);
+    }
+
+    // Tạo listener mới
+    messageListener = msgRef.on("value", (snap) => {
+      const messagesDiv = document.getElementById("messages");
+      messagesDiv.innerHTML = "";
+      
+      if (!snap.exists() || !snap.val()) {
+        messagesDiv.innerHTML = "<p style='color:#999;text-align:center;'>Chưa có tin nhắn nào...</p>";
+        return;
+      }
+
+      snap.forEach(child => {
+        const m = child.val();
+        const div = document.createElement("div");
+        div.className = "msg";
+        
+        const time = new Date(m.time).toLocaleString('vi-VN');
+        const senderClass = m.sender === myName ? "me" : "you";
+        
+        div.innerHTML = `<span class='${senderClass}'>${escapeHtml(m.sender)}</span> <small style='color:#999;'>${time}</small><br>${escapeHtml(m.text)}`;
+        messagesDiv.appendChild(div);
+      });
+      
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
     });
   }
 
-  document.getElementById("deleteRoom").onclick = async ()=>{
-    if(!isCreator) return alert("Chỉ người tạo phòng mới được xoá!");
-    if(confirm("Bạn chắc chắn muốn xoá phòng này?")){
-      await db.ref("rooms/"+roomName).remove();
-      alert("Đã xoá phòng!");
+  // Xóa phòng
+  document.getElementById("deleteRoom").onclick = async () => {
+    if (!isCreator) {
+      alert("⚠️ Chỉ người tạo phòng mới được xóa!");
+      return;
+    }
+    
+    if (confirm("⚠️ Bạn chắc chắn muốn xóa phòng này?\nTất cả tin nhắn sẽ bị mất vĩnh viễn!")) {
+      try {
+        // Tắt listener trước khi xóa
+        const msgRef = db.ref("rooms/" + roomName + "/messages");
+        if (messageListener) {
+          msgRef.off("value", messageListener);
+          messageListener = null;
+        }
+        
+        await db.ref("rooms/" + roomName).remove();
+        alert("✅ Đã xóa phòng thành công!");
+        location.reload();
+      } catch (error) {
+        console.error("Lỗi xóa phòng:", error);
+        alert("❌ Không thể xóa phòng: " + error.message);
+      }
+    }
+  };
+
+  // Rời phòng
+  document.getElementById("leave").onclick = () => {
+    if (confirm("Bạn muốn rời khỏi phòng?")) {
+      // Tắt listener
+      const msgRef = db.ref("rooms/" + roomName + "/messages");
+      if (messageListener) {
+        msgRef.off("value", messageListener);
+        messageListener = null;
+      }
       location.reload();
     }
   };
 });
 </script>
+
 </body>
 </html>
