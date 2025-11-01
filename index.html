@@ -1,215 +1,121 @@
 <!DOCTYPE html>
-
-<html lang="vi">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>Check-in BV nhân dân Gia Định</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <!-- jsPDF & autoTable -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <title>Web Test Demo</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f7fafd; margin: 0; padding: 0; min-height: 100vh;}
-    .container { max-width: 440px; margin: 40px auto; background: #fff; border-radius: 16px;
-      box-shadow: 0 2px 12px #0002; padding: 32px 24px 32px 24px;}
-    h2 { text-align: center; color: #1275d1; font-size: 2em; margin-bottom: 8px;}
-    .event-name { display: block; font-size: 1.28em; font-weight: bold; text-align: center; color: #e74c3c; margin-bottom: 28px; margin-top: 0;}
-    label { font-size: 1.1em; margin-top: 18px; display: block; font-weight: 500;}
-    input[type="text"] { width: 100%; padding: 12px 10px; font-size: 1.1em; margin-bottom: 8px; border-radius: 6px; border: 1px solid #ccc; margin-top: 4px; box-sizing: border-box;}
-    .btn-group { margin-top: 18px; text-align: center;}
-    button { font-size: 1.1em; padding: 13px 26px; margin: 0 7px; background: #1275d1; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s;}
-    button:hover, button:focus { background: #0d60b6;}
-    #status { font-size: 1.04em; margin: 15px 0 5px 0; text-align: center; min-height: 28px; color: #333;}
-    #list { margin-top: 32px;}
-    table { width: 100%; border-collapse: collapse; margin-top: 7px;}
-    th, td { border: 1px solid #d1e4f1; padding: 7px 2px; text-align: center; font-size: 1.05em;}
-    th { background: #e3f0fa; color: #1275d1;}
-    .pdf-btn-wrap {text-align:center;margin:14px 0;}
-    .pdf-btn-wrap button { background:#dc3545;color:white;}
-    @media (max-width: 540px) { .container { max-width: 96vw; padding: 9vw 2vw; margin: 6vw 1vw;} h2 { font-size: 1.25em; } }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f4f8;
+      padding: 40px;
+      max-width: 800px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      color: #0078D4;
+      margin-bottom: 10px;
+    }
+    h2, h3 {
+      color: #333;
+    }
+    textarea {
+      width: 100%;
+      font-size: 16px;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    button {
+      font-size: 16px;
+      padding: 10px 20px;
+      background-color: #0078D4;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    .note-card {
+      background-color: #ffffff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .timestamp {
+      font-size: 14px;
+      color: #888;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>ĐIỂM DANH CHECK-IN/CHECK-OUT</h2>
-    <div class="event-name">BV nhân dân Gia Định</div>
-    <form id="form" autocomplete="off" onsubmit="return false;">
-      <label for="name">Họ và tên:</label>
-      <input id="name" type="text" autocomplete="off" required placeholder="Nhập họ tên của bạn">
-      <label for="userid">Mã số/Nick/ID:</label>
-      <input id="userid" type="text" autocomplete="off" required placeholder="Nhập mã số nhân viên, nick hoặc ID">
-      <div class="btn-group">
-        <button type="button" onclick="checkin()" id="btn-checkin">Check-in</button>
-        <button type="button" onclick="checkout()" id="btn-checkout" style="background:#f39c12;">Check-out</button>
-      </div>
-    </form>
-    <div id="status"></div>
-    <div id="list"></div>
-    <div class="pdf-btn-wrap">
-      <button onclick="exportPDF()">Tải PDF danh sách</button>
-    </div>
-  </div>
+  <h1>Web Test Demo</h1>
+  <h2>📝 Ghi chú trực tuyến</h2>
+  <textarea id="noteInput" rows="5" placeholder="Nhập ghi chú tại đây..."></textarea><br>
+  <button onclick="saveNote()">Lưu ghi chú</button>
+
+  <h3>📌 Ghi chú đã lưu:</h3>
+  <div id="noteList"></div>
 
   <script>
-    // === Init Firebase ===
-    const firebaseConfig = {
-      databaseURL: "https://nhutvan5c-79ce9-default-rtdb.asia-southeast1.firebasedatabase.app/"
+    var firebaseConfig = {
+      databaseURL: "https://test-nhut117117-default-rtdb.asia-southeast1.firebasedatabase.app/"
     };
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    var database = firebase.database();
 
-    // === Config event name ===
-    const eventId = "BV-nhan-dan-Gia-Dinh";
-
-    // === Check-in function ===
-    async function checkin() {
-      let name = document.getElementById('name').value.trim();
-      let userid = document.getElementById('userid').value.trim();
-      if (!name || !userid) {
-        showStatus("Vui lòng nhập đầy đủ họ tên và mã số/ID!", "#e74c3c");
-        return;
-      }
-      let now = Math.floor(Date.now()/1000);
-      try {
-        await db.ref(`events/${eventId}/checkins/${userid}`).update({
-          name,
-          checkin: now
+    function saveNote() {
+      var note = document.getElementById("noteInput").value;
+      if (note.trim() !== "") {
+        var newNoteRef = database.ref("notes").push();
+        newNoteRef.set({
+          content: note,
+          timestamp: new Date().toISOString()
         });
-        showStatus(`✅ ${name} đã <b>check-in</b> lúc ${toTime(now)}`, "#27ae60");
-      } catch (e) {
-        showStatus("Có lỗi khi check-in!", "#e74c3c");
+        document.getElementById("noteInput").value = "";
       }
     }
 
-    // === Check-out function ===
-    async function checkout() {
-      let name = document.getElementById('name').value.trim();
-      let userid = document.getElementById('userid').value.trim();
-      if (!name || !userid) {
-        showStatus("Vui lòng nhập đầy đủ họ tên và mã số/ID!", "#e74c3c");
-        return;
-      }
-      let now = Math.floor(Date.now()/1000);
-      try {
-        await db.ref(`events/${eventId}/checkins/${userid}`).update({
-          name,
-          checkout: now
-        });
-        showStatus(`👋 ${name} đã <b>check-out</b> lúc ${toTime(now)}`, "#f39c12");
-      } catch (e) {
-        showStatus("Có lỗi khi check-out!", "#e74c3c");
-      }
-    }
-
-    // === Hiển thị trạng thái ===
-    function showStatus(msg, color="#333") {
-      let st = document.getElementById('status');
-      st.innerHTML = msg;
-      st.style.color = color;
-    }
-
-    // === Hiển thị danh sách ===
-    function watchList() {
-      db.ref(`events/${eventId}/checkins`).on('value', snap => {
-        let data = snap.val();
-        let html = `<h3 style="text-align:center; color:#1275d1; font-size:1.14em; font-weight:600;margin-top:0;">Danh sách điểm danh</h3>`;
-        html += `<table><tr><th>Họ tên</th><th>Check-in</th><th>Check-out</th></tr>`;
-        if (data) {
-          let arr = [];
-          for (let user in data) {
-            let u = data[user];
-            arr.push(u);
-          }
-          arr.sort((a,b) => (b.checkin||0)-(a.checkin||0));
-          for (let u of arr) {
-            html += `<tr>
-              <td>${u.name || ''}</td>
-              <td>${u.checkin ? toTime(u.checkin) : ''}</td>
-              <td>${u.checkout ? toTime(u.checkout) : ''}</td>
-            </tr>`;
-          }
-        }
-        html += `</table>`;
-        document.getElementById('list').innerHTML = html;
+    function formatDate(isoString) {
+      const date = new Date(isoString);
+      return date.toLocaleString('vi-VN', {
+        hour: '2-digit', minute: '2-digit',
+        day: '2-digit', month: '2-digit', year: 'numeric'
       });
     }
-    watchList();
 
-    // === Định dạng giờ ===
-    function toTime(ts) {
-      let d = new Date(ts*1000);
-      return d.toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    }
+    database.ref("notes").on("value", function(snapshot) {
+      var noteList = document.getElementById("noteList");
+      noteList.innerHTML = "";
+      snapshot.forEach(function(childSnapshot) {
+        var data = childSnapshot.val();
+        var note = data.content;
+        var time = formatDate(data.timestamp);
 
-    // === Xuất PDF - ĐÃ SỬA LỖI ===
-    async function exportPDF() {
-      // Kiểm tra thư viện
-      if (typeof window.jspdf === 'undefined') {
-        alert("Đang tải thư viện PDF, vui lòng thử lại sau vài giây!");
-        return;
-      }
+        var card = document.createElement("div");
+        card.className = "note-card";
 
-      let snap = await db.ref(`events/${eventId}/checkins`).once('value');
-      let data = snap.val();
-      if (!data) {
-        alert("Chưa có ai check-in!");
-        return;
-      }
+        var content = document.createElement("div");
+        content.textContent = note;
 
-      let rows = [];
-      Object.values(data).forEach(u => {
-        rows.push([
-          u.name || "",
-          u.checkin ? toTime(u.checkin) : "",
-          u.checkout ? toTime(u.checkout) : ""
-        ]);
+        var timestamp = document.createElement("div");
+        timestamp.className = "timestamp";
+        timestamp.textContent = "🕒 " + time;
+
+        card.appendChild(content);
+        card.appendChild(timestamp);
+        noteList.appendChild(card);
       });
-      rows.sort((a,b) => {
-        if (!a[1]) return 1;
-        if (!b[1]) return -1;
-        return b[1].localeCompare(a[1]);
-      });
-
-      try {
-        const { jsPDF } = window.jspdf;
-        let doc = new jsPDF();
-
-        // Tiêu đề với font mặc định (hỗ trợ tiếng Việt cơ bản)
-        doc.setFontSize(16);
-        doc.text("Danh sach diem danh - BV nhan dan Gia Dinh", 105, 18, {align:"center"});
-        doc.setFontSize(11);
-        doc.text("Ngay xuat: " + new Date().toLocaleString('vi-VN'), 105, 26, {align:"center"});
-
-        // Vẽ bảng
-        doc.autoTable({
-          head: [["Ho ten", "Check-in", "Check-out"]],
-          body: rows,
-          startY: 32,
-          theme: 'grid',
-          styles: {fontSize: 12, cellPadding: 3},
-          headStyles: {fillColor: [41,128,185], textColor: 255, fontStyle: 'bold'},
-          margin: {left: 10, right: 10}
-        });
-
-        doc.save("danh-sach-diem-danh.pdf");
-        showStatus("✅ Đã tải PDF thành công!", "#27ae60");
-      } catch(e) {
-        console.error(e);
-        alert("Có lỗi khi tạo PDF: " + e.message);
-      }
-    }
-
-    // === Hỗ trợ Enter ===
-    document.getElementById('form').addEventListener('keydown', function(e){
-      if (e.key === "Enter") {
-        e.preventDefault();
-        checkin();
-      }
     });
   </script>
-
 </body>
 </html>
