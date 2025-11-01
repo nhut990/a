@@ -34,47 +34,44 @@ input, button { width:90%; padding:10px; margin:6px 0; font-size:16px; }
   <button id="deleteRoom" style="background:red;color:white;">Xoá phòng</button>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, get, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
+<script>
 const firebaseConfig = {
   databaseURL: "https://nhutvan5c-79ce9-default-rtdb.asia-southeast1.firebasedatabase.app/"
 };
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 let myName, roomName, myPass, isCreator=false;
 
-// --- Tạo phòng ---
 document.getElementById("create").onclick = async ()=>{
   myName = name.value.trim();
   roomName = room.value.trim();
   myPass = pass.value.trim();
   if(!myName || !roomName || !myPass) return alert("Nhập đủ thông tin!");
-  const rRef = ref(db,"rooms/"+roomName);
-  const snap = await get(rRef);
+  const rRef = db.ref("rooms/"+roomName);
+  const snap = await rRef.get();
   if(snap.exists()) return alert("Phòng đã tồn tại!");
-  await set(rRef,{password:myPass,messages:{}});
+  await rRef.set({ password: myPass, messages: {} });
   isCreator=true;
   startChat();
 };
 
-// --- Vào phòng ---
 document.getElementById("join").onclick = async ()=>{
   myName = name.value.trim();
   roomName = room.value.trim();
   myPass = pass.value.trim();
   if(!myName || !roomName || !myPass) return alert("Nhập đủ thông tin!");
-  const rRef = ref(db,"rooms/"+roomName);
-  const snap = await get(rRef);
+  const rRef = db.ref("rooms/"+roomName);
+  const snap = await rRef.get();
   if(!snap.exists()) return alert("Phòng không tồn tại!");
-  const data = snap.val();
-  if(data.password!==myPass) return alert("Sai mật khẩu!");
+  if(snap.val().password !== myPass) return alert("Sai mật khẩu!");
   startChat();
 };
 
-// --- Bắt đầu chat ---
 function startChat(){
   login.style.display="none";
   chat.style.display="block";
@@ -82,12 +79,11 @@ function startChat(){
   loadMessages();
 }
 
-// --- Gửi tin nhắn ---
 document.getElementById("send").onclick = async ()=>{
   const text = msgBox.value.trim();
   if(!text) return;
-  const msgRef = ref(db,"rooms/"+roomName+"/messages");
-  await push(msgRef,{
+  const msgRef = db.ref("rooms/"+roomName+"/messages");
+  await msgRef.push({
     sender: myName,
     text: text,
     time: new Date().toLocaleString()
@@ -95,10 +91,9 @@ document.getElementById("send").onclick = async ()=>{
   msgBox.value="";
 };
 
-// --- Hiển thị tin nhắn realtime ---
 function loadMessages(){
-  const msgRef = ref(db,"rooms/"+roomName+"/messages");
-  onValue(msgRef,(snap)=>{
+  const msgRef = db.ref("rooms/"+roomName+"/messages");
+  msgRef.on("value", (snap)=>{
     messages.innerHTML="";
     snap.forEach(child=>{
       const m=child.val();
@@ -111,11 +106,10 @@ function loadMessages(){
   });
 }
 
-// --- Xoá phòng ---
 document.getElementById("deleteRoom").onclick = async ()=>{
   if(!isCreator) return alert("Chỉ người tạo phòng mới được xoá!");
   if(confirm("Bạn chắc chắn muốn xoá phòng này?")){
-    await remove(ref(db,"rooms/"+roomName));
+    await db.ref("rooms/"+roomName).remove();
     alert("Đã xoá phòng!");
     location.reload();
   }
