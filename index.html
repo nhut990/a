@@ -182,8 +182,13 @@
 
       database.ref("notes").once("value", function(snapshot) {
         let content = "";
+        const notesArray = [];
         snapshot.forEach(function(childSnapshot) {
-          const data = childSnapshot.val();
+          notesArray.push(childSnapshot.val());
+        });
+        notesArray.reverse(); // Đảo ngược để ghi chú mới nằm trên đầu
+
+        notesArray.forEach(function(data) {
           const time = formatDate(data.timestamp);
           content += `📝 ${data.content}\n🕒 ${time}\n\n`;
         });
@@ -200,10 +205,21 @@
       var noteList = document.getElementById("noteList");
       noteList.innerHTML = "";
       noteCount = 0;
+
+      const notesArray = [];
       snapshot.forEach(function(childSnapshot) {
-        noteCount++;
-        var data = childSnapshot.val();
-        var noteId = childSnapshot.key;
+        notesArray.push({
+          id: childSnapshot.key,
+          data: childSnapshot.val()
+        });
+      });
+
+      notesArray.reverse(); // Ghi chú mới nằm trên đầu
+      noteCount = notesArray.length;
+
+      notesArray.forEach(function(noteItem) {
+        var data = noteItem.data;
+        var noteId = noteItem.id;
         var note = data.content;
         var time = formatDate(data.timestamp);
 
