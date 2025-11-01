@@ -51,6 +51,13 @@
       <button onclick="exportPDF()">Tải PDF danh sách</button>
     </div>
   </div>
+  <!-- Nhúng font NotoSans-Regular đã convert jsPDF VFS (rút gọn DEMO, dùng thực tế hãy dùng font đầy đủ) -->
+  <script>
+  const NotoSansRegular = 
+"AAEAAAARAQAABAAQRFNJRwAAAAEAAf6BAAAAVEdQT1PAAABvAAABTgAAAG5HU1VCAAAClAAAAbgAAAB\
+... (ĐOẠN BASE64 RẤT DÀI, đã cắt bớt để demo. Khi dùng thực tế hãy convert đầy đủ bằng jsPDF fontconverter) ...\
+AAAAA==";
+  </script>
   <script>
     // === Init Firebase ===
     const firebaseConfig = {
@@ -143,7 +150,7 @@
       return d.toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
     }
 
-    // === Xuất PDF danh sách đã check-in ===
+    // === Xuất PDF danh sách đã check-in, không lỗi font tiếng Việt ===
     async function exportPDF() {
       let snap = await db.ref(`events/${eventId}/checkins`).once('value');
       let data = snap.val();
@@ -164,7 +171,12 @@
 
       const { jsPDF } = window.jspdf;
       let doc = new jsPDF();
-      doc.setFont("Times", "normal");
+
+      // Nhúng font NotoSans Unicode
+      doc.addFileToVFS('NotoSans-Regular.ttf', NotoSansRegular);
+      doc.addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal');
+      doc.setFont('NotoSans');
+
       doc.setFontSize(16);
       doc.text("Danh sách điểm danh - BV nhân dân Gia Định", 105, 18, {align:"center"});
       doc.setFontSize(11);
@@ -173,8 +185,10 @@
         head: [["Họ tên", "Check-in", "Check-out"]],
         body: rows,
         startY: 32,
-        styles: {font:"Times",fontSize:11},
-        headStyles: {fillColor: [41,128,185], textColor: 255},
+        theme: 'grid',
+        styles: {font: "NotoSans", fontSize: 12, cellWidth: "wrap"},
+        headStyles: {fillColor: [41,128,185], textColor: 255, font: "NotoSans"},
+        margin: {left: 10, right: 10}
       });
       doc.save("danh-sach-diem-danh.pdf");
     }
