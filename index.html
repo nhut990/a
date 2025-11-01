@@ -185,15 +185,25 @@
     function deleteNote(noteId, cardElement) {
       const password = prompt("Nhập mật khẩu để xóa ghi chú:");
       if (password === "898989") {
-        database.ref("notes/" + noteId).remove();
-        const label = document.createElement("div");
-        label.className = "deleted-label";
-        label.textContent = "✅ Đã xoá";
-        cardElement.innerHTML = "";
-        cardElement.appendChild(label);
-        showMessage("✅ Đã xóa ghi chú thành công!", "green");
+        database.ref("notes/" + noteId).remove()
+          .then(() => {
+            const label = document.createElement("div");
+            label.className = "deleted-label";
+            label.textContent = "✅ Đã xoá";
+            cardElement.innerHTML = "";
+            cardElement.appendChild(label);
+            showMessage("✅ Đã xóa ghi chú thành công!", "green");
+            
+            // Tự động ẩn thẻ sau 2 giây
+            setTimeout(() => {
+              cardElement.style.display = "none";
+            }, 2000);
+          })
+          .catch((error) => {
+            showMessage("❌ Lỗi khi xóa: " + error.message, "red");
+          });
       } else if (password !== null) {
-        alert("❌ Sai mật khẩu. Không thể xóa ghi chú.");
+        showMessage("❌ Sai mật khẩu. Không thể xóa ghi chú.", "red");
       }
     }
 
