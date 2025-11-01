@@ -1,476 +1,449 @@
-<!DOCTYPE html>
+import React, { useState, useEffect } from ‘react’;
+import { X, Users, Copy, Check, Play, RotateCcw } from ‘lucide-react’;
 
-<html lang="vi">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chat riêng Firebase</title>
-<style>
-body { font-family: Arial; background:#eef; text-align:center; margin:0; padding:0; }
-#login, #chat { max-width:400px; margin:20px auto; background:white; padding:15px; border-radius:10px; box-shadow:0 0 10px #999; }
-input, button { width:90%; padding:10px; margin:6px 0; font-size:16px; border:1px solid #ccc; border-radius:5px; }
-button { background:#4CAF50; color:white; cursor:pointer; border:none; }
-button:hover { background:#45a049; }
-button:disabled { background:#ccc; cursor:not-allowed; }
-#messages { height:300px; overflow-y:auto; border:1px solid #ccc; padding:10px; text-align:left; background:#fafafa; margin:10px 0; }
-.msg { margin:8px 0; padding:8px 12px; clear:both; max-width:80%; word-wrap:break-word; }
-.msg.left { float:left; background:#e3f2fd; border-radius:10px 10px 10px 0; }
-.msg.right { float:right; background:#c8e6c9; border-radius:10px 10px 0 10px; text-align:right; }
-.msg .sender { font-weight:bold; font-size:13px; margin-bottom:3px; display:block; }
-.msg.left .sender { color:#1976d2; }
-.msg.right .sender { color:#388e3c; }
-.msg .text { font-size:15px; color:#333; }
-.msg .time { font-size:11px; color:#666; margin-top:3px; display:block; }
-#deleteRoom { background:#f44336; }
-#deleteRoom:hover { background:#da190b; }
-.loading { opacity:0.6; pointer-events:none; }
-.system-msg { text-align:center; color:#999; font-size:12px; padding:5px; font-style:italic; clear:both; }
-</style>
-</head>
-<body>
+const FIREBASE_URL = ‘https://nhutvan5c-79ce9-default-rtdb.asia-southeast1.firebasedatabase.app’;
 
-<div id="login">
-  <h2>💬 Chat riêng Online</h2>
-  <button id="showGuide" style="width:auto; padding:5px 15px; font-size:14px; background:#2196F3; margin-bottom:10px;">📖 Hướng dẫn</button>
-  <input id="name" placeholder="Tên của bạn" autocomplete="off">
-  <input id="room" placeholder="Tên phòng" autocomplete="off">
-  <input id="pass" placeholder="Mật khẩu" type="password">
-  <button id="create">Tạo phòng</button>
-  <button id="join">Vào phòng</button>
-  <p style="font-size:12px; color:#666;">💡 Tên phòng và mật khẩu phân biệt hoa thường</p>
-</div>
+const PIECES = {
+RED: { K: ‘帥’, A: ‘仕’, E: ‘相’, H: ‘傌’, R: ‘俥’, C: ‘炮’, P: ‘兵’ },
+BLACK: { K: ‘將’, A: ‘士’, E: ‘象’, H: ‘馬’, R: ‘車’, C: ‘砲’, P: ‘卒’ }
+};
 
-<!-- Modal Hướng dẫn -->
+const initBoard = () => {
+const board = Array(10).fill(null).map(() => Array(9).fill(null));
 
-<div id="guideModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; overflow:auto;">
-  <div style="max-width:500px; margin:30px auto; background:white; padding:25px; border-radius:15px; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-    <h2 style="color:#2196F3; margin-top:0;">📖 Hướng dẫn sử dụng Chat riêng Online</h2>
-    <div style="text-align:left; line-height:1.8;">
-      <h3 style="color:#4CAF50; margin-top:20px;">🏠 Tạo phòng chat</h3>
-      <p style="margin:5px 0;">1️⃣ Nhập <strong>tên của bạn</strong></p>
-      <p style="margin:5px 0;">2️⃣ Đặt <strong>tên phòng</strong> (ví dụ: PhongCuaBan123)</p>
-      <p style="margin:5px 0;">3️⃣ Tạo <strong>mật khẩu</strong> (tối thiểu 6 ký tự)</p>
-      <p style="margin:5px 0;">4️⃣ Nhấn nút <strong>"Tạo phòng"</strong></p>
-      <p style="margin:5px 0; color:#666; font-size:14px;">💡 Bạn là người tạo phòng và sẽ nhận thông báo khi có người vào</p>
+board[9][4] = { type: ‘K’, color: ‘RED’ };
+board[9][3] = { type: ‘A’, color: ‘RED’ };
+board[9][5] = { type: ‘A’, color: ‘RED’ };
+board[9][2] = { type: ‘E’, color: ‘RED’ };
+board[9][6] = { type: ‘E’, color: ‘RED’ };
+board[9][1] = { type: ‘H’, color: ‘RED’ };
+board[9][7] = { type: ‘H’, color: ‘RED’ };
+board[9][0] = { type: ‘R’, color: ‘RED’ };
+board[9][8] = { type: ‘R’, color: ‘RED’ };
+board[7][1] = { type: ‘C’, color: ‘RED’ };
+board[7][7] = { type: ‘C’, color: ‘RED’ };
+for (let i = 0; i < 9; i += 2) board[6][i] = { type: ‘P’, color: ‘RED’ };
+
+board[0][4] = { type: ‘K’, color: ‘BLACK’ };
+board[0][3] = { type: ‘A’, color: ‘BLACK’ };
+board[0][5] = { type: ‘A’, color: ‘BLACK’ };
+board[0][2] = { type: ‘E’, color: ‘BLACK’ };
+board[0][6] = { type: ‘E’, color: ‘BLACK’ };
+board[0][1] = { type: ‘H’, color: ‘BLACK’ };
+board[0][7] = { type: ‘H’, color: ‘BLACK’ };
+board[0][0] = { type: ‘R’, color: ‘BLACK’ };
+board[0][8] = { type: ‘R’, color: ‘BLACK’ };
+board[2][1] = { type: ‘C’, color: ‘BLACK’ };
+board[2][7] = { type: ‘C’, color: ‘BLACK’ };
+for (let i = 0; i < 9; i += 2) board[3][i] = { type: ‘P’, color: ‘BLACK’ };
+
+return board;
+};
+
+export default function XiangqiOnline() {
+const [screen, setScreen] = useState(‘menu’);
+const [roomId, setRoomId] = useState(’’);
+const [playerId, setPlayerId] = useState(’’);
+const [playerColor, setPlayerColor] = useState(null);
+const [gameState, setGameState] = useState(null);
+const [selectedPiece, setSelectedPiece] = useState(null);
+const [copied, setCopied] = useState(false);
+
+const createRoom = async () => {
+const newRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+const newPlayerId = Math.random().toString(36).substring(2, 15);
 
 ```
-  <h3 style="color:#FF9800; margin-top:20px;">🚪 Vào phòng có sẵn</h3>
-  <p style="margin:5px 0;">1️⃣ Nhập <strong>tên của bạn</strong></p>
-  <p style="margin:5px 0;">2️⃣ Nhập <strong>tên phòng</strong> (do bạn bè tạo)</p>
-  <p style="margin:5px 0;">3️⃣ Nhập <strong>mật khẩu</strong> (hỏi người tạo phòng)</p>
-  <p style="margin:5px 0;">4️⃣ Nhấn nút <strong>"Vào phòng"</strong></p>
-  
-  <h3 style="color:#9C27B0; margin-top:20px;">💬 Chat trong phòng</h3>
-  <p style="margin:5px 0;">✅ Tin nhắn của bạn: <span style="background:#c8e6c9; padding:3px 8px; border-radius:5px;">màu xanh lá, bên phải</span></p>
-  <p style="margin:5px 0;">✅ Tin nhắn người khác: <span style="background:#e3f2fd; padding:3px 8px; border-radius:5px;">màu xanh dương, bên trái</span></p>
-  <p style="margin:5px 0;">✅ Nhấn <strong>Enter</strong> hoặc nút <strong>"Gửi"</strong> để gửi tin</p>
-  
-  <h3 style="color:#f44336; margin-top:20px;">⚠️ Lưu ý quan trọng</h3>
-  <p style="margin:5px 0;">🔒 <strong>Bảo mật:</strong> Tên phòng và mật khẩu phân biệt HOA/thường</p>
-  <p style="margin:5px 0;">🗑️ <strong>Xóa phòng:</strong> Bất kỳ ai trong phòng đều có thể xóa phòng</p>
-  <p style="margin:5px 0;">💾 <strong>Dữ liệu:</strong> Khi xóa phòng, TẤT CẢ tin nhắn sẽ MẤT VĨNH VIỄN</p>
-  <p style="margin:5px 0;">🔄 <strong>Real-time:</strong> Tin nhắn hiển thị ngay lập tức cho tất cả thành viên</p>
-  <p style="margin:5px 0;">👥 <strong>Chia sẻ:</strong> Gửi tên phòng + mật khẩu cho bạn bè để họ vào cùng</p>
-  
-  <div style="background:#ffebee; border-left:4px solid #f44336; padding:12px; margin-top:20px; border-radius:5px;">
-    <p style="color:#c62828; margin:0; font-size:14px; line-height:1.6;">
-      <strong>⚠️ CAM KẾT VÀ KHUYẾN CÁO:</strong><br>
-      Web này được tạo ra với mục đích giúp mọi người trò chuyện với nhau một cách đơn giản nhất. Chúng tôi cam kết <strong>KHÔNG lưu trữ, thu thập hay sử dụng</strong> bất kỳ nội dung trò chuyện nào của bạn. Tuy nhiên, để đảm bảo an toàn tuyệt đối, chúng tôi <strong>KHÔNG KHUYẾN NGHỊ</strong> chia sẻ các thông tin nhạy cảm như: mật khẩu tài khoản, số thẻ ngân hàng, CMND/CCCD, tài liệu mật, thông tin cá nhân quan trọng hoặc bất kỳ dữ liệu nhạy cảm nào khác qua ứng dụng này.
-    </p>
-  </div>
-</div>
-<button id="closeGuide" style="width:100%; margin-top:20px; padding:12px; background:#4CAF50; color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer;">✅ Đã hiểu</button>
+const initialState = {
+  board: initBoard(),
+  currentTurn: 'RED',
+  players: { RED: newPlayerId, BLACK: null },
+  status: 'waiting',
+  winner: null
+};
+
+try {
+  const response = await fetch(`${FIREBASE_URL}/rooms/${newRoomId}.json`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(initialState)
+  });
+
+  if (response.ok) {
+    setRoomId(newRoomId);
+    setPlayerId(newPlayerId);
+    setPlayerColor('RED');
+    setScreen('game');
+  }
+} catch (error) {
+  alert('Lỗi tạo phòng: ' + error.message);
+}
 ```
 
-  </div>
-</div>
+};
 
-<div id="chat" style="display:none;">
-  <h3 id="roomTitle"></h3>
-  <div id="messages"></div>
-  <input id="msgBox" placeholder="Nhập tin nhắn..." autocomplete="off">
-  <button id="send">Gửi</button>
-  <br><br>
-  <button id="leave" style="background:#FF9800;">Rời phòng</button>
-  <button id="deleteRoom" style="background:#f44336;">Xoá phòng</button>
-</div>
+const joinRoom = async () => {
+if (!roomId.trim()) return;
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+```
+const newPlayerId = Math.random().toString(36).substring(2, 15);
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+try {
+  const response = await fetch(`${FIREBASE_URL}/rooms/${roomId.toUpperCase()}.json`);
+  const data = await response.json();
 
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-  const firebaseConfig = {
-    databaseURL: "https://nhutvan5c-79ce9-default-rtdb.asia-southeast1.firebasedatabase.app/"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+  if (!data) {
+    alert('Phòng không tồn tại!');
+    return;
+  }
 
-  let myName, roomName, myPass, isCreator = false;
-  let messageListener = null;
-  let memberListener = null;
-  let roomDeletionListener = null;
+  if (data.players.BLACK) {
+    alert('Phòng đã đầy!');
+    return;
+  }
 
-  // Xử lý modal hướng dẫn
-  document.getElementById("showGuide").onclick = () => {
-    document.getElementById("guideModal").style.display = "block";
-  };
+  await fetch(`${FIREBASE_URL}/rooms/${roomId.toUpperCase()}/players/BLACK.json`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(newPlayerId)
+  });
 
-  document.getElementById("closeGuide").onclick = () => {
-    document.getElementById("guideModal").style.display = "none";
-  };
+  await fetch(`${FIREBASE_URL}/rooms/${roomId.toUpperCase()}/status.json`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify('playing')
+  });
 
-  document.getElementById("guideModal").onclick = (e) => {
-    if (e.target.id === "guideModal") {
-      document.getElementById("guideModal").style.display = "none";
+  setPlayerId(newPlayerId);
+  setPlayerColor('BLACK');
+  setScreen('game');
+} catch (error) {
+  alert('Lỗi tham gia phòng: ' + error.message);
+}
+```
+
+};
+
+useEffect(() => {
+if (screen !== ‘game’ || !roomId) return;
+
+```
+const interval = setInterval(async () => {
+  try {
+    const response = await fetch(`${FIREBASE_URL}/rooms/${roomId}.json`);
+    const data = await response.json();
+    if (data) setGameState(data);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}, 1000);
+
+return () => clearInterval(interval);
+```
+
+}, [screen, roomId]);
+
+const isValidMove = (fromRow, fromCol, toRow, toCol, piece, board) => {
+if (toRow < 0 || toRow > 9 || toCol < 0 || toCol > 8) return false;
+const target = board[toRow][toCol];
+if (target && target.color === piece.color) return false;
+
+```
+const rowDiff = Math.abs(toRow - fromRow);
+const colDiff = Math.abs(toCol - fromCol);
+
+switch (piece.type) {
+  case 'K':
+    if (rowDiff + colDiff !== 1) return false;
+    if (piece.color === 'RED') {
+      return toRow >= 7 && toCol >= 3 && toCol <= 5;
     }
-  };
+    return toRow <= 2 && toCol >= 3 && toCol <= 5;
 
-  // Hàm hash mật khẩu
-  async function hashPassword(password) {
-    const msgBuffer = new TextEncoder().encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  // Hàm escape HTML
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  // Tạo phòng
-  document.getElementById("create").onclick = async () => {
-    const btn = document.getElementById("create");
-    try {
-      btn.disabled = true;
-      btn.textContent = "Đang tạo...";
-
-      myName = document.getElementById("name").value.trim();
-      roomName = document.getElementById("room").value.trim();
-      myPass = document.getElementById("pass").value.trim();
-
-      if (!myName || !roomName || !myPass) {
-        alert("⚠️ Vui lòng nhập đủ thông tin!");
-        return;
-      }
-
-      if (myPass.length < 6) {
-        alert("⚠️ Mật khẩu phải có ít nhất 6 ký tự!");
-        return;
-      }
-
-      const rRef = db.ref("rooms/" + roomName);
-      const snap = await rRef.get();
-
-      if (snap.exists()) {
-        alert("⚠️ Phòng đã tồn tại! Vui lòng chọn tên khác.");
-        return;
-      }
-
-      const hashedPass = await hashPassword(myPass);
-      await rRef.set({ 
-        password: hashedPass,
-        creator: myName,
-        createdAt: new Date().toISOString()
-      });
-
-      // Thêm người tạo vào danh sách thành viên
-      await rRef.child("members").child(myName).set({
-        name: myName,
-        joinedAt: new Date().toISOString()
-      });
-
-      isCreator = true;
-      startChat();
-
-    } catch (error) {
-      console.error("Lỗi tạo phòng:", error);
-      alert("❌ Lỗi: " + error.message);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Tạo phòng";
+  case 'A':
+    if (rowDiff !== 1 || colDiff !== 1) return false;
+    if (piece.color === 'RED') {
+      return toRow >= 7 && toCol >= 3 && toCol <= 5;
     }
-  };
+    return toRow <= 2 && toCol >= 3 && toCol <= 5;
 
-  // Vào phòng
-  document.getElementById("join").onclick = async () => {
-    const btn = document.getElementById("join");
-    try {
-      btn.disabled = true;
-      btn.textContent = "Đang kết nối...";
+  case 'E':
+    if (rowDiff !== 2 || colDiff !== 2) return false;
+    const midRow = (fromRow + toRow) / 2;
+    const midCol = (fromCol + toCol) / 2;
+    if (board[midRow][midCol]) return false;
+    return piece.color === 'RED' ? toRow >= 5 : toRow <= 4;
 
-      myName = document.getElementById("name").value.trim();
-      roomName = document.getElementById("room").value.trim();
-      myPass = document.getElementById("pass").value.trim();
+  case 'H':
+    if (!((rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2))) return false;
+    const blockRow = rowDiff === 2 ? fromRow + (toRow > fromRow ? 1 : -1) : fromRow;
+    const blockCol = colDiff === 2 ? fromCol + (toCol > fromCol ? 1 : -1) : fromCol;
+    return !board[blockRow][blockCol];
 
-      if (!myName || !roomName || !myPass) {
-        alert("⚠️ Vui lòng nhập đủ thông tin!");
-        return;
+  case 'R':
+    if (rowDiff !== 0 && colDiff !== 0) return false;
+    if (rowDiff > 0) {
+      for (let r = Math.min(fromRow, toRow) + 1; r < Math.max(fromRow, toRow); r++) {
+        if (board[r][fromCol]) return false;
       }
-
-      const rRef = db.ref("rooms/" + roomName);
-      const snap = await rRef.get();
-
-      if (!snap.exists()) {
-        alert("⚠️ Phòng không tồn tại!");
-        return;
+    } else {
+      for (let c = Math.min(fromCol, toCol) + 1; c < Math.max(fromCol, toCol); c++) {
+        if (board[fromRow][c]) return false;
       }
-
-      const hashedPass = await hashPassword(myPass);
-      if (snap.val().password !== hashedPass) {
-        alert("❌ Sai mật khẩu!");
-        return;
-      }
-
-      // Thêm thành viên mới vào phòng
-      await rRef.child("members").child(myName).set({
-        name: myName,
-        joinedAt: new Date().toISOString()
-      });
-
-      isCreator = false;
-      startChat();
-
-    } catch (error) {
-      console.error("Lỗi vào phòng:", error);
-      alert("❌ Lỗi: " + error.message);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Vào phòng";
     }
-  };
+    return true;
 
-  // Bắt đầu chat
-  function startChat() {
-    document.getElementById("login").style.display = "none";
-    document.getElementById("chat").style.display = "block";
-    document.getElementById("roomTitle").textContent = "🏠 Phòng: " + roomName;
-    loadMessages();
-    listenForNewMembers();
-    listenForRoomDeletion();
+  case 'C':
+    if (rowDiff !== 0 && colDiff !== 0) return false;
+    let count = 0;
+    if (rowDiff > 0) {
+      for (let r = Math.min(fromRow, toRow) + 1; r < Math.max(fromRow, toRow); r++) {
+        if (board[r][fromCol]) count++;
+      }
+    } else {
+      for (let c = Math.min(fromCol, toCol) + 1; c < Math.max(fromCol, toCol); c++) {
+        if (board[fromRow][c]) count++;
+      }
+    }
+    return target ? count === 1 : count === 0;
+
+  case 'P':
+    if (piece.color === 'RED') {
+      if (fromRow > 4) {
+        return toRow === fromRow - 1 && toCol === fromCol;
+      }
+      return (toRow === fromRow - 1 && toCol === fromCol) || 
+             (toRow === fromRow && Math.abs(toCol - fromCol) === 1);
+    } else {
+      if (fromRow < 5) {
+        return toRow === fromRow + 1 && toCol === fromCol;
+      }
+      return (toRow === fromRow + 1 && toCol === fromCol) || 
+             (toRow === fromRow && Math.abs(toCol - fromCol) === 1);
+    }
+
+  default:
+    return false;
+}
+```
+
+};
+
+const handleSquareClick = async (row, col) => {
+if (!gameState || gameState.status !== ‘playing’ || gameState.currentTurn !== playerColor) return;
+
+```
+const piece = gameState.board[row][col];
+
+if (selectedPiece) {
+  const [fromRow, fromCol] = selectedPiece;
+  const movingPiece = gameState.board[fromRow][fromCol];
+
+  if (fromRow === row && fromCol === col) {
+    setSelectedPiece(null);
+    return;
   }
 
-  // Lắng nghe thành viên mới
-  function listenForNewMembers() {
-    const membersRef = db.ref("rooms/" + roomName + "/members");
-    let knownMembers = new Set();
-    let isFirstLoad = true;
+  if (isValidMove(fromRow, fromCol, row, col, movingPiece, gameState.board)) {
+    const newBoard = gameState.board.map(r => [...r]);
+    const capturedPiece = newBoard[row][col];
+    newBoard[row][col] = newBoard[fromRow][fromCol];
+    newBoard[fromRow][fromCol] = null;
 
-    // Load danh sách thành viên hiện tại
-    membersRef.once("value").then((snapshot) => {
-      if (snapshot.exists()) {
-        snapshot.forEach((child) => {
-          knownMembers.add(child.val().name);
-        });
-      }
-      isFirstLoad = false;
-    });
-
-    // Lắng nghe thành viên mới
-    memberListener = membersRef.on("child_added", (snapshot) => {
-      if (!isFirstLoad) {
-        const memberName = snapshot.val().name;
-        
-        // Chỉ thông báo nếu không phải là mình và chưa có trong danh sách
-        if (memberName !== myName && !knownMembers.has(memberName)) {
-          const messagesDiv = document.getElementById("messages");
-          const systemMsg = document.createElement("div");
-          systemMsg.className = "system-msg";
-          systemMsg.textContent = `👋 ${memberName} đã vào phòng`;
-          messagesDiv.appendChild(systemMsg);
-          messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-        
-        knownMembers.add(memberName);
-      }
-    });
-  }
-
-  // Lắng nghe khi phòng bị xóa
-  function listenForRoomDeletion() {
-    const roomRef = db.ref("rooms/" + roomName);
-    
-    roomDeletionListener = roomRef.on("value", (snapshot) => {
-      // Nếu phòng không còn tồn tại
-      if (!snapshot.exists()) {
-        // Tắt tất cả listeners
-        if (messageListener) {
-          db.ref("rooms/" + roomName + "/messages").off("value", messageListener);
-          messageListener = null;
-        }
-        if (memberListener) {
-          db.ref("rooms/" + roomName + "/members").off("child_added", memberListener);
-          memberListener = null;
-        }
-        if (roomDeletionListener) {
-          roomRef.off("value", roomDeletionListener);
-          roomDeletionListener = null;
-        }
-
-        // Hiển thị thông báo
-        alert("⚠️ PHÒNG ĐÃ BỊ XÓA\n\nPhòng chat này đã bị xóa bởi một thành viên khác.\n\nBạn sẽ được chuyển về trang chủ.");
-        location.reload();
-      }
-    });
-  }
-
-  // Gửi tin nhắn
-  document.getElementById("send").onclick = sendMessage;
-  document.getElementById("msgBox").onkeypress = function(e) {
-    if (e.key === 'Enter') sendMessage();
-  };
-
-  async function sendMessage() {
-    const msgBox = document.getElementById("msgBox");
-    const text = msgBox.value.trim();
-    if (!text) return;
+    const nextTurn = playerColor === 'RED' ? 'BLACK' : 'RED';
+    const winner = capturedPiece && capturedPiece.type === 'K' ? playerColor : null;
 
     try {
-      const msgRef = db.ref("rooms/" + roomName + "/messages");
-      await msgRef.push({
-        sender: myName,
-        text: text,
-        time: new Date().toISOString()
+      await fetch(`${FIREBASE_URL}/rooms/${roomId}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          board: newBoard,
+          currentTurn: winner ? playerColor : nextTurn,
+          status: winner ? 'finished' : 'playing',
+          winner: winner
+        })
       });
-      msgBox.value = "";
+      setSelectedPiece(null);
     } catch (error) {
-      console.error("Lỗi gửi tin:", error);
-      alert("❌ Không thể gửi tin nhắn: " + error.message);
+      alert('Lỗi di chuyển: ' + error.message);
     }
+  } else if (piece && piece.color === playerColor) {
+    setSelectedPiece([row, col]);
+  } else {
+    setSelectedPiece(null);
   }
+} else if (piece && piece.color === playerColor) {
+  setSelectedPiece([row, col]);
+}
+```
 
-  // Load tin nhắn
-  function loadMessages() {
-    const msgRef = db.ref("rooms/" + roomName + "/messages");
-    
-    if (messageListener) {
-      msgRef.off("value", messageListener);
-    }
+};
 
-    messageListener = msgRef.on("value", (snap) => {
-      const messagesDiv = document.getElementById("messages");
-      // Lưu các tin nhắn hệ thống hiện có
-      const systemMessages = Array.from(messagesDiv.querySelectorAll('.system-msg'));
-      
-      messagesDiv.innerHTML = "";
-      
-      if (!snap.exists() || !snap.val()) {
-        messagesDiv.innerHTML = "<p style='color:#999;text-align:center;'>Chưa có tin nhắn nào...</p>";
-        return;
-      }
+const copyRoomId = () => {
+navigator.clipboard.writeText(roomId);
+setCopied(true);
+setTimeout(() => setCopied(false), 2000);
+};
 
-      snap.forEach(child => {
-        const m = child.val();
-        const div = document.createElement("div");
-        
-        // Tin của mình bên PHẢI (xanh lá), người khác bên TRÁI (xanh dương)
-        const isMyMessage = m.sender === myName;
-        div.className = isMyMessage ? "msg right" : "msg left";
-        
-        const time = new Date(m.time).toLocaleString('vi-VN', {
-          hour: '2-digit',
-          minute: '2-digit',
-          day: '2-digit',
-          month: '2-digit'
-        });
-        
-        div.innerHTML = `
-          <span class="sender">${escapeHtml(m.sender)}</span>
-          <span class="text">${escapeHtml(m.text)}</span>
-          <span class="time">${time}</span>
-        `;
-        messagesDiv.appendChild(div);
-      });
-      
-      // Thêm lại các tin nhắn hệ thống
-      systemMessages.forEach(msg => messagesDiv.appendChild(msg));
-      
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    });
-  }
-
-  // Xóa phòng
-  document.getElementById("deleteRoom").onclick = async () => {
-    if (confirm("⚠️ XÓA PHÒNG CHAT\n\nBạn chắc chắn muốn xóa phòng này?\n\n• Phòng \"" + roomName + "\" sẽ bị xóa vĩnh viễn\n• Tất cả tin nhắn sẽ bị mất\n• Mọi người sẽ bị ngắt kết nối\n\nHành động này KHÔNG THỂ hoàn tác!")) {
-      try {
-        const btn = document.getElementById("deleteRoom");
-        btn.disabled = true;
-        btn.textContent = "Đang xóa...";
-
-        // Gửi thông báo xóa phòng trước khi xóa
-        const msgRef = db.ref("rooms/" + roomName + "/messages");
-        await msgRef.push({
-          sender: "Hệ thống",
-          text: "🗑️ " + myName + " đã xóa phòng chat này",
-          time: new Date().toISOString(),
-          isSystemMessage: true
-        });
-
-        // Đợi 1 giây để người khác nhận được thông báo
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Tắt tất cả listeners
-        if (messageListener) {
-          msgRef.off("value", messageListener);
-          messageListener = null;
-        }
-        if (memberListener) {
-          db.ref("rooms/" + roomName + "/members").off("child_added", memberListener);
-          memberListener = null;
-        }
-        if (roomDeletionListener) {
-          db.ref("rooms/" + roomName).off("value", roomDeletionListener);
-          roomDeletionListener = null;
-        }
-        
-        // Xóa phòng
-        await db.ref("rooms/" + roomName).remove();
-        
-        alert("✅ Đã xóa phòng và tất cả tin nhắn thành công!");
-        location.reload();
-      } catch (error) {
-        console.error("Lỗi xóa phòng:", error);
-        alert("❌ Không thể xóa phòng: " + error.message);
-        document.getElementById("deleteRoom").disabled = false;
-        document.getElementById("deleteRoom").textContent = "Xoá phòng";
-      }
-    }
-  };
-
-  // Rời phòng
-  document.getElementById("leave").onclick = async () => {
-    if (confirm("Bạn muốn rời khỏi phòng?")) {
-      try {
-        // Xóa khỏi danh sách members
-        await db.ref("rooms/" + roomName + "/members/" + myName).remove();
-        
-        // Tắt listeners
-        if (messageListener) {
-          db.ref("rooms/" + roomName + "/messages").off("value", messageListener);
-          messageListener = null;
-        }
-        if (memberListener) {
-          db.ref("rooms/" + roomName + "/members").off("child_added", memberListener);
-          memberListener = null;
-        }
-        if (roomDeletionListener) {
-          db.ref("rooms/" + roomName).off("value", roomDeletionListener);
-          roomDeletionListener = null;
-        }
-        
-        location.reload();
-      } catch (error) {
-        console.error("Lỗi rời phòng:", error);
-        location.reload();
-      }
-    }
-  };
+const resetGame = async () => {
+try {
+await fetch(`${FIREBASE_URL}/rooms/${roomId}.json`, {
+method: ‘PATCH’,
+headers: { ‘Content-Type’: ‘application/json’ },
+body: JSON.stringify({
+board: initBoard(),
+currentTurn: ‘RED’,
+status: ‘playing’,
+winner: null
+})
 });
-</script>
+} catch (error) {
+alert(’Lỗi reset: ’ + error.message);
+}
+};
 
-</body>
-</html>
+if (screen === ‘menu’) {
+return (
+<div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-amber-900 flex items-center justify-center p-4">
+<div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+<h1 className="text-4xl font-bold text-center mb-2 text-red-800">Cờ Tướng Online</h1>
+<p className="text-center text-gray-600 mb-8">Xiangqi - Chinese Chess</p>
+
+```
+      <div className="space-y-4">
+        <button onClick={createRoom} className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg">
+          <Play size={20} />
+          Tạo phòng mới
+        </button>
+        
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">hoặc</span>
+          </div>
+        </div>
+        
+        <div className="space-y-3">
+          <input
+            type="text"
+            placeholder="Nhập mã phòng (6 ký tự)"
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value.toUpperCase())}
+            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-red-500 focus:outline-none uppercase text-center text-lg font-semibold"
+            maxLength={6}
+          />
+          <button onClick={joinRoom} className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg">
+            <Users size={20} />
+            Tham gia phòng
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+```
+
+}
+
+return (
+<div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-amber-900 p-4">
+<div className="max-w-4xl mx-auto">
+<div className="bg-white rounded-xl shadow-lg p-4 mb-4">
+<div className="flex items-center justify-between">
+<div className="flex items-center gap-3">
+<button onClick={() => { setScreen(‘menu’); setRoomId(’’); setGameState(null); setSelectedPiece(null); }} className=“bg-gray-200 hover:bg-gray-300 p-2 rounded-lg transition-colors”>
+<X size={20} />
+</button>
+<div>
+<div className="text-sm text-gray-600">Mã phòng:</div>
+<div className="flex items-center gap-2">
+<span className="font-bold text-xl text-red-600">{roomId}</span>
+<button onClick={copyRoomId} className="p-1 hover:bg-gray-100 rounded transition-colors">
+{copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} />}
+</button>
+</div>
+</div>
+</div>
+<div className="text-right">
+<div className="text-sm text-gray-600">Bạn là:</div>
+<div className={`font-bold text-xl ${playerColor === 'RED' ? 'text-red-600' : 'text-gray-800'}`}>
+{playerColor === ‘RED’ ? ‘Đỏ’ : ‘Đen’}
+</div>
+</div>
+</div>
+</div>
+
+```
+    {gameState && (
+      <div className="bg-white rounded-xl shadow-lg p-4 mb-4">
+        {gameState.status === 'waiting' && (
+          <div className="text-center">
+            <p className="text-lg font-semibold text-amber-600">Đang chờ đối thủ...</p>
+            <p className="text-sm text-gray-600 mt-1">Chia sẻ mã phòng để mời bạn bè</p>
+          </div>
+        )}
+        
+        {gameState.status === 'playing' && (
+          <div className="text-center">
+            <p className="text-lg font-semibold">
+              Lượt: <span className={gameState.currentTurn === 'RED' ? 'text-red-600' : 'text-gray-800'}>
+                {gameState.currentTurn === 'RED' ? 'Đỏ' : 'Đen'}
+              </span>
+            </p>
+            {gameState.currentTurn === playerColor && (
+              <p className="text-sm text-green-600 mt-1">Đến lượt bạn!</p>
+            )}
+          </div>
+        )}
+        
+        {gameState.status === 'finished' && (
+          <div className="text-center">
+            <p className="text-2xl font-bold mb-3">
+              {gameState.winner === playerColor ? '🎉 Bạn thắng!' : '😔 Bạn thua!'}
+            </p>
+            <button onClick={resetGame} className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors inline-flex items-center gap-2">
+              <RotateCcw size={18} />
+              Chơi lại
+            </button>
+          </div>
+        )}
+      </div>
+    )}
+
+    {gameState && (
+      <div className="bg-amber-100 rounded-xl shadow-2xl p-6">
+        <div className="inline-block bg-amber-200 p-4 rounded-lg">
+          {gameState.board.map((row, rowIndex) => (
+            <div key={rowIndex} className="flex">
+              {row.map((piece, colIndex) => {
+                const isSelected = selectedPiece && selectedPiece[0] === rowIndex && selectedPiece[1] === colIndex;
+                const isRiver = rowIndex === 4 || rowIndex === 5;
+                
+                return (
+                  <div
+                    key={`${rowIndex}-${colIndex}`}
+                    onClick={() => handleSquareClick(rowIndex, colIndex)}
+                    className={`w-12 h-12 flex items-center justify-center cursor-pointer border border-gray-400 ${isSelected ? 'bg-yellow-300' : isRiver ? 'bg-blue-50' : 'bg-amber-50'} hover:bg-yellow-100 transition-colors`}
+                  >
+                    {piece && (
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-2xl shadow-lg ${piece.color === 'RED' ? 'bg-red-600 text-white' : 'bg-gray-800 text-white'}`}>
+                        {piece.color === 'RED' ? PIECES.RED[piece.type] : PIECES.BLACK[piece.type]}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</div>
+```
+
+);
+}
