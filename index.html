@@ -237,15 +237,14 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // Xóa phòng
+  // Xóa phòng (bất kỳ ai cũng có thể xóa)
   document.getElementById("deleteRoom").onclick = async () => {
-    if (!isCreator) {
-      alert("⚠️ Chỉ người tạo phòng mới được xóa!");
-      return;
-    }
-    
-    if (confirm("⚠️ Bạn chắc chắn muốn xóa phòng này?\nTất cả tin nhắn sẽ bị mất vĩnh viễn!")) {
+    if (confirm("⚠️ XÓA PHÒNG CHAT\n\nBạn chắc chắn muốn xóa phòng này?\n\n• Phòng \"" + roomName + "\" sẽ bị xóa vĩnh viễn\n• Tất cả tin nhắn sẽ bị mất\n• Mọi người sẽ bị ngắt kết nối\n\nHành động này KHÔNG THỂ hoàn tác!")) {
       try {
+        const btn = document.getElementById("deleteRoom");
+        btn.disabled = true;
+        btn.textContent = "Đang xóa...";
+
         // Tắt listener trước khi xóa
         const msgRef = db.ref("rooms/" + roomName + "/messages");
         if (messageListener) {
@@ -254,11 +253,13 @@ document.addEventListener("DOMContentLoaded", function() {
         }
         
         await db.ref("rooms/" + roomName).remove();
-        alert("✅ Đã xóa phòng thành công!");
+        alert("✅ Đã xóa phòng và tất cả tin nhắn thành công!");
         location.reload();
       } catch (error) {
         console.error("Lỗi xóa phòng:", error);
         alert("❌ Không thể xóa phòng: " + error.message);
+        document.getElementById("deleteRoom").disabled = false;
+        document.getElementById("deleteRoom").textContent = "Xoá phòng";
       }
     }
   };
