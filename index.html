@@ -105,6 +105,12 @@
       color: #555;
       text-align: center;
     }
+    #message {
+      margin-top: 10px;
+      color: green;
+      font-weight: bold;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -117,6 +123,7 @@
   <div id="noteList"></div>
 
   <button id="downloadBtn" onclick="downloadNotes()">📥 Tải toàn bộ ghi chú</button>
+  <div id="message"></div>
 
   <div id="footer">
     🌐 Đây là phiên bản thử nghiệm của hệ thống ghi chú trực tuyến, được thiết kế nhằm hỗ trợ đồng bộ hóa nội dung giữa các thành viên trong nhóm — giúp làm việc nhóm hiệu quả hơn, mọi người cùng nhìn thấy và cập nhật ghi chú theo thời gian thực.
@@ -128,6 +135,7 @@
     };
     firebase.initializeApp(firebaseConfig);
     var database = firebase.database();
+    let noteCount = 0;
 
     function saveNote() {
       var note = document.getElementById("noteInput").value;
@@ -164,6 +172,14 @@
     }
 
     function downloadNotes() {
+      if (noteCount === 0) {
+        document.getElementById("message").textContent = "⚠️ Chưa có ghi chú để tải.";
+        setTimeout(() => {
+          document.getElementById("message").textContent = "";
+        }, 3000);
+        return;
+      }
+
       database.ref("notes").once("value", function(snapshot) {
         let content = "";
         snapshot.forEach(function(childSnapshot) {
@@ -183,7 +199,9 @@
     database.ref("notes").on("value", function(snapshot) {
       var noteList = document.getElementById("noteList");
       noteList.innerHTML = "";
+      noteCount = 0;
       snapshot.forEach(function(childSnapshot) {
+        noteCount++;
         var data = childSnapshot.val();
         var noteId = childSnapshot.key;
         var note = data.content;
