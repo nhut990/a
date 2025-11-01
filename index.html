@@ -121,10 +121,32 @@
       text-align: center;
     }
     #message {
-      margin-top: 10px;
-      color: green;
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: white;
+      padding: 15px 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
       font-weight: bold;
       text-align: center;
+      z-index: 1000;
+      display: none;
+      animation: slideDown 0.3s ease-out;
+    }
+    #message.show {
+      display: block;
+    }
+    @keyframes slideDown {
+      from {
+        top: -50px;
+        opacity: 0;
+      }
+      to {
+        top: 20px;
+        opacity: 1;
+      }
     }
     .warning {
       color: #e74c3c !important;
@@ -264,8 +286,10 @@
       const msgElement = document.getElementById("message");
       msgElement.textContent = text;
       msgElement.style.color = color;
+      msgElement.classList.add("show");
+      
       setTimeout(() => {
-        msgElement.textContent = "";
+        msgElement.classList.remove("show");
       }, 5000);
     }
 
