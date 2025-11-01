@@ -110,6 +110,7 @@ document.addEventListener("DOMContentLoaded", function() {
   let myName, roomName, myPass, isCreator = false;
   let messageListener = null;
   let memberListener = null;
+  let roomDeletionListener = null;
 
   // Xử lý modal hướng dẫn
   document.getElementById("showGuide").onclick = () => {
@@ -250,6 +251,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("roomTitle").textContent = "🏠 Phòng: " + roomName;
     loadMessages();
     listenForNewMembers();
+    listenForRoomDeletion();
   }
 
   // Lắng nghe thành viên mới
@@ -284,6 +286,34 @@ document.addEventListener("DOMContentLoaded", function() {
         }
         
         knownMembers.add(memberName);
+      }
+    });
+  }
+
+  // Lắng nghe khi phòng bị xóa
+  function listenForRoomDeletion() {
+    const roomRef = db.ref("rooms/" + roomName);
+    
+    roomDeletionListener = roomRef.on("value", (snapshot) => {
+      // Nếu phòng không còn tồn tại
+      if (!snapshot.exists()) {
+        // Tắt tất cả listeners
+        if (messageListener) {
+          db.ref("rooms/" + roomName + "/messages").off("value", messageListener);
+          messageListener = null;
+        }
+        if (memberListener) {
+          db.ref("rooms/" + roomName + "/members").off("child_added", memberListener);
+          memberListener = null;
+        }
+        if (roomDeletionListener) {
+          roomRef.off("value", roomDeletionListener);
+          roomDeletionListener = null;
+        }
+
+        // Hiển thị thông báo
+        alert("⚠️ PHÒNG ĐÃ BỊ XÓA\n\nPhòng chat này đã bị xóa bởi một thành viên khác.\n\nBạn sẽ được chuyển về trang chủ.");
+        location.reload();
       }
     });
   }
@@ -371,17 +401,35 @@ document.addEventListener("DOMContentLoaded", function() {
         btn.disabled = true;
         btn.textContent = "Đang xóa...";
 
+        // Gửi thông báo xóa phòng trước khi xóa
+        const msgRef = db.ref("rooms/" + roomName + "/messages");
+        await msgRef.push({
+          sender: "Hệ thống",
+          text: "🗑️ " + myName + " đã xóa phòng chat này",
+          time: new Date().toISOString(),
+          isSystemMessage: true
+        });
+
+        // Đợi 1 giây để người khác nhận được thông báo
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         // Tắt tất cả listeners
         if (messageListener) {
-          db.ref("rooms/" + roomName + "/messages").off("value", messageListener);
+          msgRef.off("value", messageListener);
           messageListener = null;
         }
         if (memberListener) {
           db.ref("rooms/" + roomName + "/members").off("child_added", memberListener);
           memberListener = null;
         }
+        if (roomDeletionListener) {
+          db.ref("rooms/" + roomName).off("value", roomDeletionListener);
+          roomDeletionListener = null;
+        }
         
+        // Xóa phòng
         await db.ref("rooms/" + roomName).remove();
+        
         alert("✅ Đã xóa phòng và tất cả tin nhắn thành công!");
         location.reload();
       } catch (error) {
@@ -408,6 +456,10 @@ document.addEventListener("DOMContentLoaded", function() {
         if (memberListener) {
           db.ref("rooms/" + roomName + "/members").off("child_added", memberListener);
           memberListener = null;
+        }
+        if (roomDeletionListener) {
+          db.ref("rooms/" + roomName).off("value", roomDeletionListener);
+          roomDeletionListener = null;
         }
         
         location.reload();
