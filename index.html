@@ -13,9 +13,14 @@ button { background:#4CAF50; color:white; cursor:pointer; border:none; }
 button:hover { background:#45a049; }
 button:disabled { background:#ccc; cursor:not-allowed; }
 #messages { height:300px; overflow-y:auto; border:1px solid #ccc; padding:10px; text-align:left; background:#fafafa; margin:10px 0; }
-.msg { margin:8px 0; padding:5px; }
-.me { color:blue; font-weight:bold; }
-.you { color:green; font-weight:bold; }
+.msg { margin:8px 0; padding:8px 12px; clear:both; max-width:80%; word-wrap:break-word; }
+.msg.left { float:left; background:#e3f2fd; border-radius:10px 10px 10px 0; }
+.msg.right { float:right; background:#c8e6c9; border-radius:10px 10px 0 10px; text-align:right; }
+.msg .sender { font-weight:bold; font-size:13px; margin-bottom:3px; display:block; }
+.msg.left .sender { color:#1976d2; }
+.msg.right .sender { color:#388e3c; }
+.msg .text { font-size:15px; color:#333; }
+.msg .time { font-size:11px; color:#666; margin-top:3px; display:block; }
 #deleteRoom { background:#f44336; }
 #deleteRoom:hover { background:#da190b; }
 .loading { opacity:0.6; pointer-events:none; }
@@ -224,12 +229,23 @@ document.addEventListener("DOMContentLoaded", function() {
       snap.forEach(child => {
         const m = child.val();
         const div = document.createElement("div");
-        div.className = "msg";
         
-        const time = new Date(m.time).toLocaleString('vi-VN');
-        const senderClass = m.sender === myName ? "me" : "you";
+        // Kiểm tra tin nhắn của ai: của mình thì bên trái, người khác bên phải
+        const isMyMessage = m.sender === myName;
+        div.className = isMyMessage ? "msg left" : "msg right";
         
-        div.innerHTML = `<span class='${senderClass}'>${escapeHtml(m.sender)}</span> <small style='color:#999;'>${time}</small><br>${escapeHtml(m.text)}`;
+        const time = new Date(m.time).toLocaleString('vi-VN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          day: '2-digit',
+          month: '2-digit'
+        });
+        
+        div.innerHTML = `
+          <span class="sender">${escapeHtml(m.sender)}</span>
+          <span class="text">${escapeHtml(m.text)}</span>
+          <span class="time">${time}</span>
+        `;
         messagesDiv.appendChild(div);
       });
       
