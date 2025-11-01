@@ -1,449 +1,756 @@
-import React, { useState, useEffect } from ‘react’;
-import { X, Users, Copy, Check, Play, RotateCcw } from ‘lucide-react’;
+<!DOCTYPE html>
 
-const FIREBASE_URL = ‘https://nhutvan5c-79ce9-default-rtdb.asia-southeast1.firebasedatabase.app’;
-
-const PIECES = {
-RED: { K: ‘帥’, A: ‘仕’, E: ‘相’, H: ‘傌’, R: ‘俥’, C: ‘炮’, P: ‘兵’ },
-BLACK: { K: ‘將’, A: ‘士’, E: ‘象’, H: ‘馬’, R: ‘車’, C: ‘砲’, P: ‘卒’ }
-};
-
-const initBoard = () => {
-const board = Array(10).fill(null).map(() => Array(9).fill(null));
-
-board[9][4] = { type: ‘K’, color: ‘RED’ };
-board[9][3] = { type: ‘A’, color: ‘RED’ };
-board[9][5] = { type: ‘A’, color: ‘RED’ };
-board[9][2] = { type: ‘E’, color: ‘RED’ };
-board[9][6] = { type: ‘E’, color: ‘RED’ };
-board[9][1] = { type: ‘H’, color: ‘RED’ };
-board[9][7] = { type: ‘H’, color: ‘RED’ };
-board[9][0] = { type: ‘R’, color: ‘RED’ };
-board[9][8] = { type: ‘R’, color: ‘RED’ };
-board[7][1] = { type: ‘C’, color: ‘RED’ };
-board[7][7] = { type: ‘C’, color: ‘RED’ };
-for (let i = 0; i < 9; i += 2) board[6][i] = { type: ‘P’, color: ‘RED’ };
-
-board[0][4] = { type: ‘K’, color: ‘BLACK’ };
-board[0][3] = { type: ‘A’, color: ‘BLACK’ };
-board[0][5] = { type: ‘A’, color: ‘BLACK’ };
-board[0][2] = { type: ‘E’, color: ‘BLACK’ };
-board[0][6] = { type: ‘E’, color: ‘BLACK’ };
-board[0][1] = { type: ‘H’, color: ‘BLACK’ };
-board[0][7] = { type: ‘H’, color: ‘BLACK’ };
-board[0][0] = { type: ‘R’, color: ‘BLACK’ };
-board[0][8] = { type: ‘R’, color: ‘BLACK’ };
-board[2][1] = { type: ‘C’, color: ‘BLACK’ };
-board[2][7] = { type: ‘C’, color: ‘BLACK’ };
-for (let i = 0; i < 9; i += 2) board[3][i] = { type: ‘P’, color: ‘BLACK’ };
-
-return board;
-};
-
-export default function XiangqiOnline() {
-const [screen, setScreen] = useState(‘menu’);
-const [roomId, setRoomId] = useState(’’);
-const [playerId, setPlayerId] = useState(’’);
-const [playerColor, setPlayerColor] = useState(null);
-const [gameState, setGameState] = useState(null);
-const [selectedPiece, setSelectedPiece] = useState(null);
-const [copied, setCopied] = useState(false);
-
-const createRoom = async () => {
-const newRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-const newPlayerId = Math.random().toString(36).substring(2, 15);
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cờ Tướng Online</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
 ```
-const initialState = {
-  board: initBoard(),
-  currentTurn: 'RED',
-  players: { RED: newPlayerId, BLACK: null },
-  status: 'waiting',
-  winner: null
-};
-
-try {
-  const response = await fetch(`${FIREBASE_URL}/rooms/${newRoomId}.json`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(initialState)
-  });
-
-  if (response.ok) {
-    setRoomId(newRoomId);
-    setPlayerId(newPlayerId);
-    setPlayerColor('RED');
-    setScreen('game');
-  }
-} catch (error) {
-  alert('Lỗi tạo phòng: ' + error.message);
-}
-```
-
-};
-
-const joinRoom = async () => {
-if (!roomId.trim()) return;
-
-```
-const newPlayerId = Math.random().toString(36).substring(2, 15);
-
-try {
-  const response = await fetch(`${FIREBASE_URL}/rooms/${roomId.toUpperCase()}.json`);
-  const data = await response.json();
-
-  if (!data) {
-    alert('Phòng không tồn tại!');
-    return;
-  }
-
-  if (data.players.BLACK) {
-    alert('Phòng đã đầy!');
-    return;
-  }
-
-  await fetch(`${FIREBASE_URL}/rooms/${roomId.toUpperCase()}/players/BLACK.json`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(newPlayerId)
-  });
-
-  await fetch(`${FIREBASE_URL}/rooms/${roomId.toUpperCase()}/status.json`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify('playing')
-  });
-
-  setPlayerId(newPlayerId);
-  setPlayerColor('BLACK');
-  setScreen('game');
-} catch (error) {
-  alert('Lỗi tham gia phòng: ' + error.message);
-}
-```
-
-};
-
-useEffect(() => {
-if (screen !== ‘game’ || !roomId) return;
-
-```
-const interval = setInterval(async () => {
-  try {
-    const response = await fetch(`${FIREBASE_URL}/rooms/${roomId}.json`);
-    const data = await response.json();
-    if (data) setGameState(data);
-  } catch (error) {
-    console.error('Error:', error);
-  }
-}, 1000);
-
-return () => clearInterval(interval);
-```
-
-}, [screen, roomId]);
-
-const isValidMove = (fromRow, fromCol, toRow, toCol, piece, board) => {
-if (toRow < 0 || toRow > 9 || toCol < 0 || toCol > 8) return false;
-const target = board[toRow][toCol];
-if (target && target.color === piece.color) return false;
-
-```
-const rowDiff = Math.abs(toRow - fromRow);
-const colDiff = Math.abs(toCol - fromCol);
-
-switch (piece.type) {
-  case 'K':
-    if (rowDiff + colDiff !== 1) return false;
-    if (piece.color === 'RED') {
-      return toRow >= 7 && toCol >= 3 && toCol <= 5;
-    }
-    return toRow <= 2 && toCol >= 3 && toCol <= 5;
-
-  case 'A':
-    if (rowDiff !== 1 || colDiff !== 1) return false;
-    if (piece.color === 'RED') {
-      return toRow >= 7 && toCol >= 3 && toCol <= 5;
-    }
-    return toRow <= 2 && toCol >= 3 && toCol <= 5;
-
-  case 'E':
-    if (rowDiff !== 2 || colDiff !== 2) return false;
-    const midRow = (fromRow + toRow) / 2;
-    const midCol = (fromCol + toCol) / 2;
-    if (board[midRow][midCol]) return false;
-    return piece.color === 'RED' ? toRow >= 5 : toRow <= 4;
-
-  case 'H':
-    if (!((rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2))) return false;
-    const blockRow = rowDiff === 2 ? fromRow + (toRow > fromRow ? 1 : -1) : fromRow;
-    const blockCol = colDiff === 2 ? fromCol + (toCol > fromCol ? 1 : -1) : fromCol;
-    return !board[blockRow][blockCol];
-
-  case 'R':
-    if (rowDiff !== 0 && colDiff !== 0) return false;
-    if (rowDiff > 0) {
-      for (let r = Math.min(fromRow, toRow) + 1; r < Math.max(fromRow, toRow); r++) {
-        if (board[r][fromCol]) return false;
-      }
-    } else {
-      for (let c = Math.min(fromCol, toCol) + 1; c < Math.max(fromCol, toCol); c++) {
-        if (board[fromRow][c]) return false;
-      }
-    }
-    return true;
-
-  case 'C':
-    if (rowDiff !== 0 && colDiff !== 0) return false;
-    let count = 0;
-    if (rowDiff > 0) {
-      for (let r = Math.min(fromRow, toRow) + 1; r < Math.max(fromRow, toRow); r++) {
-        if (board[r][fromCol]) count++;
-      }
-    } else {
-      for (let c = Math.min(fromCol, toCol) + 1; c < Math.max(fromCol, toCol); c++) {
-        if (board[fromRow][c]) count++;
-      }
-    }
-    return target ? count === 1 : count === 0;
-
-  case 'P':
-    if (piece.color === 'RED') {
-      if (fromRow > 4) {
-        return toRow === fromRow - 1 && toCol === fromCol;
-      }
-      return (toRow === fromRow - 1 && toCol === fromCol) || 
-             (toRow === fromRow && Math.abs(toCol - fromCol) === 1);
-    } else {
-      if (fromRow < 5) {
-        return toRow === fromRow + 1 && toCol === fromCol;
-      }
-      return (toRow === fromRow + 1 && toCol === fromCol) || 
-             (toRow === fromRow && Math.abs(toCol - fromCol) === 1);
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #8B0000 0%, #DC143C 50%, #CD853F 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
     }
 
-  default:
-    return false;
-}
-```
-
-};
-
-const handleSquareClick = async (row, col) => {
-if (!gameState || gameState.status !== ‘playing’ || gameState.currentTurn !== playerColor) return;
-
-```
-const piece = gameState.board[row][col];
-
-if (selectedPiece) {
-  const [fromRow, fromCol] = selectedPiece;
-  const movingPiece = gameState.board[fromRow][fromCol];
-
-  if (fromRow === row && fromCol === col) {
-    setSelectedPiece(null);
-    return;
-  }
-
-  if (isValidMove(fromRow, fromCol, row, col, movingPiece, gameState.board)) {
-    const newBoard = gameState.board.map(r => [...r]);
-    const capturedPiece = newBoard[row][col];
-    newBoard[row][col] = newBoard[fromRow][fromCol];
-    newBoard[fromRow][fromCol] = null;
-
-    const nextTurn = playerColor === 'RED' ? 'BLACK' : 'RED';
-    const winner = capturedPiece && capturedPiece.type === 'K' ? playerColor : null;
-
-    try {
-      await fetch(`${FIREBASE_URL}/rooms/${roomId}.json`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          board: newBoard,
-          currentTurn: winner ? playerColor : nextTurn,
-          status: winner ? 'finished' : 'playing',
-          winner: winner
-        })
-      });
-      setSelectedPiece(null);
-    } catch (error) {
-      alert('Lỗi di chuyển: ' + error.message);
+    .container {
+        max-width: 800px;
+        width: 100%;
     }
-  } else if (piece && piece.color === playerColor) {
-    setSelectedPiece([row, col]);
-  } else {
-    setSelectedPiece(null);
-  }
-} else if (piece && piece.color === playerColor) {
-  setSelectedPiece([row, col]);
-}
+
+    .menu-screen, .game-screen {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        padding: 40px;
+        text-align: center;
+    }
+
+    h1 {
+        font-size: 3em;
+        color: #8B0000;
+        margin-bottom: 10px;
+    }
+
+    .subtitle {
+        color: #666;
+        margin-bottom: 40px;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 15px 30px;
+        font-size: 1.1em;
+        font-weight: bold;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin: 10px 0;
+    }
+
+    .btn-primary {
+        background: #DC143C;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #B00020;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(220, 20, 60, 0.4);
+    }
+
+    .btn-secondary {
+        background: #CD853F;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #B8753F;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(205, 133, 63, 0.4);
+    }
+
+    .btn-success {
+        background: #28a745;
+        color: white;
+        display: inline-block;
+        width: auto;
+        padding: 10px 25px;
+        font-size: 1em;
+    }
+
+    .divider {
+        margin: 30px 0;
+        position: relative;
+        text-align: center;
+    }
+
+    .divider::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: #ddd;
+    }
+
+    .divider span {
+        background: white;
+        padding: 0 15px;
+        position: relative;
+        color: #999;
+    }
+
+    .input-group {
+        margin: 20px 0;
+    }
+
+    input {
+        width: 100%;
+        padding: 15px;
+        font-size: 1.2em;
+        border: 2px solid #ddd;
+        border-radius: 12px;
+        text-align: center;
+        text-transform: uppercase;
+        font-weight: bold;
+    }
+
+    input:focus {
+        outline: none;
+        border-color: #DC143C;
+    }
+
+    .game-header {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .room-info, .player-info {
+        text-align: left;
+    }
+
+    .label {
+        font-size: 0.9em;
+        color: #666;
+        margin-bottom: 5px;
+    }
+
+    .value {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #DC143C;
+    }
+
+    .back-btn {
+        background: #e0e0e0;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: inline-block;
+    }
+
+    .back-btn:hover {
+        background: #d0d0d0;
+    }
+
+    .copy-btn {
+        display: inline-block;
+        margin-left: 10px;
+        padding: 5px 10px;
+        background: #f0f0f0;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9em;
+    }
+
+    .copy-btn:hover {
+        background: #e0e0e0;
+    }
+
+    .status-box {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .status-waiting {
+        color: #CD853F;
+        font-size: 1.3em;
+        font-weight: bold;
+    }
+
+    .status-playing {
+        font-size: 1.3em;
+        font-weight: bold;
+    }
+
+    .turn-red {
+        color: #DC143C;
+    }
+
+    .turn-black {
+        color: #333;
+    }
+
+    .your-turn {
+        color: #28a745;
+        font-size: 0.9em;
+        margin-top: 5px;
+    }
+
+    .board-container {
+        background: #DEB887;
+        padding: 30px;
+        border-radius: 15px;
+        display: inline-block;
+    }
+
+    .board {
+        background: #F5DEB3;
+        padding: 20px;
+        border-radius: 10px;
+        display: inline-block;
+    }
+
+    .row {
+        display: flex;
+    }
+
+    .square {
+        width: 50px;
+        height: 50px;
+        border: 1px solid #8B4513;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        background: #FFF8DC;
+        position: relative;
+    }
+
+    .square:hover {
+        background: #FFFFE0;
+    }
+
+    .square.selected {
+        background: #FFD700;
+    }
+
+    .square.river {
+        background: #B0E0E6;
+    }
+
+    .piece {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8em;
+        font-weight: bold;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    }
+
+    .piece-red {
+        background: #DC143C;
+        color: white;
+    }
+
+    .piece-black {
+        background: #333;
+        color: white;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .winner-msg {
+        font-size: 2em;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+
+    @media (max-width: 600px) {
+        .square {
+            width: 40px;
+            height: 40px;
+        }
+        .piece {
+            width: 36px;
+            height: 36px;
+            font-size: 1.5em;
+        }
+        h1 {
+            font-size: 2em;
+        }
+    }
+</style>
 ```
 
-};
-
-const copyRoomId = () => {
-navigator.clipboard.writeText(roomId);
-setCopied(true);
-setTimeout(() => setCopied(false), 2000);
-};
-
-const resetGame = async () => {
-try {
-await fetch(`${FIREBASE_URL}/rooms/${roomId}.json`, {
-method: ‘PATCH’,
-headers: { ‘Content-Type’: ‘application/json’ },
-body: JSON.stringify({
-board: initBoard(),
-currentTurn: ‘RED’,
-status: ‘playing’,
-winner: null
-})
-});
-} catch (error) {
-alert(’Lỗi reset: ’ + error.message);
-}
-};
-
-if (screen === ‘menu’) {
-return (
-<div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-amber-900 flex items-center justify-center p-4">
-<div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
-<h1 className="text-4xl font-bold text-center mb-2 text-red-800">Cờ Tướng Online</h1>
-<p className="text-center text-gray-600 mb-8">Xiangqi - Chinese Chess</p>
+</head>
+<body>
+    <div class="container">
+        <!-- Menu Screen -->
+        <div id="menuScreen" class="menu-screen">
+            <h1>🏮 Cờ Tướng Online 🏮</h1>
+            <p class="subtitle">Xiangqi - Chinese Chess</p>
 
 ```
-      <div className="space-y-4">
-        <button onClick={createRoom} className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg">
-          <Play size={20} />
-          Tạo phòng mới
+        <button class="btn btn-primary" onclick="createRoom()">
+            ▶️ Tạo phòng mới
         </button>
         
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">hoặc</span>
-          </div>
+        <div class="divider">
+            <span>hoặc</span>
         </div>
         
-        <div className="space-y-3">
-          <input
-            type="text"
-            placeholder="Nhập mã phòng (6 ký tự)"
-            value={roomId}
-            onChange={(e) => setRoomId(e.target.value.toUpperCase())}
-            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-red-500 focus:outline-none uppercase text-center text-lg font-semibold"
-            maxLength={6}
-          />
-          <button onClick={joinRoom} className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg">
-            <Users size={20} />
-            Tham gia phòng
-          </button>
+        <div class="input-group">
+            <input type="text" id="roomIdInput" placeholder="Nhập mã phòng (6 ký tự)" maxlength="6">
         </div>
-      </div>
+        
+        <button class="btn btn-secondary" onclick="joinRoom()">
+            👥 Tham gia phòng
+        </button>
     </div>
-  </div>
-);
-```
 
-}
-
-return (
-<div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-amber-900 p-4">
-<div className="max-w-4xl mx-auto">
-<div className="bg-white rounded-xl shadow-lg p-4 mb-4">
-<div className="flex items-center justify-between">
-<div className="flex items-center gap-3">
-<button onClick={() => { setScreen(‘menu’); setRoomId(’’); setGameState(null); setSelectedPiece(null); }} className=“bg-gray-200 hover:bg-gray-300 p-2 rounded-lg transition-colors”>
-<X size={20} />
-</button>
-<div>
-<div className="text-sm text-gray-600">Mã phòng:</div>
-<div className="flex items-center gap-2">
-<span className="font-bold text-xl text-red-600">{roomId}</span>
-<button onClick={copyRoomId} className="p-1 hover:bg-gray-100 rounded transition-colors">
-{copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} />}
-</button>
-</div>
-</div>
-</div>
-<div className="text-right">
-<div className="text-sm text-gray-600">Bạn là:</div>
-<div className={`font-bold text-xl ${playerColor === 'RED' ? 'text-red-600' : 'text-gray-800'}`}>
-{playerColor === ‘RED’ ? ‘Đỏ’ : ‘Đen’}
-</div>
-</div>
-</div>
-</div>
-
-```
-    {gameState && (
-      <div className="bg-white rounded-xl shadow-lg p-4 mb-4">
-        {gameState.status === 'waiting' && (
-          <div className="text-center">
-            <p className="text-lg font-semibold text-amber-600">Đang chờ đối thủ...</p>
-            <p className="text-sm text-gray-600 mt-1">Chia sẻ mã phòng để mời bạn bè</p>
-          </div>
-        )}
-        
-        {gameState.status === 'playing' && (
-          <div className="text-center">
-            <p className="text-lg font-semibold">
-              Lượt: <span className={gameState.currentTurn === 'RED' ? 'text-red-600' : 'text-gray-800'}>
-                {gameState.currentTurn === 'RED' ? 'Đỏ' : 'Đen'}
-              </span>
-            </p>
-            {gameState.currentTurn === playerColor && (
-              <p className="text-sm text-green-600 mt-1">Đến lượt bạn!</p>
-            )}
-          </div>
-        )}
-        
-        {gameState.status === 'finished' && (
-          <div className="text-center">
-            <p className="text-2xl font-bold mb-3">
-              {gameState.winner === playerColor ? '🎉 Bạn thắng!' : '😔 Bạn thua!'}
-            </p>
-            <button onClick={resetGame} className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors inline-flex items-center gap-2">
-              <RotateCcw size={18} />
-              Chơi lại
-            </button>
-          </div>
-        )}
-      </div>
-    )}
-
-    {gameState && (
-      <div className="bg-amber-100 rounded-xl shadow-2xl p-6">
-        <div className="inline-block bg-amber-200 p-4 rounded-lg">
-          {gameState.board.map((row, rowIndex) => (
-            <div key={rowIndex} className="flex">
-              {row.map((piece, colIndex) => {
-                const isSelected = selectedPiece && selectedPiece[0] === rowIndex && selectedPiece[1] === colIndex;
-                const isRiver = rowIndex === 4 || rowIndex === 5;
-                
-                return (
-                  <div
-                    key={`${rowIndex}-${colIndex}`}
-                    onClick={() => handleSquareClick(rowIndex, colIndex)}
-                    className={`w-12 h-12 flex items-center justify-center cursor-pointer border border-gray-400 ${isSelected ? 'bg-yellow-300' : isRiver ? 'bg-blue-50' : 'bg-amber-50'} hover:bg-yellow-100 transition-colors`}
-                  >
-                    {piece && (
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-2xl shadow-lg ${piece.color === 'RED' ? 'bg-red-600 text-white' : 'bg-gray-800 text-white'}`}>
-                        {piece.color === 'RED' ? PIECES.RED[piece.type] : PIECES.BLACK[piece.type]}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+    <!-- Game Screen -->
+    <div id="gameScreen" class="game-screen hidden">
+        <div class="game-header">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div class="back-btn" onclick="backToMenu()">← Thoát</div>
+                <div class="room-info">
+                    <div class="label">Mã phòng:</div>
+                    <div>
+                        <span class="value" id="roomIdDisplay"></span>
+                        <span class="copy-btn" onclick="copyRoomId()">📋 Copy</span>
+                    </div>
+                </div>
             </div>
-          ))}
+            <div class="player-info">
+                <div class="label">Bạn là:</div>
+                <div class="value" id="playerColorDisplay"></div>
+            </div>
         </div>
-      </div>
-    )}
-  </div>
+
+        <div class="status-box">
+            <div id="statusWaiting" class="hidden">
+                <p class="status-waiting">⏳ Đang chờ đối thủ...</p>
+                <p style="color: #666; margin-top: 10px;">Chia sẻ mã phòng để mời bạn bè</p>
+            </div>
+            
+            <div id="statusPlaying" class="hidden">
+                <p class="status-playing">
+                    Lượt: <span id="currentTurnDisplay"></span>
+                </p>
+                <p id="yourTurnMsg" class="your-turn hidden">Đến lượt bạn!</p>
+            </div>
+            
+            <div id="statusFinished" class="hidden">
+                <p class="winner-msg" id="winnerMsg"></p>
+                <button class="btn btn-success" onclick="resetGame()">🔄 Chơi lại</button>
+            </div>
+        </div>
+
+        <div class="board-container">
+            <div class="board" id="board"></div>
+        </div>
+    </div>
 </div>
+
+<script>
+    const FIREBASE_URL = 'https://nhutvan5c-79ce9-default-rtdb.asia-southeast1.firebasedatabase.app';
+    
+    const PIECES = {
+        RED: { K: '帥', A: '仕', E: '相', H: '傌', R: '俥', C: '炮', P: '兵' },
+        BLACK: { K: '將', A: '士', E: '象', H: '馬', R: '車', C: '砲', P: '卒' }
+    };
+
+    let roomId = '';
+    let playerId = '';
+    let playerColor = null;
+    let gameState = null;
+    let selectedPiece = null;
+    let gameInterval = null;
+
+    function initBoard() {
+        const board = Array(10).fill(null).map(() => Array(9).fill(null));
+        
+        // Đỏ
+        board[9][4] = { type: 'K', color: 'RED' };
+        board[9][3] = { type: 'A', color: 'RED' };
+        board[9][5] = { type: 'A', color: 'RED' };
+        board[9][2] = { type: 'E', color: 'RED' };
+        board[9][6] = { type: 'E', color: 'RED' };
+        board[9][1] = { type: 'H', color: 'RED' };
+        board[9][7] = { type: 'H', color: 'RED' };
+        board[9][0] = { type: 'R', color: 'RED' };
+        board[9][8] = { type: 'R', color: 'RED' };
+        board[7][1] = { type: 'C', color: 'RED' };
+        board[7][7] = { type: 'C', color: 'RED' };
+        for (let i = 0; i < 9; i += 2) board[6][i] = { type: 'P', color: 'RED' };
+        
+        // Đen
+        board[0][4] = { type: 'K', color: 'BLACK' };
+        board[0][3] = { type: 'A', color: 'BLACK' };
+        board[0][5] = { type: 'A', color: 'BLACK' };
+        board[0][2] = { type: 'E', color: 'BLACK' };
+        board[0][6] = { type: 'E', color: 'BLACK' };
+        board[0][1] = { type: 'H', color: 'BLACK' };
+        board[0][7] = { type: 'H', color: 'BLACK' };
+        board[0][0] = { type: 'R', color: 'BLACK' };
+        board[0][8] = { type: 'R', color: 'BLACK' };
+        board[2][1] = { type: 'C', color: 'BLACK' };
+        board[2][7] = { type: 'C', color: 'BLACK' };
+        for (let i = 0; i < 9; i += 2) board[3][i] = { type: 'P', color: 'BLACK' };
+        
+        return board;
+    }
+
+    async function createRoom() {
+        const newRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const newPlayerId = Math.random().toString(36).substring(2, 15);
+        
+        const initialState = {
+            board: initBoard(),
+            currentTurn: 'RED',
+            players: { RED: newPlayerId, BLACK: null },
+            status: 'waiting',
+            winner: null
+        };
+
+        try {
+            const response = await fetch(`${FIREBASE_URL}/rooms/${newRoomId}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(initialState)
+            });
+
+            if (response.ok) {
+                roomId = newRoomId;
+                playerId = newPlayerId;
+                playerColor = 'RED';
+                showGameScreen();
+            }
+        } catch (error) {
+            alert('Lỗi tạo phòng: ' + error.message);
+        }
+    }
+
+    async function joinRoom() {
+        const inputRoomId = document.getElementById('roomIdInput').value.trim().toUpperCase();
+        if (!inputRoomId) {
+            alert('Vui lòng nhập mã phòng!');
+            return;
+        }
+
+        const newPlayerId = Math.random().toString(36).substring(2, 15);
+        
+        try {
+            const response = await fetch(`${FIREBASE_URL}/rooms/${inputRoomId}.json`);
+            const data = await response.json();
+
+            if (!data) {
+                alert('Phòng không tồn tại!');
+                return;
+            }
+
+            if (data.players.BLACK) {
+                alert('Phòng đã đầy!');
+                return;
+            }
+
+            await fetch(`${FIREBASE_URL}/rooms/${inputRoomId}/players/BLACK.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newPlayerId)
+            });
+
+            await fetch(`${FIREBASE_URL}/rooms/${inputRoomId}/status.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify('playing')
+            });
+
+            roomId = inputRoomId;
+            playerId = newPlayerId;
+            playerColor = 'BLACK';
+            showGameScreen();
+        } catch (error) {
+            alert('Lỗi tham gia phòng: ' + error.message);
+        }
+    }
+
+    function showGameScreen() {
+        document.getElementById('menuScreen').classList.add('hidden');
+        document.getElementById('gameScreen').classList.remove('hidden');
+        document.getElementById('roomIdDisplay').textContent = roomId;
+        document.getElementById('playerColorDisplay').textContent = playerColor === 'RED' ? 'Đỏ' : 'Đen';
+        document.getElementById('playerColorDisplay').style.color = playerColor === 'RED' ? '#DC143C' : '#333';
+        
+        startGameLoop();
+    }
+
+    function backToMenu() {
+        if (gameInterval) clearInterval(gameInterval);
+        document.getElementById('menuScreen').classList.remove('hidden');
+        document.getElementById('gameScreen').classList.add('hidden');
+        roomId = '';
+        playerId = '';
+        playerColor = null;
+        gameState = null;
+        selectedPiece = null;
+    }
+
+    function startGameLoop() {
+        gameInterval = setInterval(async () => {
+            try {
+                const response = await fetch(`${FIREBASE_URL}/rooms/${roomId}.json`);
+                const data = await response.json();
+                if (data) {
+                    gameState = data;
+                    updateUI();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }, 1000);
+    }
+
+    function updateUI() {
+        // Update status
+        document.getElementById('statusWaiting').classList.toggle('hidden', gameState.status !== 'waiting');
+        document.getElementById('statusPlaying').classList.toggle('hidden', gameState.status !== 'playing');
+        document.getElementById('statusFinished').classList.toggle('hidden', gameState.status !== 'finished');
+
+        if (gameState.status === 'playing') {
+            const turnText = gameState.currentTurn === 'RED' ? 'Đỏ' : 'Đen';
+            const turnSpan = document.getElementById('currentTurnDisplay');
+            turnSpan.textContent = turnText;
+            turnSpan.className = gameState.currentTurn === 'RED' ? 'turn-red' : 'turn-black';
+            
+            document.getElementById('yourTurnMsg').classList.toggle('hidden', gameState.currentTurn !== playerColor);
+        }
+
+        if (gameState.status === 'finished') {
+            const winnerText = gameState.winner === playerColor ? '🎉 Bạn thắng!' : '😔 Bạn thua!';
+            document.getElementById('winnerMsg').textContent = winnerText;
+        }
+
+        // Render board
+        renderBoard();
+    }
+
+    function renderBoard() {
+        const boardEl = document.getElementById('board');
+        boardEl.innerHTML = '';
+
+        for (let row = 0; row < 10; row++) {
+            const rowEl = document.createElement('div');
+            rowEl.className = 'row';
+
+            for (let col = 0; col < 9; col++) {
+                const square = document.createElement('div');
+                square.className = 'square';
+                
+                if (row === 4 || row === 5) {
+                    square.classList.add('river');
+                }
+
+                if (selectedPiece && selectedPiece[0] === row && selectedPiece[1] === col) {
+                    square.classList.add('selected');
+                }
+
+                const piece = gameState.board[row][col];
+                if (piece) {
+                    const pieceEl = document.createElement('div');
+                    pieceEl.className = `piece piece-${piece.color.toLowerCase()}`;
+                    pieceEl.textContent = piece.color === 'RED' ? PIECES.RED[piece.type] : PIECES.BLACK[piece.type];
+                    square.appendChild(pieceEl);
+                }
+
+                square.onclick = () => handleSquareClick(row, col);
+                rowEl.appendChild(square);
+            }
+
+            boardEl.appendChild(rowEl);
+        }
+    }
+
+    function handleSquareClick(row, col) {
+        if (!gameState || gameState.status !== 'playing' || gameState.currentTurn !== playerColor) return;
+
+        const piece = gameState.board[row][col];
+
+        if (selectedPiece) {
+            const [fromRow, fromCol] = selectedPiece;
+            const movingPiece = gameState.board[fromRow][fromCol];
+
+            if (fromRow === row && fromCol === col) {
+                selectedPiece = null;
+                renderBoard();
+                return;
+            }
+
+            if (isValidMove(fromRow, fromCol, row, col, movingPiece, gameState.board)) {
+                makeMove(fromRow, fromCol, row, col);
+            } else if (piece && piece.color === playerColor) {
+                selectedPiece = [row, col];
+                renderBoard();
+            } else {
+                selectedPiece = null;
+                renderBoard();
+            }
+        } else if (piece && piece.color === playerColor) {
+            selectedPiece = [row, col];
+            renderBoard();
+        }
+    }
+
+    async function makeMove(fromRow, fromCol, toRow, toCol) {
+        const newBoard = gameState.board.map(r => [...r]);
+        const capturedPiece = newBoard[toRow][toCol];
+        newBoard[toRow][toCol] = newBoard[fromRow][fromCol];
+        newBoard[fromRow][fromCol] = null;
+
+        const nextTurn = playerColor === 'RED' ? 'BLACK' : 'RED';
+        const winner = capturedPiece && capturedPiece.type === 'K' ? playerColor : null;
+
+        try {
+            await fetch(`${FIREBASE_URL}/rooms/${roomId}.json`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    board: newBoard,
+                    currentTurn: winner ? playerColor : nextTurn,
+                    status: winner ? 'finished' : 'playing',
+                    winner: winner
+                })
+            });
+            selectedPiece = null;
+        } catch (error) {
+            alert('Lỗi di chuyển: ' + error.message);
+        }
+    }
+
+    function isValidMove(fromRow, fromCol, toRow, toCol, piece, board) {
+        if (toRow < 0 || toRow > 9 || toCol < 0 || toCol > 8) return false;
+        const target = board[toRow][toCol];
+        if (target && target.color === piece.color) return false;
+
+        const rowDiff = Math.abs(toRow - fromRow);
+        const colDiff = Math.abs(toCol - fromCol);
+
+        switch (piece.type) {
+            case 'K':
+                if (rowDiff + colDiff !== 1) return false;
+                if (piece.color === 'RED') return toRow >= 7 && toCol >= 3 && toCol <= 5;
+                return toRow <= 2 && toCol >= 3 && toCol <= 5;
+
+            case 'A':
+                if (rowDiff !== 1 || colDiff !== 1) return false;
+                if (piece.color === 'RED') return toRow >= 7 && toCol >= 3 && toCol <= 5;
+                return toRow <= 2 && toCol >= 3 && toCol <= 5;
+
+            case 'E':
+                if (rowDiff !== 2 || colDiff !== 2) return false;
+                const midRow = (fromRow + toRow) / 2;
+                const midCol = (fromCol + toCol) / 2;
+                if (board[midRow][midCol]) return false;
+                return piece.color === 'RED' ? toRow >= 5 : toRow <= 4;
+
+            case 'H':
+                if (!((rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2))) return false;
+                const blockRow = rowDiff === 2 ? fromRow + (toRow > fromRow ? 1 : -1) : fromRow;
+                const blockCol = colDiff === 2 ? fromCol + (toCol > fromCol ? 1 : -1) : fromCol;
+                return !board[blockRow][blockCol];
+
+            case 'R':
+                if (rowDiff !== 0 && colDiff !== 0) return false;
+                if (rowDiff > 0) {
+                    for (let r = Math.min(fromRow, toRow) + 1; r < Math.max(fromRow, toRow); r++) {
+                        if (board[r][fromCol]) return false;
+                    }
+                } else {
+                    for (let c = Math.min(fromCol, toCol) + 1; c < Math.max(fromCol, toCol); c++) {
+                        if (board[fromRow][c]) return false;
+                    }
+                }
+                return true;
+
+            case 'C':
+                if (rowDiff !== 0 && colDiff !== 0) return false;
+                let count = 0;
+                if (rowDiff > 0) {
+                    for (let r = Math.min(fromRow, toRow) + 1; r < Math.max(fromRow, toRow); r++) {
+                        if (board[r][fromCol]) count++;
+                    }
+                } else {
+                    for (let c = Math.min(fromCol, toCol) + 1; c < Math.max(fromCol, toCol); c++) {
+                        if (board[fromRow][c]) count++;
+                    }
+                }
+                return target ? count === 1 : count === 0;
+
+            case 'P':
+                if (piece.color === 'RED') {
+                    if (fromRow > 4) return toRow === fromRow - 1 && toCol === fromCol;
+                    return (toRow === fromRow - 1 && toCol === fromCol) || 
+                           (toRow === fromRow && Math.abs(toCol - fromCol) === 1);
+                } else {
+                    if (fromRow < 5) return toRow === fromRow + 1 && toCol === fromCol;
+                    return (toRow === fromRow + 1 && toCol === fromCol) || 
+                           (toRow === fromRow && Math.abs(toCol - fromCol) === 1);
+                }
+
+            default:
+                return false;
+        }
+    }
+
+    function copyRoomId() {
+        navigator.clipboard.writeText(roomId);
+        alert('Đã copy mã phòng: ' + roomId);
+    }
+
+    async function resetGame() {
+        try {
+            await fetch(`${FIREBASE_URL}/rooms/${roomId}.json`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    board: initBoard(),
+                    currentTurn: 'RED',
+                    status: 'playing',
+                    winner: null
+                })
+            });
+        } catch (error) {
+            alert('Lỗi reset: ' + error.message);
+        }
+    }
+</script>
 ```
 
-);
-}
+</body>
+</html>
