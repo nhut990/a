@@ -219,14 +219,17 @@
 
     .board-container {
         background: #DEB887;
-        padding: 30px;
+        padding: 20px;
         border-radius: 15px;
-        display: inline-block;
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        overflow-x: auto;
     }
 
     .board {
         background: #F5DEB3;
-        padding: 20px;
+        padding: 15px;
         border-radius: 10px;
         display: inline-block;
     }
@@ -236,8 +239,8 @@
     }
 
     .square {
-        width: 50px;
-        height: 50px;
+        width: 45px;
+        height: 45px;
         border: 1px solid #8B4513;
         display: flex;
         align-items: center;
@@ -245,6 +248,7 @@
         cursor: pointer;
         background: #FFF8DC;
         position: relative;
+        flex-shrink: 0;
     }
 
     .square:hover {
@@ -260,15 +264,16 @@
     }
 
     .piece {
-        width: 45px;
-        height: 45px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.8em;
+        font-size: 1.6em;
         font-weight: bold;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        pointer-events: none;
     }
 
     .piece-red {
@@ -293,16 +298,22 @@
 
     @media (max-width: 600px) {
         .square {
-            width: 40px;
-            height: 40px;
+            width: 35px;
+            height: 35px;
         }
         .piece {
-            width: 36px;
-            height: 36px;
-            font-size: 1.5em;
+            width: 32px;
+            height: 32px;
+            font-size: 1.3em;
         }
         h1 {
             font-size: 2em;
+        }
+        .board-container {
+            padding: 10px;
+        }
+        .board {
+            padding: 10px;
         }
     }
 </style>
