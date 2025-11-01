@@ -24,6 +24,7 @@ button:disabled { background:#ccc; cursor:not-allowed; }
 #deleteRoom { background:#f44336; }
 #deleteRoom:hover { background:#da190b; }
 .loading { opacity:0.6; pointer-events:none; }
+.system-msg { text-align:center; color:#999; font-size:12px; padding:5px; font-style:italic; clear:both; }
 </style>
 </head>
 <body>
@@ -44,16 +45,15 @@ button:disabled { background:#ccc; cursor:not-allowed; }
 <div id="guideModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; overflow:auto;">
   <div style="max-width:500px; margin:30px auto; background:white; padding:25px; border-radius:15px; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
     <h2 style="color:#2196F3; margin-top:0;">📖 Hướng dẫn sử dụng Chat riêng Online</h2>
+    <div style="text-align:left; line-height:1.8;">
+      <h3 style="color:#4CAF50; margin-top:20px;">🏠 Tạo phòng chat</h3>
+      <p style="margin:5px 0;">1️⃣ Nhập <strong>tên của bạn</strong></p>
+      <p style="margin:5px 0;">2️⃣ Đặt <strong>tên phòng</strong> (ví dụ: PhongCuaBan123)</p>
+      <p style="margin:5px 0;">3️⃣ Tạo <strong>mật khẩu</strong> (tối thiểu 6 ký tự)</p>
+      <p style="margin:5px 0;">4️⃣ Nhấn nút <strong>"Tạo phòng"</strong></p>
+      <p style="margin:5px 0; color:#666; font-size:14px;">💡 Bạn là người tạo phòng và sẽ nhận thông báo khi có người vào</p>
 
 ```
-<div style="text-align:left; line-height:1.8;">
-  <h3 style="color:#4CAF50; margin-top:20px;">🏠 Tạo phòng chat</h3>
-  <p style="margin:5px 0;">1️⃣ Nhập <strong>tên của bạn</strong></p>
-  <p style="margin:5px 0;">2️⃣ Đặt <strong>tên phòng</strong> (ví dụ: PhongCuaBan123)</p>
-  <p style="margin:5px 0;">3️⃣ Tạo <strong>mật khẩu</strong> (tối thiểu 6 ký tự)</p>
-  <p style="margin:5px 0;">4️⃣ Nhấn nút <strong>"Tạo phòng"</strong></p>
-  <p style="margin:5px 0; color:#666; font-size:14px;">💡 Bạn là người tạo phòng và sẽ nhận thông báo khi có người vào</p>
-  
   <h3 style="color:#FF9800; margin-top:20px;">🚪 Vào phòng có sẵn</h3>
   <p style="margin:5px 0;">1️⃣ Nhập <strong>tên của bạn</strong></p>
   <p style="margin:5px 0;">2️⃣ Nhập <strong>tên phòng</strong> (do bạn bè tạo)</p>
@@ -61,8 +61,8 @@ button:disabled { background:#ccc; cursor:not-allowed; }
   <p style="margin:5px 0;">4️⃣ Nhấn nút <strong>"Vào phòng"</strong></p>
   
   <h3 style="color:#9C27B0; margin-top:20px;">💬 Chat trong phòng</h3>
-  <p style="margin:5px 0;">✅ Tin nhắn của bạn: <span style="background:#e3f2fd; padding:3px 8px; border-radius:5px;">màu xanh dương, bên trái</span></p>
-  <p style="margin:5px 0;">✅ Tin nhắn người khác: <span style="background:#c8e6c9; padding:3px 8px; border-radius:5px;">màu xanh lá, bên phải</span></p>
+  <p style="margin:5px 0;">✅ Tin nhắn của bạn: <span style="background:#c8e6c9; padding:3px 8px; border-radius:5px;">màu xanh lá, bên phải</span></p>
+  <p style="margin:5px 0;">✅ Tin nhắn người khác: <span style="background:#e3f2fd; padding:3px 8px; border-radius:5px;">màu xanh dương, bên trái</span></p>
   <p style="margin:5px 0;">✅ Nhấn <strong>Enter</strong> hoặc nút <strong>"Gửi"</strong> để gửi tin</p>
   
   <h3 style="color:#f44336; margin-top:20px;">⚠️ Lưu ý quan trọng</h3>
@@ -79,7 +79,6 @@ button:disabled { background:#ccc; cursor:not-allowed; }
     </p>
   </div>
 </div>
-
 <button id="closeGuide" style="width:100%; margin-top:20px; padding:12px; background:#4CAF50; color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer;">✅ Đã hiểu</button>
 ```
 
@@ -96,8 +95,6 @@ button:disabled { background:#ccc; cursor:not-allowed; }
   <button id="deleteRoom" style="background:#f44336;">Xoá phòng</button>
 </div>
 
-<!-- Firebase SDK -->
-
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -111,7 +108,8 @@ document.addEventListener("DOMContentLoaded", function() {
   const db = firebase.database();
 
   let myName, roomName, myPass, isCreator = false;
-  let messageListener = null; // Để quản lý listener
+  let messageListener = null;
+  let memberListener = null;
 
   // Xử lý modal hướng dẫn
   document.getElementById("showGuide").onclick = () => {
@@ -122,14 +120,13 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("guideModal").style.display = "none";
   };
 
-  // Đóng modal khi click ra ngoài
   document.getElementById("guideModal").onclick = (e) => {
     if (e.target.id === "guideModal") {
       document.getElementById("guideModal").style.display = "none";
     }
   };
 
-  // Hàm hash mật khẩu đơn giản (SHA-256)
+  // Hàm hash mật khẩu
   async function hashPassword(password) {
     const msgBuffer = new TextEncoder().encode(password);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -137,7 +134,7 @@ document.addEventListener("DOMContentLoaded", function() {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
-  // Hàm escape HTML để tránh XSS
+  // Hàm escape HTML
   function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
@@ -173,14 +170,11 @@ document.addEventListener("DOMContentLoaded", function() {
         return;
       }
 
-      // Hash mật khẩu trước khi lưu
       const hashedPass = await hashPassword(myPass);
       await rRef.set({ 
         password: hashedPass,
         creator: myName,
-        createdAt: new Date().toISOString(),
-        members: {},
-        messages: {}
+        createdAt: new Date().toISOString()
       });
 
       // Thêm người tạo vào danh sách thành viên
@@ -190,7 +184,6 @@ document.addEventListener("DOMContentLoaded", function() {
       });
 
       isCreator = true;
-      alert("✅ Phòng đã tạo thành công!");
       startChat();
 
     } catch (error) {
@@ -238,8 +231,7 @@ document.addEventListener("DOMContentLoaded", function() {
         joinedAt: new Date().toISOString()
       });
 
-      isCreator = false; // Quan trọng: reset isCreator
-      alert("✅ Đã vào phòng thành công!");
+      isCreator = false;
       startChat();
 
     } catch (error) {
@@ -257,7 +249,43 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("chat").style.display = "block";
     document.getElementById("roomTitle").textContent = "🏠 Phòng: " + roomName;
     loadMessages();
-    listenForNewMembers(); // Lắng nghe thành viên mới
+    listenForNewMembers();
+  }
+
+  // Lắng nghe thành viên mới
+  function listenForNewMembers() {
+    const membersRef = db.ref("rooms/" + roomName + "/members");
+    let knownMembers = new Set();
+    let isFirstLoad = true;
+
+    // Load danh sách thành viên hiện tại
+    membersRef.once("value").then((snapshot) => {
+      if (snapshot.exists()) {
+        snapshot.forEach((child) => {
+          knownMembers.add(child.val().name);
+        });
+      }
+      isFirstLoad = false;
+    });
+
+    // Lắng nghe thành viên mới
+    memberListener = membersRef.on("child_added", (snapshot) => {
+      if (!isFirstLoad) {
+        const memberName = snapshot.val().name;
+        
+        // Chỉ thông báo nếu không phải là mình và chưa có trong danh sách
+        if (memberName !== myName && !knownMembers.has(memberName)) {
+          const messagesDiv = document.getElementById("messages");
+          const systemMsg = document.createElement("div");
+          systemMsg.className = "system-msg";
+          systemMsg.textContent = `👋 ${memberName} đã vào phòng`;
+          messagesDiv.appendChild(systemMsg);
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        knownMembers.add(memberName);
+      }
+    });
   }
 
   // Gửi tin nhắn
@@ -289,14 +317,15 @@ document.addEventListener("DOMContentLoaded", function() {
   function loadMessages() {
     const msgRef = db.ref("rooms/" + roomName + "/messages");
     
-    // Xóa listener cũ nếu có
     if (messageListener) {
       msgRef.off("value", messageListener);
     }
 
-    // Tạo listener mới
     messageListener = msgRef.on("value", (snap) => {
       const messagesDiv = document.getElementById("messages");
+      // Lưu các tin nhắn hệ thống hiện có
+      const systemMessages = Array.from(messagesDiv.querySelectorAll('.system-msg'));
+      
       messagesDiv.innerHTML = "";
       
       if (!snap.exists() || !snap.val()) {
@@ -308,9 +337,9 @@ document.addEventListener("DOMContentLoaded", function() {
         const m = child.val();
         const div = document.createElement("div");
         
-        // Kiểm tra tin nhắn của ai: của mình thì bên trái, người khác bên phải
+        // Tin của mình bên PHẢI (xanh lá), người khác bên TRÁI (xanh dương)
         const isMyMessage = m.sender === myName;
-        div.className = isMyMessage ? "msg left" : "msg right";
+        div.className = isMyMessage ? "msg right" : "msg left";
         
         const time = new Date(m.time).toLocaleString('vi-VN', {
           hour: '2-digit',
@@ -327,11 +356,14 @@ document.addEventListener("DOMContentLoaded", function() {
         messagesDiv.appendChild(div);
       });
       
+      // Thêm lại các tin nhắn hệ thống
+      systemMessages.forEach(msg => messagesDiv.appendChild(msg));
+      
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     });
   }
 
-  // Xóa phòng (bất kỳ ai cũng có thể xóa)
+  // Xóa phòng
   document.getElementById("deleteRoom").onclick = async () => {
     if (confirm("⚠️ XÓA PHÒNG CHAT\n\nBạn chắc chắn muốn xóa phòng này?\n\n• Phòng \"" + roomName + "\" sẽ bị xóa vĩnh viễn\n• Tất cả tin nhắn sẽ bị mất\n• Mọi người sẽ bị ngắt kết nối\n\nHành động này KHÔNG THỂ hoàn tác!")) {
       try {
@@ -339,11 +371,14 @@ document.addEventListener("DOMContentLoaded", function() {
         btn.disabled = true;
         btn.textContent = "Đang xóa...";
 
-        // Tắt listener trước khi xóa
-        const msgRef = db.ref("rooms/" + roomName + "/messages");
+        // Tắt tất cả listeners
         if (messageListener) {
-          msgRef.off("value", messageListener);
+          db.ref("rooms/" + roomName + "/messages").off("value", messageListener);
           messageListener = null;
+        }
+        if (memberListener) {
+          db.ref("rooms/" + roomName + "/members").off("child_added", memberListener);
+          memberListener = null;
         }
         
         await db.ref("rooms/" + roomName).remove();
@@ -359,15 +394,27 @@ document.addEventListener("DOMContentLoaded", function() {
   };
 
   // Rời phòng
-  document.getElementById("leave").onclick = () => {
+  document.getElementById("leave").onclick = async () => {
     if (confirm("Bạn muốn rời khỏi phòng?")) {
-      // Tắt listener
-      const msgRef = db.ref("rooms/" + roomName + "/messages");
-      if (messageListener) {
-        msgRef.off("value", messageListener);
-        messageListener = null;
+      try {
+        // Xóa khỏi danh sách members
+        await db.ref("rooms/" + roomName + "/members/" + myName).remove();
+        
+        // Tắt listeners
+        if (messageListener) {
+          db.ref("rooms/" + roomName + "/messages").off("value", messageListener);
+          messageListener = null;
+        }
+        if (memberListener) {
+          db.ref("rooms/" + roomName + "/members").off("child_added", memberListener);
+          memberListener = null;
+        }
+        
+        location.reload();
+      } catch (error) {
+        console.error("Lỗi rời phòng:", error);
+        location.reload();
       }
-      location.reload();
     }
   };
 });
