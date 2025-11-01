@@ -24,12 +24,20 @@ button:disabled { background:#ccc; cursor:not-allowed; }
 #deleteRoom { background:#f44336; }
 #deleteRoom:hover { background:#da190b; }
 .loading { opacity:0.6; pointer-events:none; }
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
 </style>
 </head>
 <body>
 
 <div id="login">
-  <h2>💬 Chat riêng Firebase</h2>
+  <h2>💬 Chat riêng Online</h2>
   <input id="name" placeholder="Tên của bạn" autocomplete="off">
   <input id="room" placeholder="Tên phòng" autocomplete="off">
   <input id="pass" placeholder="Mật khẩu" type="password">
@@ -115,7 +123,14 @@ document.addEventListener("DOMContentLoaded", function() {
         password: hashedPass,
         creator: myName,
         createdAt: new Date().toISOString(),
+        members: {},
         messages: {}
+      });
+
+      // Thêm người tạo vào danh sách thành viên
+      await rRef.child("members").child(myName).set({
+        name: myName,
+        joinedAt: new Date().toISOString()
       });
 
       isCreator = true;
@@ -161,6 +176,12 @@ document.addEventListener("DOMContentLoaded", function() {
         return;
       }
 
+      // Thêm thành viên mới vào phòng
+      await rRef.child("members").child(myName).set({
+        name: myName,
+        joinedAt: new Date().toISOString()
+      });
+
       isCreator = false; // Quan trọng: reset isCreator
       alert("✅ Đã vào phòng thành công!");
       startChat();
@@ -180,6 +201,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("chat").style.display = "block";
     document.getElementById("roomTitle").textContent = "🏠 Phòng: " + roomName;
     loadMessages();
+    listenForNewMembers(); // Lắng nghe thành viên mới
   }
 
   // Gửi tin nhắn
@@ -251,6 +273,59 @@ document.addEventListener("DOMContentLoaded", function() {
       
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     });
+  }
+
+  // Lắng nghe thành viên mới vào phòng (chỉ người tạo phòng thấy thông báo)
+  function listenForNewMembers() {
+    if (!isCreator) return; // Chỉ người tạo phòng mới nhận thông báo
+
+    const membersRef = db.ref("rooms/" + roomName + "/members");
+    
+    // Lắng nghe thành viên mới được thêm
+    membersRef.on("child_added", (snapshot) => {
+      const memberName = snapshot.val().name;
+      
+      // Không thông báo khi chính mình (người tạo) vào
+      if (memberName !== myName) {
+        // Hiển thị thông báo
+        showNotification(`🎉 ${memberName} đã vào phòng`);
+        
+        // Thêm tin nhắn hệ thống vào chat
+        const messagesDiv = document.getElementById("messages");
+        const div = document.createElement("div");
+        div.style.cssText = "text-align:center; color:#666; font-size:13px; margin:10px 0; padding:8px; background:#f0f0f0; border-radius:15px;";
+        div.innerHTML = `👤 <strong>${escapeHtml(memberName)}</strong> đã vào phòng`;
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+    });
+  }
+
+  // Hiển thị thông báo popup
+  function showNotification(message) {
+    // Tạo thông báo tạm thời
+    const notification = document.createElement("div");
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #4CAF50;
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 9999;
+      font-size: 15px;
+      animation: slideIn 0.3s ease;
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    // Tự động xóa sau 4 giây
+    setTimeout(() => {
+      notification.style.animation = "slideOut 0.3s ease";
+      setTimeout(() => notification.remove(), 300);
+    }, 4000);
   }
 
   // Xóa phòng (bất kỳ ai cũng có thể xóa)
