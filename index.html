@@ -41,6 +41,8 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      margin-top: 10px;
+      margin-right: 10px;
     }
     button:hover {
       background-color: #005fa3;
@@ -74,6 +76,32 @@
     .delete-btn:hover {
       background-color: #c0392b;
     }
+    #message {
+      margin-top: 10px;
+      color: green;
+      font-weight: bold;
+    }
+    #downloadBtn {
+      display: block;
+      width: 100%;
+      margin-top: 30px;
+      font-size: 16px;
+      padding: 12px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #downloadBtn:hover {
+      background-color: #218838;
+    }
+    #footer {
+      margin-top: 30px;
+      font-size: 16px;
+      color: #555;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -81,9 +109,16 @@
   <h2>📝 Ghi chú trực tuyến</h2>
   <textarea id="noteInput" rows="5" placeholder="Nhập ghi chú tại đây..."></textarea>
   <button onclick="saveNote()">Lưu ghi chú</button>
+  <div id="message"></div>
 
   <h3>📌 Ghi chú đã lưu:</h3>
   <div id="noteList"></div>
+
+  <button id="downloadBtn" onclick="downloadNotes()">📥 Tải toàn bộ ghi chú</button>
+
+  <div id="footer">
+    🌐 Đây là phiên bản thử nghiệm của hệ thống ghi chú trực tuyến, được thiết kế nhằm hỗ trợ đồng bộ hóa nội dung giữa các thành viên trong nhóm — giúp làm việc nhóm hiệu quả hơn, mọi người cùng nhìn thấy và cập nhật ghi chú theo thời gian thực.
+  </div>
 
   <script>
     var firebaseConfig = {
@@ -116,9 +151,30 @@
       const password = prompt("Nhập mật khẩu để xóa ghi chú:");
       if (password === "898989") {
         database.ref("notes/" + noteId).remove();
+        document.getElementById("message").textContent = "✅ Đã xoá";
+        setTimeout(() => {
+          document.getElementById("message").textContent = "";
+        }, 3000);
       } else {
         alert("Sai mật khẩu. Không thể xóa ghi chú.");
       }
+    }
+
+    function downloadNotes() {
+      database.ref("notes").once("value", function(snapshot) {
+        let content = "";
+        snapshot.forEach(function(childSnapshot) {
+          const data = childSnapshot.val();
+          const time = formatDate(data.timestamp);
+          content += `📝 ${data.content}\n🕒 ${time}\n\n`;
+        });
+
+        const blob = new Blob([content], { type: "text/plain" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "ghi_chu.txt";
+        link.click();
+      });
     }
 
     database.ref("notes").on("value", function(snapshot) {
