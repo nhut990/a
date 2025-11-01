@@ -2,97 +2,228 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Điểm danh Check-in/Check-out (Firebase Demo)</title>
+  <title>Check-in BV nhân dân Gia Định</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
-    body { font-family: Arial; }
-    label { display: block; margin-top: 8px; }
-    #list { margin-top: 16px; }
-    table { border-collapse: collapse; }
-    td, th { border: 1px solid #ccc; padding: 4px 8px; }
-    th { background: #f5f5f5; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7fafd;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 440px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px #0002;
+      padding: 32px 24px 32px 24px;
+    }
+    h2 {
+      text-align: center;
+      color: #1275d1;
+      font-size: 2em;
+      margin-bottom: 8px;
+    }
+    .event-name {
+      display: block;
+      font-size: 1.28em;
+      font-weight: bold;
+      text-align: center;
+      color: #e74c3c;
+      margin-bottom: 28px;
+      margin-top: 0;
+    }
+    label {
+      font-size: 1.1em;
+      margin-top: 18px;
+      display: block;
+      font-weight: 500;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 10px;
+      font-size: 1.1em;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-top: 4px;
+      box-sizing: border-box;
+    }
+    .btn-group {
+      margin-top: 18px;
+      text-align: center;
+    }
+    button {
+      font-size: 1.1em;
+      padding: 13px 26px;
+      margin: 0 7px;
+      background: #1275d1;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    button:hover, button:focus {
+      background: #0d60b6;
+    }
+    #status {
+      font-size: 1.04em;
+      margin: 15px 0 5px 0;
+      text-align: center;
+      min-height: 28px;
+      color: #333;
+    }
+    #list {
+      margin-top: 32px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 7px;
+    }
+    th, td {
+      border: 1px solid #d1e4f1;
+      padding: 7px 2px;
+      text-align: center;
+      font-size: 1.05em;
+    }
+    th {
+      background: #e3f0fa;
+      color: #1275d1;
+    }
+    @media (max-width: 540px) {
+      .container {
+        max-width: 96vw;
+        padding: 9vw 2vw;
+        margin: 6vw 1vw;
+      }
+      h2 { font-size: 1.25em; }
+    }
   </style>
 </head>
 <body>
-  <h2>Điểm danh Check-in/Check-out (Firebase)</h2>
-  <form id="form">
-    <label>
-      Sự kiện:
-      <input id="event-id" value="event-2025" required>
-    </label>
-    <label>
-      Họ tên:
-      <input id="name" required>
-    </label>
-    <label>
-      Mã số/Nick/ID:
-      <input id="userid" required>
-    </label>
-    <button type="button" onclick="checkin()">Check-in</button>
-    <button type="button" onclick="checkout()">Check-out</button>
-  </form>
-  <div id="status"></div>
-  <div id="list"></div>
-<script>
-  // === Init Firebase ===
-  const firebaseConfig = {
-    databaseURL: "https://nhutvan5c-79ce9-default-rtdb.asia-southeast1.firebasedatabase.app/"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+  <div class="container">
+    <h2>ĐIỂM DANH CHECK-IN/CHECK-OUT</h2>
+    <div class="event-name">BV nhân dân Gia Định</div>
+    <form id="form" autocomplete="off" onsubmit="return false;">
+      <label for="name">Họ và tên:</label>
+      <input id="name" type="text" autocomplete="off" required placeholder="Nhập họ tên của bạn">
+      <label for="userid">Mã số/Nick/ID:</label>
+      <input id="userid" type="text" autocomplete="off" required placeholder="Nhập mã số nhân viên, nick hoặc ID">
+      <div class="btn-group">
+        <button type="button" onclick="checkin()" id="btn-checkin">Check-in</button>
+        <button type="button" onclick="checkout()" id="btn-checkout" style="background:#f39c12;">Check-out</button>
+      </div>
+    </form>
+    <div id="status"></div>
+    <div id="list"></div>
+  </div>
+  <script>
+    // === Init Firebase ===
+    const firebaseConfig = {
+      databaseURL: "https://nhutvan5c-79ce9-default-rtdb.asia-southeast1.firebasedatabase.app/"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-  // === Check-in function ===
-  async function checkin() {
-    let eventId = document.getElementById('event-id').value.trim();
-    let name = document.getElementById('name').value.trim();
-    let userid = document.getElementById('userid').value.trim();
-    if (!eventId || !name || !userid) return;
-    let now = Math.floor(Date.now()/1000);
-    await db.ref(`events/${eventId}/checkins/${userid}`).update({
-      name,
-      checkin: now
-    });
-    document.getElementById('status').innerText = `✅ ${name} đã check-in lúc ${new Date(now*1000).toLocaleTimeString()}`;
-  }
+    // === Config event name, không cho sửa ===
+    const eventId = "BV-nhan-dan-Gia-Dinh"; // dùng cho key trên database
 
-  // === Check-out function ===
-  async function checkout() {
-    let eventId = document.getElementById('event-id').value.trim();
-    let name = document.getElementById('name').value.trim();
-    let userid = document.getElementById('userid').value.trim();
-    if (!eventId || !name || !userid) return;
-    let now = Math.floor(Date.now()/1000);
-    await db.ref(`events/${eventId}/checkins/${userid}`).update({
-      name,
-      checkout: now
-    });
-    document.getElementById('status').innerText = `👋 ${name} đã check-out lúc ${new Date(now*1000).toLocaleTimeString()}`;
-  }
-
-  // === Hiển thị danh sách người đã check-in/check-out ===
-  document.getElementById('event-id').addEventListener('input', watchList);
-  function watchList() {
-    let eventId = document.getElementById('event-id').value.trim();
-    if (!eventId) return;
-    db.ref(`events/${eventId}/checkins`).on('value', snap => {
-      let data = snap.val();
-      let html = `<h3>Danh sách điểm danh</h3><table><tr><th>Họ tên</th><th>Check-in</th><th>Check-out</th></tr>`;
-      if (data) {
-        for (let user in data) {
-          let u = data[user];
-          html += `<tr>
-            <td>${u.name || ''}</td>
-            <td>${u.checkin ? new Date(u.checkin*1000).toLocaleTimeString() : ''}</td>
-            <td>${u.checkout ? new Date(u.checkout*1000).toLocaleTimeString() : ''}</td>
-          </tr>`;
-        }
+    // === Check-in function ===
+    async function checkin() {
+      let name = document.getElementById('name').value.trim();
+      let userid = document.getElementById('userid').value.trim();
+      if (!name || !userid) {
+        showStatus("Vui lòng nhập đầy đủ họ tên và mã số/ID!", "#e74c3c");
+        return;
       }
-      html += `</table>`;
-      document.getElementById('list').innerHTML = html;
+      let now = Math.floor(Date.now()/1000);
+      try {
+        await db.ref(`events/${eventId}/checkins/${userid}`).update({
+          name,
+          checkin: now
+        });
+        showStatus(`✅ ${name} đã <b>check-in</b> lúc ${toTime(now)}`, "#27ae60");
+      } catch (e) {
+        showStatus("Có lỗi khi check-in!", "#e74c3c");
+      }
+    }
+
+    // === Check-out function ===
+    async function checkout() {
+      let name = document.getElementById('name').value.trim();
+      let userid = document.getElementById('userid').value.trim();
+      if (!name || !userid) {
+        showStatus("Vui lòng nhập đầy đủ họ tên và mã số/ID!", "#e74c3c");
+        return;
+      }
+      let now = Math.floor(Date.now()/1000);
+      try {
+        await db.ref(`events/${eventId}/checkins/${userid}`).update({
+          name,
+          checkout: now
+        });
+        showStatus(`👋 ${name} đã <b>check-out</b> lúc ${toTime(now)}`, "#f39c12");
+      } catch (e) {
+        showStatus("Có lỗi khi check-out!", "#e74c3c");
+      }
+    }
+
+    // === Hiển thị trạng thái ===
+    function showStatus(msg, color="#333") {
+      let st = document.getElementById('status');
+      st.innerHTML = msg;
+      st.style.color = color;
+    }
+
+    // === Hiển thị danh sách người đã check-in/check-out ===
+    function watchList() {
+      db.ref(`events/${eventId}/checkins`).on('value', snap => {
+        let data = snap.val();
+        let html = `<h3 style="text-align:center; color:#1275d1; font-size:1.14em; font-weight:600;margin-top:0;">Danh sách điểm danh</h3>`;
+        html += `<table><tr><th>Họ tên</th><th>Check-in</th><th>Check-out</th></tr>`;
+        if (data) {
+          let arr = [];
+          for (let user in data) {
+            let u = data[user];
+            arr.push(u);
+          }
+          // Sắp xếp theo thời gian check-in gần nhất trước
+          arr.sort((a,b) => (b.checkin||0)-(a.checkin||0));
+          for (let u of arr) {
+            html += `<tr>
+              <td>${u.name || ''}</td>
+              <td>${u.checkin ? toTime(u.checkin) : ''}</td>
+              <td>${u.checkout ? toTime(u.checkout) : ''}</td>
+            </tr>`;
+          }
+        }
+        html += `</table>`;
+        document.getElementById('list').innerHTML = html;
+      });
+    }
+    watchList();
+
+    // === Định dạng giờ phút giây ===
+    function toTime(ts) {
+      let d = new Date(ts*1000);
+      return d.toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    }
+
+    // === Hỗ trợ nhấn Enter để check-in ===
+    document.getElementById('form').addEventListener('keydown', function(e){
+      if (e.key === "Enter") {
+        e.preventDefault();
+        checkin();
+      }
     });
-  }
-  watchList();
-</script>
+  </script>
 </body>
 </html>
