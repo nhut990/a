@@ -180,7 +180,7 @@
     
     .chords-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 4px;
     }
     
@@ -286,9 +286,12 @@
     <div class="container">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <h1 class="title" style="margin: 0;">🎹 Đàn Piano</h1>
-            <button class="sound-toggle" id="soundToggle">
-                <span id="soundIcon">🔊</span>
-            </button>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                <button class="sound-toggle muted" id="soundToggle">
+                    <span id="soundIcon">🔇</span>
+                </button>
+                <span style="color: white; font-size: 10px; font-weight: bold;" id="soundStatus">Tắt âm</span>
+            </div>
         </div>
 
 ```
@@ -313,16 +316,6 @@
             </div>
         </div>
         
-        <div class="chords-title">🎵 Tone</div>
-        <div class="tone-selector">
-            <button class="tone-btn active" data-tone="Dm">Dm</button>
-            <button class="tone-btn" data-tone="Am">Am</button>
-            <button class="tone-btn" data-tone="C">C</button>
-            <button class="tone-btn" data-tone="G">G</button>
-            <button class="tone-btn" data-tone="Em">Em</button>
-            <button class="tone-btn" data-tone="F">F</button>
-        </div>
-        
         <div class="chords-title" id="currentTone">Hợp Âm - Tone Dm</div>
         <div class="chords-grid" id="chordsGrid"></div>
     </div>
@@ -338,7 +331,7 @@
 
 <script>
     let audioContext = null;
-    let isMuted = false;
+    let isMuted = true; // Mặc định TẮT ÂM
     let currentTone = 'Dm';
     let currentInstrument = 'piano';
     
@@ -359,12 +352,14 @@
     // Nút bật/tắt âm thanh
     const soundToggle = document.getElementById('soundToggle');
     const soundIcon = document.getElementById('soundIcon');
+    const soundStatus = document.getElementById('soundStatus');
     
     soundToggle.addEventListener('click', () => {
         initAudioContext();
         isMuted = !isMuted;
         soundToggle.classList.toggle('muted', isMuted);
         soundIcon.textContent = isMuted ? '🔇' : '🔊';
+        soundStatus.textContent = isMuted ? 'Tắt âm' : 'Bật âm';
     });
     
     const notes = {
@@ -401,14 +396,9 @@
         'Fm': ['F4', 'G#4', 'C5'], 'Cm': ['C4', 'D#4', 'G4']
     };
     
-    // ĐÃ SỬA: Thay Dm7 → E và hoán đổi Bb ↔ C
+    // ĐÃ SỬA: Thêm G và chỉ giữ tone Dm
     const toneChords = {
-        'Dm': ['Dm', 'Am', 'C', 'Bb', 'F', 'Gm', 'A7', 'E'],
-        'Am': ['Am', 'Dm', 'Em', 'F', 'C', 'G', 'E7', 'Am7'],
-        'C': ['C', 'F', 'G', 'Am', 'Em', 'Dm', 'G7', 'C7'],
-        'G': ['G', 'C', 'D', 'Em', 'Am', 'Bm', 'D7', 'G7'],
-        'Em': ['Em', 'Am', 'Bm', 'C', 'G', 'D', 'E7', 'Em7'],
-        'F': ['F', 'Bb', 'C', 'Dm', 'Am', 'Gm', 'C7', 'Dm7']
+        'Dm': ['Dm', 'Am', 'C', 'Bb', 'F', 'Gm', 'A7', 'E', 'G']
     };
     
     const piano = document.getElementById('piano');
