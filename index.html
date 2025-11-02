@@ -116,16 +116,27 @@
         padding: 12px 5px;
         font-size: 14px;
         font-weight: bold;
-        cursor: pointer;
+        cursor: move;
         box-shadow: 0 3px 5px rgba(0,0,0,0.3);
         transition: all 0.1s;
-        touch-action: manipulation;
+        touch-action: none;
+        user-select: none;
     }
     
     .chord-btn:active {
         transform: scale(0.95);
         box-shadow: 0 2px 3px rgba(0,0,0,0.3);
         background: linear-gradient(145deg, #66BB6A, #5CB860);
+    }
+    
+    .chord-btn.dragging {
+        opacity: 0.5;
+        transform: scale(1.05);
+        z-index: 100;
+    }
+    
+    .chord-btn.drag-over {
+        border: 2px dashed white;
     }
     
     .piano-container {
@@ -202,6 +213,13 @@
         font-size: 12px;
         line-height: 1.4;
     }
+    
+    .drag-hint {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 11px;
+        margin-top: 5px;
+    }
 
     @media (max-width: 600px) {
         .chords-grid {
@@ -225,16 +243,17 @@
     
     <div class="chords-section">
         <div class="chords-title">🎵 Hợp Âm (Bấm để phát cùng lúc)</div>
-        <div class="chords-grid">
-            <button class="chord-btn" data-chord="Dm">Dm</button>
-            <button class="chord-btn" data-chord="Am">Am</button>
-            <button class="chord-btn" data-chord="Bb">B♭</button>
-            <button class="chord-btn" data-chord="C">C</button>
-            <button class="chord-btn" data-chord="F">F</button>
-            <button class="chord-btn" data-chord="Gm">Gm</button>
-            <button class="chord-btn" data-chord="A7">A7</button>
-            <button class="chord-btn" data-chord="Dm7">Dm7</button>
+        <div class="chords-grid" id="chordsGrid">
+            <button class="chord-btn" data-chord="Dm" draggable="true">Dm</button>
+            <button class="chord-btn" data-chord="Am" draggable="true">Am</button>
+            <button class="chord-btn" data-chord="Bb" draggable="true">B♭</button>
+            <button class="chord-btn" data-chord="C" draggable="true">C</button>
+            <button class="chord-btn" data-chord="F" draggable="true">F</button>
+            <button class="chord-btn" data-chord="Gm" draggable="true">Gm</button>
+            <button class="chord-btn" data-chord="A7" draggable="true">A7</button>
+            <button class="chord-btn" data-chord="Dm7" draggable="true">Dm7</button>
         </div>
+        <div class="drag-hint">💡 Giữ và kéo để sắp xếp lại vị trí hợp âm</div>
     </div>
     
     <div class="piano-container">
@@ -373,20 +392,164 @@
     }
     
     // Xử lý nút hợp âm
-    const chordButtons = document.querySelectorAll('.chord-btn');
-    chordButtons.forEach(btn => {
-        const handler = () => {
-            if (!isStarted) return;
-            const chord = btn.dataset.chord;
-            playChord(chord);
-        };
+    const chordsGrid = document.getElementById('chordsGrid');
+    let draggedElement = null;
+    let isDragging = false;
+    let dragStartTime = 0;
+    
+    function setupChordButtons() {
+        const chordButtons = document.querySelectorAll('.chord-btn');
         
-        btn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            handler();
+        chordButtons.forEach(btn => {
+            // Xử lý phát âm (click/tap nhanh)
+            let touchStartTime = 0;
+            
+            btn.addEventListener('touchstart', (e) => {
+                touchStartTime = Date.now();
+            });
+            
+            btn.addEventListener('touchend', (e) => {
+                const touchDuration = Date.now() - touchStartTime;
+                // Nếu tap nhanh (< 200ms) thì phát âm
+                if (touchDuration < 200 && !isDragging && isStarted) {
+                    e.preventDefault();
+                    playChord(btn.dataset.chord);
+                }
+            });
+            
+            btn.addEventListener('click', (e) => {
+                if (!isDragging && isStarted) {
+                    playChord(btn.dataset.chord);
+                }
+            });
+            
+            // Desktop drag events
+            btn.addEventListener('dragstart', (e) => {
+                draggedElement = btn;
+                dragStartTime = Date.now();
+                setTimeout(() => {
+                    btn.classList.add('dragging');
+                    isDragging = true;
+                }, 0);
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            
+            btn.addEventListener('dragend', (e) => {
+                btn.classList.remove('dragging');
+                setTimeout(() => isDragging = false, 100);
+            });
+            
+            btn.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (draggedElement && draggedElement !== btn) {
+                    btn.classList.add('drag-over');
+                }
+            });
+            
+            btn.addEventListener('dragleave', (e) => {
+                btn.classList.remove('drag-over');
+            });
+            
+            btn.addEventListener('drop', (e) => {
+                e.preventDefault();
+                btn.classList.remove('drag-over');
+                
+                if (draggedElement && draggedElement !== btn) {
+                    swapElements(draggedElement, btn);
+                }
+                draggedElement = null;
+            });
+            
+            // Touch drag for mobile
+            let touchStartX, touchStartY;
+            let currentTouchElement = null;
+            
+            btn.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                touchStartX = touch.clientX;
+                touchStartY = touch.clientY;
+                dragStartTime = Date.now();
+                currentTouchElement = btn;
+            }, { passive: true });
+            
+            btn.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                const deltaX = Math.abs(touch.clientX - touchStartX);
+                const deltaY = Math.abs(touch.clientY - touchStartY);
+                const duration = Date.now() - dragStartTime;
+                
+                // Nếu di chuyển > 10px hoặc giữ > 200ms thì bắt đầu drag
+                if ((deltaX > 10 || deltaY > 10 || duration > 200) && currentTouchElement) {
+                    e.preventDefault();
+                    isDragging = true;
+                    btn.classList.add('dragging');
+                    
+                    // Tìm element ở vị trí touch
+                    const elementAtPoint = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const targetBtn = elementAtPoint?.closest('.chord-btn');
+                    
+                    // Remove drag-over từ tất cả
+                    document.querySelectorAll('.chord-btn').forEach(b => {
+                        b.classList.remove('drag-over');
+                    });
+                    
+                    // Add drag-over cho target
+                    if (targetBtn && targetBtn !== btn) {
+                        targetBtn.classList.add('drag-over');
+                    }
+                }
+            }, { passive: false });
+            
+            btn.addEventListener('touchend', (e) => {
+                if (isDragging && currentTouchElement) {
+                    e.preventDefault();
+                    const touch = e.changedTouches[0];
+                    const elementAtPoint = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const targetBtn = elementAtPoint?.closest('.chord-btn');
+                    
+                    if (targetBtn && targetBtn !== btn) {
+                        swapElements(btn, targetBtn);
+                    }
+                }
+                
+                btn.classList.remove('dragging');
+                document.querySelectorAll('.chord-btn').forEach(b => {
+                    b.classList.remove('drag-over');
+                });
+                
+                setTimeout(() => {
+                    isDragging = false;
+                    currentTouchElement = null;
+                }, 100);
+            });
         });
-        btn.addEventListener('click', handler);
-    });
+    }
+    
+    function swapElements(elem1, elem2) {
+        const parent = elem1.parentNode;
+        const next1 = elem1.nextSibling;
+        const next2 = elem2.nextSibling;
+        
+        if (next1 === elem2) {
+            parent.insertBefore(elem2, elem1);
+        } else if (next2 === elem1) {
+            parent.insertBefore(elem1, elem2);
+        } else {
+            if (next1) {
+                parent.insertBefore(elem2, next1);
+            } else {
+                parent.appendChild(elem2);
+            }
+            
+            if (next2) {
+                parent.insertBefore(elem1, next2);
+            } else {
+                parent.appendChild(elem1);
+            }
+        }
+    }
+    
+    setupChordButtons();
     
     // Xử lý nút bắt đầu
     const startBtn = document.getElementById('startBtn');
