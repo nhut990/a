@@ -59,10 +59,11 @@
     
     .title {
         text-align: center;
-        color: white;
+        color: #FFD700;
         margin-bottom: 8px;
         font-size: 18px;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        font-weight: bold;
     }
     
     .chords-section {
@@ -216,26 +217,26 @@
     
     .piano {
         position: relative;
-        height: 160px;
-        width: 700px;
+        height: 140px;
+        width: 1050px;
         margin: 0 auto;
     }
     
     .white-key {
         position: absolute;
-        width: 50px;
-        height: 160px;
+        width: 35px;
+        height: 140px;
         background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%);
         border: 2px solid #222;
-        border-radius: 0 0 5px 5px;
+        border-radius: 0 0 4px 4px;
         cursor: pointer;
         user-select: none;
         touch-action: manipulation;
         display: flex;
         align-items: flex-end;
         justify-content: center;
-        padding-bottom: 6px;
-        font-size: 10px;
+        padding-bottom: 4px;
+        font-size: 8px;
         color: #666;
         font-weight: bold;
     }
@@ -247,8 +248,8 @@
     
     .black-key {
         position: absolute;
-        width: 33px;
-        height: 100px;
+        width: 24px;
+        height: 85px;
         background: linear-gradient(to bottom, #444 0%, #000 100%);
         border: 1px solid #000;
         border-radius: 0 0 3px 3px;
@@ -260,15 +261,15 @@
         display: flex;
         align-items: flex-end;
         justify-content: center;
-        padding-bottom: 5px;
-        font-size: 8px;
+        padding-bottom: 3px;
+        font-size: 7px;
         font-weight: bold;
-        box-shadow: 0 3px 5px rgba(0,0,0,0.5);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.5);
     }
     
     .black-key:active {
         background: linear-gradient(to bottom, #666 0%, #333 100%);
-        box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
     }
     
     .info {
@@ -363,12 +364,16 @@
     });
     
     const notes = {
+        'C3': 130.81, 'C#3': 138.59, 'D3': 146.83, 'D#3': 155.56,
+        'E3': 164.81, 'F3': 174.61, 'F#3': 185.00, 'G3': 196.00,
+        'G#3': 207.65, 'A3': 220.00, 'A#3': 233.08, 'B3': 246.94,
         'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13,
         'E4': 329.63, 'F4': 349.23, 'F#4': 369.99, 'G4': 392.00,
         'G#4': 415.30, 'A4': 440.00, 'A#4': 466.16, 'B4': 493.88,
         'C5': 523.25, 'C#5': 554.37, 'D5': 587.33, 'D#5': 622.25, 
         'E5': 659.25, 'F5': 698.46, 'F#5': 739.99, 'G5': 783.99,
-        'G#5': 830.61, 'A5': 880.00, 'A#5': 932.33, 'B5': 987.77
+        'G#5': 830.61, 'A5': 880.00, 'A#5': 932.33, 'B5': 987.77,
+        'C6': 1046.50
     };
     
     const instrumentSettings = {
@@ -396,26 +401,31 @@
         'Fm': ['F4', 'G#4', 'C5'], 'Cm': ['C4', 'D#4', 'G4']
     };
     
-    // ĐÃ SỬA: Thêm G và chỉ giữ tone Dm
+    // ĐÃ SỬA: Sắp xếp lại thứ tự hợp âm
     const toneChords = {
-        'Dm': ['Dm', 'Am', 'C', 'Bb', 'F', 'Gm', 'A7', 'E', 'G']
+        'Dm': ['Dm', 'Gm', 'Bb', 'C', 'F', 'G', 'A7', 'Am', 'E']
     };
     
     const piano = document.getElementById('piano');
     
     const whiteKeysData = [
-        {note: 'C4', left: 0}, {note: 'D4', left: 50}, {note: 'E4', left: 100},
-        {note: 'F4', left: 150}, {note: 'G4', left: 200}, {note: 'A4', left: 250},
-        {note: 'B4', left: 300}, {note: 'C5', left: 350}, {note: 'D5', left: 400},
-        {note: 'E5', left: 450}, {note: 'F5', left: 500}, {note: 'G5', left: 550},
-        {note: 'A5', left: 600}, {note: 'B5', left: 650}
+        {note: 'C3', left: 0}, {note: 'D3', left: 35}, {note: 'E3', left: 70},
+        {note: 'F3', left: 105}, {note: 'G3', left: 140}, {note: 'A3', left: 175},
+        {note: 'B3', left: 210}, {note: 'C4', left: 245}, {note: 'D4', left: 280},
+        {note: 'E4', left: 315}, {note: 'F4', left: 350}, {note: 'G4', left: 385},
+        {note: 'A4', left: 420}, {note: 'B4', left: 455}, {note: 'C5', left: 490},
+        {note: 'D5', left: 525}, {note: 'E5', left: 560}, {note: 'F5', left: 595},
+        {note: 'G5', left: 630}, {note: 'A5', left: 665}, {note: 'B5', left: 700},
+        {note: 'C6', left: 735}
     ];
     
     const blackKeysData = [
-        {note: 'C#4', left: 33}, {note: 'D#4', left: 83},
-        {note: 'F#4', left: 183}, {note: 'G#4', left: 233}, {note: 'A#4', left: 283},
-        {note: 'C#5', left: 383}, {note: 'D#5', left: 433},
-        {note: 'F#5', left: 533}, {note: 'G#5', left: 583}, {note: 'A#5', left: 633}
+        {note: 'C#3', left: 24}, {note: 'D#3', left: 59},
+        {note: 'F#3', left: 129}, {note: 'G#3', left: 164}, {note: 'A#3', left: 199},
+        {note: 'C#4', left: 269}, {note: 'D#4', left: 304},
+        {note: 'F#4', left: 374}, {note: 'G#4', left: 409}, {note: 'A#4', left: 444},
+        {note: 'C#5', left: 514}, {note: 'D#5', left: 549},
+        {note: 'F#5', left: 619}, {note: 'G#5', left: 654}, {note: 'A#5', left: 689}
     ];
     
     whiteKeysData.forEach(data => {
