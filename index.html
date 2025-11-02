@@ -2,340 +2,472 @@
 
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>Web Test Demo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Đàn Piano - Tone Dm</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+```
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f0f4f8;
-      margin: 0;
-      padding: 20px;
-      font-size: 18px;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 5px;
+        touch-action: manipulation;
+        overflow-x: hidden;
     }
-    h1 {
-      text-align: center;
-      color: #0078D4;
-      margin-bottom: 10px;
+    
+    .container {
+        width: 100%;
+        max-width: 100vw;
     }
-    h2, h3 {
-      color: #333;
-      margin-top: 20px;
+    
+    .title {
+        text-align: center;
+        color: white;
+        margin-bottom: 8px;
+        font-size: 18px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
-    textarea {
-      width: 100%;
-      font-size: 16px;
-      padding: 12px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      margin-bottom: 10px;
-      box-sizing: border-box;
-      resize: vertical;
+    
+    .chords-section {
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 10px;
+        padding: 8px;
+        margin-bottom: 8px;
     }
-    button {
-      font-size: 16px;
-      padding: 10px 20px;
-      background-color: #0078D4;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-top: 10px;
-      margin-right: 10px;
+    
+    .chords-grid {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 5px;
+        margin-bottom: 8px;
     }
-    button:hover {
-      background-color: #005fa3;
+    
+    .chord-btn {
+        background: linear-gradient(145deg, #4CAF50, #45a049);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 5px;
+        font-size: 13px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 3px 5px rgba(0,0,0,0.3);
+        transition: all 0.1s;
+        touch-action: manipulation;
     }
-    .note-card {
-      background-color: #ffffff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 15px;
-      padding-bottom: 50px;
-      margin-top: 15px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      position: relative;
+    
+    .chord-btn:active, .chord-btn.playing {
+        transform: scale(0.95);
+        box-shadow: 0 2px 3px rgba(0,0,0,0.3);
+        background: linear-gradient(145deg, #66BB6A, #5CB860);
     }
-    .timestamp {
-      font-size: 14px;
-      color: #888;
-      margin-top: 8px;
+    
+    .controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
     }
-    .delete-btn {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      background-color: #e74c3c;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 5px 10px;
-      font-size: 14px;
-      cursor: pointer;
+    
+    .loop-btn {
+        background: linear-gradient(145deg, #2196F3, #1976D2);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 15px;
+        font-size: 13px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 3px 5px rgba(0,0,0,0.3);
+        transition: all 0.1s;
+        touch-action: manipulation;
     }
-    .delete-btn:hover {
-      background-color: #c0392b;
+    
+    .loop-btn.active {
+        background: linear-gradient(145deg, #f44336, #d32f2f);
     }
-    .deleted-label {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      color: green;
-      font-weight: bold;
-      font-size: 14px;
+    
+    .loop-btn:active {
+        transform: scale(0.95);
     }
-    .action-buttons {
-      display: flex;
-      gap: 10px;
-      margin-top: 30px;
+    
+    .speed-control {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(255,255,255,0.2);
+        padding: 5px 10px;
+        border-radius: 8px;
     }
-    .action-buttons button {
-      flex: 1;
-      margin: 0;
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 6px;
-      cursor: pointer;
+    
+    .speed-control label {
+        color: white;
+        font-size: 12px;
+        white-space: nowrap;
     }
-    #deleteAllBtn {
-      background-color: #e74c3c;
-      color: white;
-      border: none;
+    
+    .speed-control input {
+        width: 80px;
     }
-    #deleteAllBtn:hover {
-      background-color: #c0392b;
+    
+    .speed-value {
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+        min-width: 35px;
     }
-    #downloadBtn {
-      background-color: #28a745;
-      color: white;
-      border: none;
+    
+    .piano-container {
+        background: rgba(0,0,0,0.3);
+        backdrop-filter: blur(10px);
+        border-radius: 10px;
+        padding: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        overflow-x: auto;
+        overflow-y: hidden;
     }
-    #downloadBtn:hover {
-      background-color: #218838;
+    
+    .piano {
+        position: relative;
+        height: 180px;
+        width: 840px;
+        margin: 0 auto;
     }
-    #footer {
-      margin-top: 30px;
-      font-size: 16px;
-      color: #555;
-      text-align: center;
+    
+    .white-key {
+        position: absolute;
+        width: 60px;
+        height: 180px;
+        background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%);
+        border: 2px solid #222;
+        border-radius: 0 0 5px 5px;
+        cursor: pointer;
+        user-select: none;
+        touch-action: manipulation;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 8px;
+        font-size: 11px;
+        color: #666;
+        font-weight: bold;
     }
-    #message {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: white;
-      padding: 15px 30px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      font-weight: bold;
-      text-align: center;
-      z-index: 1000;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+    
+    .white-key:active {
+        background: linear-gradient(to bottom, #e8e8e8 0%, #d8d8d8 100%);
+        box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
     }
-    #message.show {
-      opacity: 1;
-      visibility: visible;
+    
+    .black-key {
+        position: absolute;
+        width: 40px;
+        height: 115px;
+        background: linear-gradient(to bottom, #444 0%, #000 100%);
+        border: 1px solid #000;
+        border-radius: 0 0 3px 3px;
+        cursor: pointer;
+        user-select: none;
+        touch-action: manipulation;
+        z-index: 10;
+        color: white;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 6px;
+        font-size: 9px;
+        font-weight: bold;
+        box-shadow: 0 3px 5px rgba(0,0,0,0.5);
     }
-    .warning {
-      color: #e74c3c !important;
+    
+    .black-key:active {
+        background: linear-gradient(to bottom, #666 0%, #333 100%);
+        box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
     }
-  </style>
+    
+    .info {
+        text-align: center;
+        color: white;
+        margin-top: 8px;
+        font-size: 11px;
+        line-height: 1.4;
+    }
+
+    @media (max-width: 600px) {
+        .chords-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+</style>
+```
+
 </head>
 <body>
-  <h1>Web Test Demo</h1>
-  <h2>📝 Ghi chú trực tuyến</h2>
-  <textarea id="noteInput" rows="5" placeholder="Nhập ghi chú tại đây..."></textarea>
-  <button onclick="saveNote()">Lưu ghi chú</button>
+    <div class="container">
+        <h1 class="title">🎹 Đàn Piano - Tone Dm</h1>
 
-  <h3>📌 Ghi chú đã lưu:</h3>
-  <div id="noteList"></div>
+```
+    <div class="chords-section">
+        <div class="chords-grid">
+            <button class="chord-btn" data-chord="Dm">Dm</button>
+            <button class="chord-btn" data-chord="Am">Am</button>
+            <button class="chord-btn" data-chord="Bb">B♭</button>
+            <button class="chord-btn" data-chord="C">C</button>
+            <button class="chord-btn" data-chord="F">F</button>
+            <button class="chord-btn" data-chord="Gm">Gm</button>
+            <button class="chord-btn" data-chord="A7">A7</button>
+            <button class="chord-btn" data-chord="Dm7">Dm7</button>
+        </div>
+        
+        <div class="controls">
+            <button class="loop-btn" id="loopBtn">▶ Lặp</button>
+            <div class="speed-control">
+                <label>Tốc độ:</label>
+                <input type="range" id="speedSlider" min="100" max="500" value="250" step="50">
+                <span class="speed-value" id="speedValue">250ms</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="piano-container">
+        <div class="piano" id="piano"></div>
+    </div>
+    
+    <div class="info">
+        Bấm hợp âm → Bấm "▶ Lặp" để lặp liên tục → Điều chỉnh tốc độ
+    </div>
+</div>
 
-  <div id="message"></div>
-
-  <div class="action-buttons">
-    <button id="deleteAllBtn" onclick="deleteAllNotes()">🗑️ Xóa tất cả ghi chú</button>
-    <button id="downloadBtn" onclick="downloadNotes()">📥 Tải toàn bộ ghi chú</button>
-  </div>
-
-  <div id="footer">
-    🌐 Đây là phiên bản thử nghiệm của hệ thống ghi chú trực tuyến, được thiết kế nhằm hỗ trợ đồng bộ hóa nội dung giữa các thành viên trong nhóm — giúp làm việc nhóm hiệu quả hơn, mọi người cùng nhìn thấy và cập nhật ghi chú theo thời gian thực.
-  </div>
-
-  <script>
-    var firebaseConfig = {
-      databaseURL: "https://test-nhut117117-default-rtdb.asia-southeast1.firebasedatabase.app/"
-    };
-    firebase.initializeApp(firebaseConfig);
-    var database = firebase.database();
-    let noteCount = 0;
-
-    function saveNote() {
-      var note = document.getElementById("noteInput").value;
-      if (note.trim() !== "") {
-        var newNoteRef = database.ref("notes").push();
-        newNoteRef.set({
-          content: note,
-          timestamp: new Date().toISOString()
-        });
-        document.getElementById("noteInput").value = "";
-        showMessage("✅ Đã lưu ghi chú thành công!", "green");
-      } else {
-        showMessage("⚠️ Vui lòng nhập nội dung ghi chú!", "orange");
-      }
-    }
-
-    function formatDate(isoString) {
-      const date = new Date(isoString);
-      return date.toLocaleString('vi-VN', {
-        hour: '2-digit', minute: '2-digit',
-        day: '2-digit', month: '2-digit', year: 'numeric'
-      });
-    }
-
-    function deleteNote(noteId, cardElement) {
-      const password = prompt("Nhập mật khẩu để xóa ghi chú:");
-      if (password === "898989") {
-        database.ref("notes/" + noteId).remove()
-          .then(() => {
-            const label = document.createElement("div");
-            label.className = "deleted-label";
-            label.textContent = "✅ Đã xoá";
-            cardElement.innerHTML = "";
-            cardElement.appendChild(label);
-            showMessage("✅ Đã xóa ghi chú thành công!", "green");
-            
-            // Tự động ẩn thẻ sau 3 giây
-            setTimeout(() => {
-              cardElement.style.display = "none";
-            }, 3000);
-          })
-          .catch((error) => {
-            showMessage("❌ Lỗi khi xóa: " + error.message, "red");
-          });
-      } else if (password !== null) {
-        showMessage("❌ Sai mật khẩu. Không thể xóa ghi chú.", "red");
-      }
-    }
-
-    function deleteAllNotes() {
-      if (noteCount === 0) {
-        showMessage("⚠️ Chưa có ghi chú để xóa.", "orange");
-        return;
-      }
-
-      const confirmDelete = confirm(`⚠️ BẠN CHẮC CHẮN MUỐN XÓA TẤT CẢ ${noteCount} GHI CHÚ?\n\nHành động này KHÔNG THỂ hoàn tác!`);
-      
-      if (confirmDelete) {
-        const password = prompt("Nhập mật khẩu để xác nhận xóa tất cả ghi chú:");
-        if (password === "898989") {
-          database.ref("notes").remove()
-            .then(() => {
-              showMessage("✅ Đã xóa tất cả ghi chú thành công!", "green");
-            })
-            .catch((error) => {
-              showMessage("❌ Lỗi khi xóa: " + error.message, "red");
-            });
-        } else if (password !== null) {
-          alert("❌ Sai mật khẩu. Không thể xóa ghi chú.");
+<script>
+    // Tối ưu cho iOS - tạo AudioContext sau user interaction
+    let audioContext = null;
+    let isLooping = false;
+    let currentChord = null;
+    let loopInterval = null;
+    let chordSpeed = 250;
+    
+    function initAudioContext() {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
-      }
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
     }
-
-    function downloadNotes() {
-      if (noteCount === 0) {
-        showMessage("⚠️ Chưa có ghi chú để tải.", "orange");
-        return;
-      }
-
-      database.ref("notes").once("value", function(snapshot) {
-        let content = "";
-        const notesArray = [];
-        snapshot.forEach(function(childSnapshot) {
-          notesArray.push(childSnapshot.val());
+    
+    // Định nghĩa các nốt nhạc
+    const notes = {
+        'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13,
+        'E4': 329.63, 'F4': 349.23, 'F#4': 369.99, 'G4': 392.00,
+        'G#4': 415.30, 'A4': 440.00, 'A#4': 466.16, 'B4': 493.88,
+        'C5': 523.25, 'C#5': 554.37, 'D5': 587.33, 'D#5': 622.25, 
+        'E5': 659.25, 'F5': 698.46, 'F#5': 739.99, 'G5': 783.99,
+        'G#5': 830.61, 'A5': 880.00, 'A#5': 932.33, 'B5': 987.77
+    };
+    
+    // Định nghĩa hợp âm
+    const chords = {
+        'Dm': ['D4', 'F4', 'A4'],
+        'Am': ['A4', 'C5', 'E5'],
+        'Bb': ['A#4', 'D5', 'F4'],
+        'C': ['C4', 'E4', 'G4'],
+        'F': ['F4', 'A4', 'C5'],
+        'Gm': ['G4', 'A#4', 'D5'],
+        'A7': ['A4', 'C#5', 'E5', 'G4'],
+        'Dm7': ['D4', 'F4', 'A4', 'C5']
+    };
+    
+    // Tạo bàn phím piano
+    const piano = document.getElementById('piano');
+    
+    const whiteKeysData = [
+        {note: 'C4', left: 0}, {note: 'D4', left: 60}, {note: 'E4', left: 120},
+        {note: 'F4', left: 180}, {note: 'G4', left: 240}, {note: 'A4', left: 300},
+        {note: 'B4', left: 360}, {note: 'C5', left: 420}, {note: 'D5', left: 480},
+        {note: 'E5', left: 540}, {note: 'F5', left: 600}, {note: 'G5', left: 660},
+        {note: 'A5', left: 720}, {note: 'B5', left: 780}
+    ];
+    
+    const blackKeysData = [
+        {note: 'C#4', left: 40}, {note: 'D#4', left: 100},
+        {note: 'F#4', left: 220}, {note: 'G#4', left: 280}, {note: 'A#4', left: 340},
+        {note: 'C#5', left: 460}, {note: 'D#5', left: 520},
+        {note: 'F#5', left: 640}, {note: 'G#5', left: 700}, {note: 'A#5', left: 760}
+    ];
+    
+    // Tạo phím trắng
+    whiteKeysData.forEach(data => {
+        const key = document.createElement('div');
+        key.className = 'white-key';
+        key.dataset.note = data.note;
+        key.textContent = data.note;
+        key.style.left = data.left + 'px';
+        
+        key.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            initAudioContext();
+            playNote(data.note);
         });
-        notesArray.reverse();
-
-        notesArray.forEach(function(data) {
-          const time = formatDate(data.timestamp);
-          content += `📝 ${data.content}\n🕒 ${time}\n\n`;
+        key.addEventListener('mousedown', () => {
+            initAudioContext();
+            playNote(data.note);
         });
-
-        const blob = new Blob(["\uFEFF" + content], { type: "text/plain;charset=utf-8" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        const dateStr = new Date().toLocaleDateString('vi-VN').replace(/\//g, '-');
-        link.download = `ghi_chu_${dateStr}.txt`;
-        link.click();
-        showMessage("✅ Đã tải xuống ghi chú thành công!", "green");
-      });
-    }
-
-    function showMessage(text, color) {
-      const msgElement = document.getElementById("message");
-      msgElement.textContent = text;
-      msgElement.style.color = color;
-      msgElement.classList.add("show");
-      
-      setTimeout(() => {
-        msgElement.classList.remove("show");
-      }, 5000);
-    }
-
-    database.ref("notes").on("value", function(snapshot) {
-      var noteList = document.getElementById("noteList");
-      noteList.innerHTML = "";
-      noteCount = 0;
-
-      const notesArray = [];
-      snapshot.forEach(function(childSnapshot) {
-        notesArray.push({
-          id: childSnapshot.key,
-          data: childSnapshot.val()
-        });
-      });
-
-      notesArray.reverse();
-      noteCount = notesArray.length;
-
-      if (noteCount === 0) {
-        noteList.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">Chưa có ghi chú nào. Hãy thêm ghi chú đầu tiên!</div>';
-      }
-
-      notesArray.forEach(function(noteItem) {
-        var data = noteItem.data;
-        var noteId = noteItem.id;
-        var note = data.content;
-        var time = formatDate(data.timestamp);
-
-        var card = document.createElement("div");
-        card.className = "note-card";
-
-        var content = document.createElement("div");
-        content.textContent = note;
-
-        var timestamp = document.createElement("div");
-        timestamp.className = "timestamp";
-        timestamp.textContent = "🕒 " + time;
-
-        var deleteBtn = document.createElement("button");
-        deleteBtn.className = "delete-btn";
-        deleteBtn.textContent = "Xóa";
-        deleteBtn.onclick = function() {
-          deleteNote(noteId, card);
-        };
-
-        card.appendChild(content);
-        card.appendChild(timestamp);
-        card.appendChild(deleteBtn);
-        noteList.appendChild(card);
-      });
+        
+        piano.appendChild(key);
     });
-  </script>
+    
+    // Tạo phím đen
+    blackKeysData.forEach(data => {
+        const key = document.createElement('div');
+        key.className = 'black-key';
+        key.dataset.note = data.note;
+        key.textContent = data.note;
+        key.style.left = data.left + 'px';
+        
+        key.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            initAudioContext();
+            playNote(data.note);
+        });
+        key.addEventListener('mousedown', () => {
+            initAudioContext();
+            playNote(data.note);
+        });
+        
+        piano.appendChild(key);
+    });
+    
+    // Hàm phát âm thanh - tối ưu cho iOS
+    function playNote(note, duration = 1.5) {
+        if (!audioContext || !notes[note]) return;
+        
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = notes[note];
+        oscillator.type = 'sine';
+        
+        const now = audioContext.currentTime;
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(0.3, now + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        
+        oscillator.start(now);
+        oscillator.stop(now + duration);
+    }
+    
+    // Hàm phát hợp âm
+    function playChord(chordName) {
+        const chordNotes = chords[chordName];
+        if (!chordNotes) return;
+        
+        chordNotes.forEach((note, index) => {
+            setTimeout(() => {
+                playNote(note, 2.0);
+            }, index * chordSpeed);
+        });
+    }
+    
+    // Xử lý nút hợp âm
+    const chordButtons = document.querySelectorAll('.chord-btn');
+    chordButtons.forEach(btn => {
+        const handler = () => {
+            initAudioContext();
+            const chord = btn.dataset.chord;
+            currentChord = chord;
+            playChord(chord);
+            
+            // Highlight button
+            chordButtons.forEach(b => b.classList.remove('playing'));
+            btn.classList.add('playing');
+            setTimeout(() => btn.classList.remove('playing'), 1000);
+        };
+        
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handler();
+        });
+        btn.addEventListener('click', handler);
+    });
+    
+    // Xử lý nút lặp
+    const loopBtn = document.getElementById('loopBtn');
+    loopBtn.addEventListener('click', () => {
+        initAudioContext();
+        isLooping = !isLooping;
+        
+        if (isLooping) {
+            if (!currentChord) {
+                currentChord = 'Dm';
+            }
+            loopBtn.textContent = '⏸ Dừng';
+            loopBtn.classList.add('active');
+            startLoop();
+        } else {
+            loopBtn.textContent = '▶ Lặp';
+            loopBtn.classList.remove('active');
+            stopLoop();
+        }
+    });
+    
+    function startLoop() {
+        if (!currentChord) return;
+        
+        const chordNotes = chords[currentChord];
+        const totalDuration = chordNotes.length * chordSpeed + 500;
+        
+        playChord(currentChord);
+        loopInterval = setInterval(() => {
+            if (isLooping) {
+                playChord(currentChord);
+            }
+        }, totalDuration);
+    }
+    
+    function stopLoop() {
+        if (loopInterval) {
+            clearInterval(loopInterval);
+            loopInterval = null;
+        }
+    }
+    
+    // Xử lý thanh điều chỉnh tốc độ
+    const speedSlider = document.getElementById('speedSlider');
+    const speedValue = document.getElementById('speedValue');
+    
+    speedSlider.addEventListener('input', (e) => {
+        chordSpeed = parseInt(e.target.value);
+        speedValue.textContent = chordSpeed + 'ms';
+        
+        // Restart loop nếu đang chạy
+        if (isLooping) {
+            stopLoop();
+            startLoop();
+        }
+    });
+    
+    // Khởi tạo AudioContext khi tương tác lần đầu
+    ['touchstart', 'click'].forEach(event => {
+        document.body.addEventListener(event, initAudioContext, { once: true });
+    });
+</script>
+```
 
 </body>
 </html>
