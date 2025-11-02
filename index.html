@@ -91,30 +91,128 @@
         background: rgba(255,255,255,0.1);
         backdrop-filter: blur(10px);
         border-radius: 10px;
-        padding: 10px;
+        padding: 8px;
         margin-bottom: 8px;
+        max-width: 400px;
+    }
+    
+    .instrument-selector {
+        position: relative;
+        margin-bottom: 8px;
+    }
+    
+    .instrument-current {
+        background: linear-gradient(145deg, #9C27B0, #7B1FA2);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 13px;
+        font-weight: bold;
+        cursor: pointer;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .instrument-current:active {
+        transform: scale(0.98);
+    }
+    
+    .instrument-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: rgba(0,0,0,0.9);
+        backdrop-filter: blur(10px);
+        border-radius: 6px;
+        margin-top: 4px;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        z-index: 100;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    }
+    
+    .instrument-dropdown.open {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .instrument-option {
+        background: transparent;
+        color: white;
+        border: none;
+        padding: 10px 12px;
+        font-size: 13px;
+        font-weight: bold;
+        cursor: pointer;
+        width: 100%;
+        text-align: left;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        transition: background 0.2s;
+    }
+    
+    .instrument-option:hover, .instrument-option:active {
+        background: rgba(156, 39, 176, 0.3);
+    }
+    
+    .instrument-option:last-child {
+        border-bottom: none;
+    }
+    
+    .tone-selector {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 8px;
+        overflow-x: auto;
+    }
+    
+    .tone-btn {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s;
+    }
+    
+    .tone-btn.active {
+        background: linear-gradient(145deg, #FF9800, #F57C00);
+        border-color: #FF9800;
+    }
+    
+    .tone-btn:active {
+        transform: scale(0.95);
     }
     
     .chords-title {
         color: white;
-        font-size: 14px;
-        margin-bottom: 8px;
+        font-size: 13px;
+        margin-bottom: 6px;
         text-align: center;
     }
     
     .chords-grid {
         display: grid;
-        grid-template-columns: repeat(8, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 5px;
     }
     
     .chord-btn {
         background: linear-gradient(145deg, #4CAF50, #45a049);
         color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 12px 5px;
-        font-size: 14px;
+        border: 2px solid rgba(255,255,255,0.4);
+        border-radius: 6px;
+        padding: 10px 5px;
+        font-size: 13px;
         font-weight: bold;
         cursor: pointer;
         box-shadow: 0 3px 5px rgba(0,0,0,0.3);
@@ -140,15 +238,15 @@
     
     .piano {
         position: relative;
-        height: 180px;
-        width: 840px;
+        height: 160px;
+        width: 700px;
         margin: 0 auto;
     }
     
     .white-key {
         position: absolute;
-        width: 60px;
-        height: 180px;
+        width: 50px;
+        height: 160px;
         background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%);
         border: 2px solid #222;
         border-radius: 0 0 5px 5px;
@@ -158,8 +256,8 @@
         display: flex;
         align-items: flex-end;
         justify-content: center;
-        padding-bottom: 8px;
-        font-size: 11px;
+        padding-bottom: 6px;
+        font-size: 10px;
         color: #666;
         font-weight: bold;
     }
@@ -171,8 +269,8 @@
     
     .black-key {
         position: absolute;
-        width: 40px;
-        height: 115px;
+        width: 33px;
+        height: 100px;
         background: linear-gradient(to bottom, #444 0%, #000 100%);
         border: 1px solid #000;
         border-radius: 0 0 3px 3px;
@@ -184,8 +282,8 @@
         display: flex;
         align-items: flex-end;
         justify-content: center;
-        padding-bottom: 6px;
-        font-size: 9px;
+        padding-bottom: 5px;
+        font-size: 8px;
         font-weight: bold;
         box-shadow: 0 3px 5px rgba(0,0,0,0.5);
     }
@@ -199,21 +297,14 @@
         text-align: center;
         color: white;
         margin-top: 8px;
-        font-size: 12px;
+        font-size: 11px;
         line-height: 1.4;
-    }
-
-    @media (max-width: 600px) {
-        .chords-grid {
-            grid-template-columns: repeat(4, 1fr);
-        }
     }
 </style>
 ```
 
 </head>
 <body>
-    <!-- Màn hình bắt đầu -->
     <div class="start-overlay" id="startOverlay">
         <div class="start-text">🎹 Bấm nút bên dưới để bắt đầu chơi nhạc</div>
         <button class="start-btn" id="startBtn">🎵 BẮT ĐẦU CHƠI</button>
@@ -221,20 +312,41 @@
 
 ```
 <div class="container">
-    <h1 class="title">🎹 Đàn Piano - Tone Dm</h1>
+    <h1 class="title">🎹 Đàn Piano</h1>
     
     <div class="chords-section">
-        <div class="chords-title">🎵 Hợp Âm (Bấm để phát cùng lúc)</div>
-        <div class="chords-grid">
-            <button class="chord-btn" data-chord="Dm">Dm</button>
-            <button class="chord-btn" data-chord="Am">Am</button>
-            <button class="chord-btn" data-chord="Bb">B♭</button>
-            <button class="chord-btn" data-chord="C">C</button>
-            <button class="chord-btn" data-chord="F">F</button>
-            <button class="chord-btn" data-chord="Gm">Gm</button>
-            <button class="chord-btn" data-chord="A7">A7</button>
-            <button class="chord-btn" data-chord="Dm7">Dm7</button>
+        <div class="chords-title">🎸 Nhạc Cụ</div>
+        <div class="instrument-selector">
+            <button class="instrument-current" id="instrumentCurrent">
+                <span id="instrumentName">🎹 Piano</span>
+                <span id="dropdownArrow">▼</span>
+            </button>
+            <div class="instrument-dropdown" id="instrumentDropdown">
+                <button class="instrument-option" data-instrument="piano">🎹 Piano</button>
+                <button class="instrument-option" data-instrument="guitar">🎸 Guitar</button>
+                <button class="instrument-option" data-instrument="violin">🎻 Violin</button>
+                <button class="instrument-option" data-instrument="flute">🎺 Flute</button>
+                <button class="instrument-option" data-instrument="organ">🎛️ Organ</button>
+                <button class="instrument-option" data-instrument="synth">🎹 Synth</button>
+                <button class="instrument-option" data-instrument="bass">🎸 Bass</button>
+                <button class="instrument-option" data-instrument="trumpet">🎺 Trumpet</button>
+                <button class="instrument-option" data-instrument="saxophone">🎷 Saxophone</button>
+                <button class="instrument-option" data-instrument="harp">🎵 Harp</button>
+            </div>
         </div>
+        
+        <div class="chords-title">🎵 Tone</div>
+        <div class="tone-selector">
+            <button class="tone-btn active" data-tone="Dm">Dm</button>
+            <button class="tone-btn" data-tone="Am">Am</button>
+            <button class="tone-btn" data-tone="C">C</button>
+            <button class="tone-btn" data-tone="G">G</button>
+            <button class="tone-btn" data-tone="Em">Em</button>
+            <button class="tone-btn" data-tone="F">F</button>
+        </div>
+        
+        <div class="chords-title" id="currentTone">Hợp Âm - Tone Dm</div>
+        <div class="chords-grid" id="chordsGrid"></div>
     </div>
     
     <div class="piano-container">
@@ -242,16 +354,16 @@
     </div>
     
     <div class="info">
-        Bấm hợp âm phía trên để phát các nốt cùng lúc<br>
-        Bấm phím đàn bên dưới để đàn giai điệu
+        Bấm hợp âm phía trên • Bấm phím đàn để chơi giai điệu
     </div>
 </div>
 
 <script>
     let audioContext = null;
     let isStarted = false;
+    let currentTone = 'Dm';
+    let currentInstrument = 'piano';
     
-    // Khởi tạo AudioContext
     function initAudioContext() {
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -261,7 +373,6 @@
         }
     }
     
-    // Định nghĩa các nốt nhạc
     const notes = {
         'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13,
         'E4': 329.63, 'F4': 349.23, 'F#4': 369.99, 'G4': 392.00,
@@ -271,124 +382,156 @@
         'G#5': 830.61, 'A5': 880.00, 'A#5': 932.33, 'B5': 987.77
     };
     
-    // Định nghĩa hợp âm
-    const chords = {
-        'Dm': ['D4', 'F4', 'A4'],
-        'Am': ['A4', 'C5', 'E5'],
-        'Bb': ['A#4', 'D5', 'F4'],
-        'C': ['C4', 'E4', 'G4'],
-        'F': ['F4', 'A4', 'C5'],
-        'Gm': ['G4', 'A#4', 'D5'],
-        'A7': ['A4', 'C#5', 'E5', 'G4'],
-        'Dm7': ['D4', 'F4', 'A4', 'C5']
+    const instrumentSettings = {
+        piano: { type: 'sine', attack: 0.01, decay: 1.5, sustain: 0.3, release: 0.001, name: '🎹 Piano' },
+        guitar: { type: 'triangle', attack: 0.005, decay: 0.8, sustain: 0.25, release: 0.001, name: '🎸 Guitar' },
+        violin: { type: 'sawtooth', attack: 0.1, decay: 2.0, sustain: 0.35, release: 0.001, name: '🎻 Violin' },
+        flute: { type: 'sine', attack: 0.05, decay: 1.2, sustain: 0.2, release: 0.001, name: '🎺 Flute' },
+        organ: { type: 'square', attack: 0.001, decay: 2.5, sustain: 0.4, release: 0.001, name: '🎛️ Organ' },
+        synth: { type: 'sawtooth', attack: 0.02, decay: 1.0, sustain: 0.3, release: 0.001, name: '🎹 Synth' },
+        bass: { type: 'triangle', attack: 0.01, decay: 0.6, sustain: 0.2, release: 0.001, name: '🎸 Bass' },
+        trumpet: { type: 'square', attack: 0.08, decay: 1.5, sustain: 0.3, release: 0.001, name: '🎺 Trumpet' },
+        saxophone: { type: 'sawtooth', attack: 0.06, decay: 1.8, sustain: 0.35, release: 0.001, name: '🎷 Saxophone' },
+        harp: { type: 'sine', attack: 0.001, decay: 1.2, sustain: 0.15, release: 0.001, name: '🎵 Harp' }
     };
     
-    // Tạo bàn phím piano
+    const chords = {
+        'C': ['C4', 'E4', 'G4'], 'Dm': ['D4', 'F4', 'A4'], 'Em': ['E4', 'G4', 'B4'],
+        'F': ['F4', 'A4', 'C5'], 'G': ['G4', 'B4', 'D5'], 'Am': ['A4', 'C5', 'E5'],
+        'Bb': ['A#4', 'D5', 'F4'], 'Gm': ['G4', 'A#4', 'D5'], 'A': ['A4', 'C#5', 'E5'],
+        'Bm': ['B4', 'D5', 'F#5'], 'D': ['D4', 'F#4', 'A4'], 'E': ['E4', 'G#4', 'B4'],
+        'A7': ['A4', 'C#5', 'E5', 'G4'], 'D7': ['D4', 'F#4', 'A4', 'C5'],
+        'E7': ['E4', 'G#4', 'B4', 'D5'], 'G7': ['G4', 'B4', 'D5', 'F5'],
+        'C7': ['C4', 'E4', 'G4', 'A#4'], 'Dm7': ['D4', 'F4', 'A4', 'C5'],
+        'Em7': ['E4', 'G4', 'B4', 'D5'], 'Am7': ['A4', 'C5', 'E5', 'G5'],
+        'Fm': ['F4', 'G#4', 'C5'], 'Cm': ['C4', 'D#4', 'G4']
+    };
+    
+    const toneChords = {
+        'Dm': ['Dm', 'Am', 'Bb', 'C', 'F', 'Gm', 'A7', 'Dm7'],
+        'Am': ['Am', 'Dm', 'Em', 'F', 'C', 'G', 'E7', 'Am7'],
+        'C': ['C', 'F', 'G', 'Am', 'Em', 'Dm', 'G7', 'C7'],
+        'G': ['G', 'C', 'D', 'Em', 'Am', 'Bm', 'D7', 'G7'],
+        'Em': ['Em', 'Am', 'Bm', 'C', 'G', 'D', 'E7', 'Em7'],
+        'F': ['F', 'Bb', 'C', 'Dm', 'Am', 'Gm', 'C7', 'Dm7']
+    };
+    
     const piano = document.getElementById('piano');
     
     const whiteKeysData = [
-        {note: 'C4', left: 0}, {note: 'D4', left: 60}, {note: 'E4', left: 120},
-        {note: 'F4', left: 180}, {note: 'G4', left: 240}, {note: 'A4', left: 300},
-        {note: 'B4', left: 360}, {note: 'C5', left: 420}, {note: 'D5', left: 480},
-        {note: 'E5', left: 540}, {note: 'F5', left: 600}, {note: 'G5', left: 660},
-        {note: 'A5', left: 720}, {note: 'B5', left: 780}
+        {note: 'C4', left: 0}, {note: 'D4', left: 50}, {note: 'E4', left: 100},
+        {note: 'F4', left: 150}, {note: 'G4', left: 200}, {note: 'A4', left: 250},
+        {note: 'B4', left: 300}, {note: 'C5', left: 350}, {note: 'D5', left: 400},
+        {note: 'E5', left: 450}, {note: 'F5', left: 500}, {note: 'G5', left: 550},
+        {note: 'A5', left: 600}, {note: 'B5', left: 650}
     ];
     
     const blackKeysData = [
-        {note: 'C#4', left: 40}, {note: 'D#4', left: 100},
-        {note: 'F#4', left: 220}, {note: 'G#4', left: 280}, {note: 'A#4', left: 340},
-        {note: 'C#5', left: 460}, {note: 'D#5', left: 520},
-        {note: 'F#5', left: 640}, {note: 'G#5', left: 700}, {note: 'A#5', left: 760}
+        {note: 'C#4', left: 33}, {note: 'D#4', left: 83},
+        {note: 'F#4', left: 183}, {note: 'G#4', left: 233}, {note: 'A#4', left: 283},
+        {note: 'C#5', left: 383}, {note: 'D#5', left: 433},
+        {note: 'F#5', left: 533}, {note: 'G#5', left: 583}, {note: 'A#5', left: 633}
     ];
     
-    // Tạo phím trắng
     whiteKeysData.forEach(data => {
         const key = document.createElement('div');
         key.className = 'white-key';
         key.dataset.note = data.note;
         key.textContent = data.note;
         key.style.left = data.left + 'px';
-        
-        key.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (isStarted) playNote(data.note);
-        });
-        key.addEventListener('mousedown', () => {
-            if (isStarted) playNote(data.note);
-        });
-        
+        key.addEventListener('touchstart', (e) => { e.preventDefault(); if (isStarted) playNote(data.note); });
+        key.addEventListener('mousedown', () => { if (isStarted) playNote(data.note); });
         piano.appendChild(key);
     });
     
-    // Tạo phím đen
     blackKeysData.forEach(data => {
         const key = document.createElement('div');
         key.className = 'black-key';
         key.dataset.note = data.note;
         key.textContent = data.note;
         key.style.left = data.left + 'px';
-        
-        key.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (isStarted) playNote(data.note);
-        });
-        key.addEventListener('mousedown', () => {
-            if (isStarted) playNote(data.note);
-        });
-        
+        key.addEventListener('touchstart', (e) => { e.preventDefault(); if (isStarted) playNote(data.note); });
+        key.addEventListener('mousedown', () => { if (isStarted) playNote(data.note); });
         piano.appendChild(key);
     });
     
-    // Hàm phát âm thanh
-    function playNote(note, duration = 1.5) {
+    function playNote(note) {
         if (!audioContext || !notes[note]) return;
-        
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.value = notes[note];
-        oscillator.type = 'sine';
-        
+        const settings = instrumentSettings[currentInstrument];
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.frequency.value = notes[note];
+        osc.type = settings.type;
         const now = audioContext.currentTime;
-        gainNode.gain.setValueAtTime(0, now);
-        gainNode.gain.linearRampToValueAtTime(0.3, now + 0.01);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
-        
-        oscillator.start(now);
-        oscillator.stop(now + duration);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(settings.sustain, now + settings.attack);
+        gain.gain.exponentialRampToValueAtTime(settings.release, now + settings.decay);
+        osc.start(now);
+        osc.stop(now + settings.decay);
     }
     
-    // Hàm phát hợp âm - TẤT CẢ CÁC NỐT CÙNG LÚC
     function playChord(chordName) {
         const chordNotes = chords[chordName];
         if (!chordNotes) return;
-        
-        // Phát tất cả các nốt cùng lúc
-        chordNotes.forEach(note => {
-            playNote(note, 2.0);
+        chordNotes.forEach(note => playNote(note));
+    }
+    
+    function renderChords(tone) {
+        const grid = document.getElementById('chordsGrid');
+        const title = document.getElementById('currentTone');
+        grid.innerHTML = '';
+        title.textContent = `Hợp Âm - Tone ${tone}`;
+        toneChords[tone].forEach(chordName => {
+            const btn = document.createElement('button');
+            btn.className = 'chord-btn';
+            btn.dataset.chord = chordName;
+            btn.textContent = chordName;
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); if (isStarted) playChord(chordName); });
+            btn.addEventListener('click', () => { if (isStarted) playChord(chordName); });
+            grid.appendChild(btn);
         });
     }
     
-    // Xử lý nút hợp âm
-    const chordButtons = document.querySelectorAll('.chord-btn');
-    chordButtons.forEach(btn => {
-        const handler = () => {
-            if (!isStarted) return;
-            const chord = btn.dataset.chord;
-            playChord(chord);
-        };
-        
-        btn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            handler();
-        });
-        btn.addEventListener('click', handler);
+    const instrumentCurrent = document.getElementById('instrumentCurrent');
+    const instrumentDropdown = document.getElementById('instrumentDropdown');
+    const instrumentName = document.getElementById('instrumentName');
+    const dropdownArrow = document.getElementById('dropdownArrow');
+    
+    instrumentCurrent.addEventListener('click', () => {
+        if (!isStarted) return;
+        instrumentDropdown.classList.toggle('open');
+        dropdownArrow.textContent = instrumentDropdown.classList.contains('open') ? '▲' : '▼';
     });
     
-    // Xử lý nút bắt đầu
+    document.querySelectorAll('.instrument-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!isStarted) return;
+            currentInstrument = btn.dataset.instrument;
+            instrumentName.textContent = instrumentSettings[currentInstrument].name;
+            instrumentDropdown.classList.remove('open');
+            dropdownArrow.textContent = '▼';
+        });
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.instrument-selector')) {
+            instrumentDropdown.classList.remove('open');
+            dropdownArrow.textContent = '▼';
+        }
+    });
+    
+    document.querySelectorAll('.tone-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!isStarted) return;
+            document.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentTone = btn.dataset.tone;
+            renderChords(currentTone);
+        });
+    });
+    
     const startBtn = document.getElementById('startBtn');
     const startOverlay = document.getElementById('startOverlay');
     
@@ -396,8 +539,7 @@
         initAudioContext();
         isStarted = true;
         startOverlay.classList.add('hidden');
-        
-        // Phát âm thanh demo để kích hoạt
+        renderChords(currentTone);
         playNote('C4', 0.1);
     });
     
@@ -406,8 +548,7 @@
         initAudioContext();
         isStarted = true;
         startOverlay.classList.add('hidden');
-        
-        // Phát âm thanh demo để kích hoạt
+        renderChords(currentTone);
         playNote('C4', 0.1);
     });
 </script>
