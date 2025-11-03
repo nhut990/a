@@ -103,25 +103,9 @@
     .tone-btn.active { background: linear-gradient(145deg, #FF9800, #F57C00); border-color: #FF9800; }
     .tone-btn:active { transform: scale(0.95); }
     .chords-title { color: white; font-size: 12px; margin-bottom: 4px; text-align: center; display: flex; justify-content: center; align-items: center; gap: 8px; }
-    .edit-mode-btn { background: linear-gradient(145deg, #FF9800, #F57C00); color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: bold; cursor: pointer; }
-    .edit-mode-btn.active { background: linear-gradient(145deg, #4CAF50, #45a049); }
     .chords-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 4px; }
     .chord-btn { background: linear-gradient(145deg, #4CAF50, #45a049); color: white; border: 2px solid rgba(255,255,255,0.4); border-radius: 5px; padding: 6px 2px; font-size: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3); transition: all 0.1s; touch-action: manipulation; position: relative; }
     .chord-btn:active { transform: scale(0.95); box-shadow: 0 2px 3px rgba(0,0,0,0.3); background: linear-gradient(145deg, #66BB6A, #5CB860); }
-    .chord-btn.edit-mode { background: linear-gradient(145deg, #9C27B0, #7B1FA2); }
-    .chord-edit-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); border-radius: 10px; padding: 20px; z-index: 1000; max-width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
-    .chord-edit-modal.active { display: block; }
-    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 999; }
-    .modal-overlay.active { display: block; }
-    .modal-title { color: #FFD700; font-size: 16px; font-weight: bold; margin-bottom: 12px; text-align: center; }
-    .modal-input { width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 5px; border: 2px solid #9C27B0; font-size: 14px; font-weight: bold; box-sizing: border-box; }
-    .modal-hint { color: #4CAF50; font-size: 12px; margin-bottom: 10px; text-align: center; font-style: italic; }
-    .modal-preview { background: rgba(76, 175, 80, 0.2); border: 2px solid #4CAF50; border-radius: 5px; padding: 8px; margin-bottom: 10px; color: white; font-size: 12px; min-height: 40px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px; }
-    .preview-note { background: rgba(255, 152, 0, 0.8); padding: 4px 8px; border-radius: 3px; font-weight: bold; font-size: 11px; }
-    .modal-buttons { display: flex; gap: 8px; margin-top: 15px; }
-    .modal-btn { flex: 1; padding: 10px; border: none; border-radius: 5px; font-weight: bold; font-size: 14px; cursor: pointer; }
-    .modal-btn.save { background: linear-gradient(145deg, #4CAF50, #45a049); color: white; }
-    .modal-btn.cancel { background: linear-gradient(145deg, #f44336, #d32f2f); color: white; }
     .piano-container { background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border-radius: 10px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow-x: auto; overflow-y: visible; width: 100%; max-width: 800px; position: relative; z-index: 1; }
     .piano { position: relative; height: 140px; width: 1050px; margin: 0 auto; }
     .white-key { position: absolute; width: 35px; height: 140px; background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%); border: 2px solid #222; border-radius: 0 0 4px 4px; cursor: pointer; user-select: none; touch-action: manipulation; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; font-size: 8px; color: #666; font-weight: bold; transition: all 0.05s; }
@@ -189,22 +173,8 @@
       <div class="tone-selector" id="toneSelector"></div>
       <div class="chords-title" id="currentTone">
         <span>Hợp Âm - Tone Dm</span>
-        <button class="edit-mode-btn" id="editModeBtn" style="display:none;">✏️ Edit</button>
       </div>
       <div class="chords-grid" id="chordsGrid"></div>
-    </div>
-    <div class="modal-overlay" id="modalOverlay"></div>
-    <div class="chord-edit-modal" id="chordEditModal">
-      <div class="modal-title">Chỉnh sửa hợp âm Tone User</div>
-      <input type="text" id="chordNameInput" class="modal-input" placeholder="Nhập tên hợp âm (VD: Dm, A7, Dsus4, Edim...)">
-      <div class="modal-hint">💡 Gõ tên hợp âm (VD Cm, Dsus4, Edim), thằng Nhựt nó sẽ tự tính nốt!</div>
-      <div class="modal-preview" id="chordPreview">
-        <span style="opacity: 0.6;">Nhập hợp âm để xem nốt nhạc...</span>
-      </div>
-      <div class="modal-buttons">
-        <button class="modal-btn save" id="saveChordBtn">💾 Lưu</button>
-        <button class="modal-btn cancel" id="cancelEditBtn">✖️ Hủy</button>
-      </div>
     </div>
     <div class="piano-container">
       <div class="piano" id="piano"></div>
@@ -214,7 +184,7 @@
     </div>
   </div>
   <script>
-    // ✅ CẤU HÌNH NHẠC CỤ - ĐÃ CẬP NHẬT THEO GITHUB CỦA BẠN
+    // ✅ CẤU HÌNH NHẠC CỤ
     const sampleInstruments = {
         piano: { name: '🎹 Acoustic Grand Piano', folder: 'acoustic_grand_piano-mp3' },
         guitar_nylon: { name: '🎸 Acoustic Guitar Nylon', folder: 'acoustic_guitar_nylon-mp3' },
@@ -232,7 +202,6 @@
         violin: { name: '🎻 Violin', folder: 'violin-mp3' }
     };
     
-    // ✅ LINK GITHUB CỦA BẠN - SỬ DỤNG RAW.GITHUBUSERCONTENT.COM
     const sampleBaseURL = "https://raw.githubusercontent.com/Nhut11790/nhut11790.github.io/main/tieng/";
 
     // ✅ TẦN SỐ CÁC NỐT NHẠC
@@ -269,7 +238,7 @@
         }
     }
 
-    // ✅ PRELOAD SAMPLES VỚI XỬ LÝ LỖI TỐT HƠN
+    // ✅ PRELOAD SAMPLES
     async function preloadSamples(instrument) {
         let notesList = Object.keys(notes);
         let folder = sampleInstruments[instrument].folder;
@@ -303,7 +272,7 @@
         console.log(`✅ ${instrument}: Đã tải ${successCount}/${notesList.length} nốt nhạc`);
         
         if (successCount === 0) {
-            alert(`⚠️ Không thể tải nhạc cụ ${sampleInstruments[instrument].name}. Vui lòng kiểm tra:\n1. File MP3 đã upload đúng chưa\n2. Tên thư mục có đúng không\n3. Xem Console (F12) để biết chi tiết`);
+            alert(`⚠️ Không thể tải nhạc cụ ${sampleInstruments[instrument].name}. Vui lòng kiểm tra kết nối.`);
         }
     }
 
@@ -376,14 +345,13 @@
     whiteKeysData.forEach(data => piano.appendChild(createKey(false, data)));
     blackKeysData.forEach(data => piano.appendChild(createKey(true, data)));
 
-    // ✅ PHÁT ÂM THANH SAMPLE VỚI FALLBACK THÔNG MINH
+    // ✅ PHÁT ÂM THANH SAMPLE
     async function playSample(instrument, note, volume = 1.0, duration = 1200) {
         if (!audioContext || isMuted) return;
         
         let sampleBuffer = sampleBuffers[instrument][note];
         let rootNote = note;
         
-        // ✅ NẾU KHÔNG CÓ NỐT CHÍNH XÁC, TÌM NỐT GẦN NHẤT
         if (!sampleBuffer) {
             const availableNotes = Object.keys(sampleBuffers[instrument]).filter(n => sampleBuffers[instrument][n]);
             
@@ -409,7 +377,6 @@
         const src = audioContext.createBufferSource();
         src.buffer = sampleBuffer;
         
-        // ✅ TÍNH TOÁN PITCH SHIFT
         let semitone = Math.log2(notes[note] / notes[rootNote]) * 12;
         src.playbackRate.value = Math.pow(2, semitone / 12);
         
@@ -439,44 +406,30 @@
         playSample(currentInstrument, note, 1.0, 1200);
     }
 
-    // ✅ ĐỊNH NGHĨA HỢP ÂM
+    // ✅ ĐỊNH NGHĨA HỢP ÂM - CHỈ GIỮ CÁC HỢP ÂM ĐANG DÙNG
     const chords = {
-        'C': ['C3', 'E3', 'G3'], 'C#': ['C#3', 'F3', 'G#3'], 'Cm': ['C3', 'D#3', 'G3'], 'Cdim': ['C3', 'D#3', 'F#3'], 'Csus4': ['C3', 'F3', 'G3'],
-        'C#m': ['C#3', 'E3', 'G#3'], 'C#dim': ['C#3', 'E3', 'G3'], 'C#sus4': ['C#3', 'F#3', 'G#3'], 'C7': ['C3', 'E3', 'G3', 'A#3'], 'C#7': ['C#3', 'F3', 'G#3', 'B3'],
-        'D': ['D3', 'F#3', 'A3'], 'D#': ['D#3', 'G3', 'A#3'], 'Dm': ['D3', 'F3', 'A3'], 'Ddim': ['D3', 'F3', 'A#3'], 'Dsus4': ['D3', 'G3', 'A3'],
-        'D#m': ['D#3', 'F#3', 'A#3'], 'D#dim': ['D#3', 'F#3', 'A3'], 'D#sus4': ['D#3', 'G#3', 'A#3'], 'D7': ['D3', 'F#3', 'A3', 'C4'],
-        'E': ['E3', 'G#3', 'B3'], 'Em': ['E3', 'G3', 'B3'], 'Edim': ['E3', 'G3', 'A#3'], 'Esus4': ['E3', 'A3', 'B3'], 'Em7': ['E3', 'G3', 'B3', 'D4'], 'E7': ['E3', 'G#3', 'B3', 'D4'],
-        'Eb': ['D#3', 'G3', 'A#3'], 'Ebdim': ['D#3', 'F#3', 'A3'], 'Ebsus4': ['D#3', 'G#3', 'A#3'],
-        'F': ['F3', 'A3', 'C4'], 'Fm': ['F3', 'G#3', 'C4'], 'Fdim': ['F3', 'G#3', 'B3'], 'Fsus4': ['F3', 'B3', 'C4'],
-        'F#': ['F#3', 'A#3', 'C#4'], 'F#m': ['F#3', 'A3', 'C#4'], 'F#dim': ['F#3', 'A3', 'C3'], 'F#sus4': ['F#3', 'B3', 'C#4'], 'F#7': ['F#3', 'A#3', 'C#4', 'E4'],
-        'G': ['G3', 'B3', 'D4'], 'Gm': ['G3', 'A#3', 'D4'], 'Gdim': ['G3', 'A#3', 'C#4'], 'Gsus4': ['G3', 'C4', 'D4'], 'G#': ['G#3', 'C4', 'D#4'],
-        'G#m': ['G#3', 'B3', 'D#4'], 'G#dim': ['G#3', 'B3', 'D3'], 'G#sus4': ['G#3', 'C#4', 'D#4'], 'G7': ['G3', 'B3', 'D4', 'F4'],
-        'A': ['A3', 'C#4', 'E4'], 'Am': ['A3', 'C4', 'E4'], 'Adim': ['A3', 'C4', 'D#4'], 'Asus4': ['A3', 'D4', 'E4'], 'A7': ['A3', 'C#4', 'E4', 'G3'], 'Am7': ['A3', 'C4', 'E4', 'G4'],
-        'A#': ['A#3', 'D4', 'F4'], 'A#m': ['A#3', 'C#4', 'F4'], 'A#dim': ['A#3', 'C#4', 'E3'], 'A#sus4': ['A#3', 'D#4', 'F4'],
-        'B': ['B3', 'D#4', 'F#4'], 'Bm': ['B3', 'D4', 'F#4'], 'Bdim': ['B3', 'D4', 'F3'], 'Bsus4': ['B3', 'E4', 'F#4'],
-        'Bb': ['A#3', 'D4', 'F3'], 'Bbm': ['A#3', 'C#4', 'F3'], 'Bbdim': ['A#3', 'C#4', 'E3'], 'Bbsus4': ['A#3', 'D#4', 'F3'],
-        'D#m7': ['D#3', 'F#3', 'A#3', 'C#4'], 'Dm7': ['D3', 'F3', 'A3', 'C4'],
-        'F#m7': ['F#3', 'A3', 'C#4', 'E4'], 'Db': ['C#3', 'F3', 'G#3']
+        'Dm': ['D3', 'F3', 'A3'],
+        'Gm': ['G3', 'A#3', 'D4'],
+        'Bb': ['A#3', 'D4', 'F4'],
+        'C': ['C3', 'E3', 'G3'],
+        'F': ['F3', 'A3', 'C4'],
+        'G': ['G3', 'B3', 'D4'],
+        'D7': ['D3', 'F#3', 'A3', 'C4'],
+        'A7': ['A3', 'C#4', 'E4', 'G3'],
+        'Am': ['A3', 'C4', 'E4'],
+        'Em': ['E3', 'G3', 'B3'],
+        'E': ['E3', 'G#3', 'B3']
     };
 
-    // ✅ HỢP ÂM THEO TONE
+    // ✅ HỢP ÂM THEO TONE - ĐÃ CẬP NHẬT
     const toneChords = {
         'Dm': ['Dm', 'Gm', 'Bb', 'C', 'F', 'G', 'A7', 'Am', 'E'],
-        'Bm': ['Bm', 'Em', 'D#', 'F#', 'B', 'C#', 'F#7', 'F#m', 'G#'],
-        'Am': ['Am', 'Dm', 'G', 'Bb', 'Eb', 'A', 'D7', 'Em', 'B'],
-        'D#m': ['D#m', 'G#m', 'B', 'C#', 'F#', 'G#', 'C#7', 'C#m', 'F#7'],
-        'Gm': ['Gm', 'Cm', 'Bb', 'Db', 'F', 'G', 'D7', 'D', 'A'],
-        'User': ['Dm', 'Gm', 'Bb', 'C', 'F', 'G', 'A7', 'Am', 'E']
+        'Dm_2': ['Dm', 'Gm', 'Bb', 'C', 'F', 'D7', 'A7', 'Am', 'Em']
     };
-
-    let userChords = JSON.parse(JSON.stringify(chords));
-    let userToneChords = [...toneChords['User']];
-    let isEditMode = false;
-    let editingChordIndex = -1;
 
     // ✅ PHÁT HỢP ÂM
     async function playChord(chordName) {
-        const chordNotes = (currentTone === 'User' ? userChords : chords)[chordName];
+        const chordNotes = chords[chordName];
         if (!chordNotes) {
             alert(`Hợp âm ${chordName} chưa được hỗ trợ!`);
             return;
@@ -492,7 +445,7 @@
         document.querySelectorAll('.white-key,.black-key').forEach(key => {
             key.classList.remove('chord-active');
         });
-        const chordNotes = (currentTone === 'User' ? userChords : chords)[chordName];
+        const chordNotes = chords[chordName];
         if (!chordNotes) return;
         chordNotes.forEach(note => {
             const keyElement = document.querySelector(`[data-note="${note}"]`);
@@ -508,13 +461,12 @@
             const btn = document.createElement('button');
             btn.className = 'tone-btn';
             btn.dataset.tone = tone;
-            btn.textContent = tone === 'User' ? 'User' : tone;
+            btn.textContent = tone;
             if (tone === currentTone) btn.classList.add('active');
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentTone = tone;
-                isEditMode = false;
                 renderChords(tone);
             });
             selector.appendChild(btn);
@@ -525,48 +477,30 @@
     function renderChords(tone) {
         const grid = document.getElementById('chordsGrid');
         const titleEl = document.getElementById('currentTone');
-        const editBtn = document.getElementById('editModeBtn');
         
         grid.innerHTML = '';
         titleEl.querySelector('span').textContent = `Hợp Âm - Tone ${tone}`;
         
-        if (tone === 'User') {
-            editBtn.style.display = 'inline-block';
-            editBtn.textContent = isEditMode ? '✅ Save' : '✏️ Edit';
-            editBtn.className = isEditMode ? 'edit-mode-btn active' : 'edit-mode-btn';
-        } else {
-            editBtn.style.display = 'none';
-            isEditMode = false;
-        }
-        
-        const chordsToUse = tone === 'User' ? userToneChords : toneChords[tone];
+        const chordsToUse = toneChords[tone];
         
         if (chordsToUse) {
-            chordsToUse.forEach((chordName, index) => {
+            chordsToUse.forEach((chordName) => {
                 const btn = document.createElement('button');
                 btn.className = 'chord-btn';
-                if (isEditMode && tone === 'User') btn.classList.add('edit-mode');
                 btn.dataset.chord = chordName;
-                btn.dataset.index = index;
                 btn.textContent = chordName;
                 
-                if (isEditMode && tone === 'User') {
-                    btn.addEventListener('click', (function(name, idx) {
-                        return function() { openChordEditor(name, idx); };
-                    })(chordName, index));
-                } else {
-                    btn.addEventListener('click', (function(name) {
-                        return function() { playChord(name); showChordOnKeys(name); };
-                    })(chordName));
-                    
-                    btn.addEventListener('touchstart', (function(name) {
-                        return function(e) { 
-                            e.preventDefault(); 
-                            playChord(name); 
-                            showChordOnKeys(name); 
-                        };
-                    })(chordName));
-                }
+                btn.addEventListener('click', (function(name) {
+                    return function() { playChord(name); showChordOnKeys(name); };
+                })(chordName));
+                
+                btn.addEventListener('touchstart', (function(name) {
+                    return function(e) { 
+                        e.preventDefault(); 
+                        playChord(name); 
+                        showChordOnKeys(name); 
+                    };
+                })(chordName));
                 
                 grid.appendChild(btn);
             });
@@ -606,99 +540,6 @@
     if (toneChords[currentTone]) {
         showChordOnKeys(toneChords[currentTone][0]);
     }
-
-    // ✅ XỬ LÝ CHỈNH SỬA HỢP ÂM
-    const modal = document.getElementById('chordEditModal');
-    const overlay = document.getElementById('modalOverlay');
-    const editModeBtn = document.getElementById('editModeBtn');
-    const chordNameInput = document.getElementById('chordNameInput');
-    const chordPreview = document.getElementById('chordPreview');
-    const saveChordBtn = document.getElementById('saveChordBtn');
-    const cancelEditBtn = document.getElementById('cancelEditBtn');
-
-    let currentPreviewNotes = [];
-
-    chordNameInput.addEventListener('input', () => {
-        const inputChord = chordNameInput.value.trim();
-        updateChordPreview(inputChord);
-    });
-
-    function updateChordPreview(chordName) {
-        if (!chordName) {
-            chordPreview.innerHTML = '<span style="opacity: 0.6;">Nhập hợp âm để xem nốt nhạc...</span>';
-            currentPreviewNotes = [];
-            return;
-        }
-
-        const chordNotes = chords[chordName];
-        
-        if (chordNotes) {
-            currentPreviewNotes = [...chordNotes];
-            chordPreview.innerHTML = chordNotes.map(note => 
-                `<span class="preview-note">${note}</span>`
-            ).join('');
-        } else {
-            chordPreview.innerHTML = `<span style="color: #ff5252;">⚠️ Hợp âm "${chordName}" chưa có trong danh sách</span>`;
-            currentPreviewNotes = [];
-        }
-    }
-
-    function openChordEditor(chordName, index) {
-        editingChordIndex = index;
-        chordNameInput.value = chordName;
-        updateChordPreview(chordName);
-        
-        modal.classList.add('active');
-        overlay.classList.add('active');
-        
-        setTimeout(() => chordNameInput.focus(), 100);
-    }
-
-    function closeChordEditor() {
-        modal.classList.remove('active');
-        overlay.classList.remove('active');
-        currentPreviewNotes = [];
-        editingChordIndex = -1;
-        chordNameInput.value = '';
-        chordPreview.innerHTML = '<span style="opacity: 0.6;">Nhập hợp âm để xem nốt nhạc...</span>';
-    }
-
-    editModeBtn.addEventListener('click', () => {
-        if (isEditMode) {
-            isEditMode = false;
-            renderChords('User');
-        } else {
-            isEditMode = true;
-            renderChords('User');
-        }
-    });
-
-    saveChordBtn.addEventListener('click', () => {
-        const newName = chordNameInput.value.trim();
-        if (!newName) {
-            alert('❌ Vui lòng nhập tên hợp âm!');
-            return;
-        }
-        
-        if (!chords[newName]) {
-            alert(`❌ Hợp âm "${newName}" chưa có trong danh sách!\n\n💡 Các hợp âm có sẵn gồm: bình thường (C, D...), m (Cm, Dm...), dim (Cdim, Ddim...), sus4 (Csus4, Dsus4...), 7, m7 v.v...`);
-            return;
-        }
-        
-        const chordNotes = chords[newName];
-        
-        userChords[newName] = [...chordNotes];
-        userToneChords[editingChordIndex] = newName;
-        
-        closeChordEditor();
-        renderChords('User');
-        showChordOnKeys(newName);
-        
-        alert(`✅ Đã lưu hợp âm "${newName}" với các nốt: ${chordNotes.join(', ')}`);
-    });
-
-    cancelEditBtn.addEventListener('click', closeChordEditor);
-    overlay.addEventListener('click', closeChordEditor);
 
     // ✅ GHI ÂM WAV
     let mediaRecorder, audioChunks = [], wavUrl = null;
