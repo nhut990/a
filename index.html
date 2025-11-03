@@ -91,7 +91,7 @@
         border-radius: 6px; margin-top: 4px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.7);
     }
     .instrument-dropdown.open {
-        max-height: 320px;
+        max-height: 420px;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
     }
@@ -170,19 +170,20 @@
               <span id="dropdownArrow">▼</span>
           </button>
           <div class="instrument-dropdown" id="instrumentDropdown">
-              <button class="instrument-option" data-instrument="piano">🎹 Piano Thật</button>
-              <button class="instrument-option" data-instrument="guitar">🎸 Guitar Classic</button>
+              <button class="instrument-option" data-instrument="piano">🎹 Acoustic Grand Piano</button>
+              <button class="instrument-option" data-instrument="guitar_nylon">🎸 Acoustic Guitar Nylon</button>
+              <button class="instrument-option" data-instrument="guitar_steel">🎸 Acoustic Guitar Steel</button>
+              <button class="instrument-option" data-instrument="alto_sax">🎷 Alto Saxophone</button>
+              <button class="instrument-option" data-instrument="bass">🎸 Electric Bass</button>
+              <button class="instrument-option" data-instrument="guitar_clean">🎸 Electric Guitar Clean</button>
               <button class="instrument-option" data-instrument="epiano1">🎹 Electric Piano 1</button>
               <button class="instrument-option" data-instrument="epiano2">🎹 Electric Piano 2</button>
-              <button class="instrument-option" data-instrument="trumpet">🎺 Trumpet</button>
-              <button class="instrument-option" data-instrument="sax_alto">🎷 Alto Saxophone</button>
-              <button class="instrument-option" data-instrument="sax_soprano">🎷 Soprano Saxophone</button>
               <button class="instrument-option" data-instrument="flute">🎶 Flute</button>
+              <button class="instrument-option" data-instrument="overdriven_guitar">🎸 Overdriven Guitar</button>
+              <button class="instrument-option" data-instrument="soprano_sax">🎷 Soprano Saxophone</button>
+              <button class="instrument-option" data-instrument="synth_brass">🎺 Synth Brass 2</button>
+              <button class="instrument-option" data-instrument="trumpet">🎺 Trumpet</button>
               <button class="instrument-option" data-instrument="violin">🎻 Violin</button>
-              <button class="instrument-option" data-instrument="cello">🎻 Cello</button>
-              <button class="instrument-option" data-instrument="clarinet">🎼 Clarinet</button>
-              <button class="instrument-option" data-instrument="xylophone">🎼 Xylophone</button>
-              <button class="instrument-option" data-instrument="bass">🎸 Bass</button>
           </div>
       </div>
       <div class="tone-selector" id="toneSelector"></div>
@@ -213,25 +214,26 @@
     </div>
   </div>
   <script>
-    // ✅ CẤU HÌNH NHẠC CỤ - ĐÃ XÓA DRUM KIT
+    // ✅ CẤU HÌNH NHẠC CỤ - ĐÃ CẬP NHẬT THEO GITHUB CỦA BẠN
     const sampleInstruments = {
-        piano: { name: '🎹 Piano Thật', folder: 'acoustic_grand_piano-mp3' },
-        guitar: { name: '🎸 Guitar Classic', folder: 'acoustic_guitar_nylon-mp3' },
+        piano: { name: '🎹 Acoustic Grand Piano', folder: 'acoustic_grand_piano-mp3' },
+        guitar_nylon: { name: '🎸 Acoustic Guitar Nylon', folder: 'acoustic_guitar_nylon-mp3' },
+        guitar_steel: { name: '🎸 Acoustic Guitar Steel', folder: 'acoustic_guitar_steel-mp3' },
+        alto_sax: { name: '🎷 Alto Saxophone', folder: 'alto_sax-mp3' },
+        bass: { name: '🎸 Electric Bass', folder: 'electric_bass_finger-mp3' },
+        guitar_clean: { name: '🎸 Electric Guitar Clean', folder: 'electric_guitar_clean-mp3' },
         epiano1: { name: '🎹 Electric Piano 1', folder: 'electric_piano_1-mp3' },
         epiano2: { name: '🎹 Electric Piano 2', folder: 'electric_piano_2-mp3' },
-        trumpet: { name: '🎺 Trumpet', folder: 'trumpet-mp3' },
-        sax_alto: { name: '🎷 Alto Saxophone', folder: 'alto_sax-mp3' },
-        sax_soprano: { name: '🎷 Soprano Saxophone', folder: 'soprano_sax-mp3' },
         flute: { name: '🎶 Flute', folder: 'flute-mp3' },
-        violin: { name: '🎻 Violin', folder: 'violin-mp3' },
-        cello: { name: '🎻 Cello', folder: 'cello-mp3' },
-        clarinet: { name: '🎼 Clarinet', folder: 'clarinet-mp3' },
-        xylophone: { name: '🎼 Xylophone', folder: 'xylophone-mp3' },
-        bass: { name: '🎸 Bass', folder: 'electric_bass_finger-mp3' }
+        overdriven_guitar: { name: '🎸 Overdriven Guitar', folder: 'overdriven_guitar-mp3' },
+        soprano_sax: { name: '🎷 Soprano Saxophone', folder: 'soprano_sax-mp3' },
+        synth_brass: { name: '🎺 Synth Brass 2', folder: 'synth_brass_2-mp3' },
+        trumpet: { name: '🎺 Trumpet', folder: 'trumpet-mp3' },
+        violin: { name: '🎻 Violin', folder: 'violin-mp3' }
     };
     
-    // ✅ LINK MỚI TỪ GITHUB
-    const sampleBaseURL = "https://nhut11790.github.io/tieng/";
+    // ✅ LINK GITHUB CỦA BẠN - SỬ DỤNG RAW.GITHUBUSERCONTENT.COM
+    const sampleBaseURL = "https://raw.githubusercontent.com/Nhut11790/nhut11790.github.io/main/tieng/";
 
     // ✅ TẦN SỐ CÁC NỐT NHẠC
     const notes = {
@@ -273,6 +275,8 @@
         let folder = sampleInstruments[instrument].folder;
         let successCount = 0;
         
+        console.log(`⏳ Đang tải ${instrument} từ: ${sampleBaseURL}${folder}/`);
+        
         let promises = notesList.map(note => {
             let url = `${sampleBaseURL}${folder}/${note}.mp3`;
             return fetch(url)
@@ -297,6 +301,10 @@
         
         await Promise.all(promises);
         console.log(`✅ ${instrument}: Đã tải ${successCount}/${notesList.length} nốt nhạc`);
+        
+        if (successCount === 0) {
+            alert(`⚠️ Không thể tải nhạc cụ ${sampleInstruments[instrument].name}. Vui lòng kiểm tra:\n1. File MP3 đã upload đúng chưa\n2. Tên thư mục có đúng không\n3. Xem Console (F12) để biết chi tiết`);
+        }
     }
 
     let hasPreload = {};
