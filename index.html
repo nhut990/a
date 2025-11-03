@@ -172,9 +172,11 @@
           <div class="instrument-dropdown" id="instrumentDropdown">
               <button class="instrument-option" data-instrument="piano">🎹 Piano Thật</button>
               <button class="instrument-option" data-instrument="guitar">🎸 Guitar Classic</button>
-              <button class="instrument-option" data-instrument="epiano">🎹 Electric Piano</button>
+              <button class="instrument-option" data-instrument="epiano1">🎹 Electric Piano 1</button>
+              <button class="instrument-option" data-instrument="epiano2">🎹 Electric Piano 2</button>
               <button class="instrument-option" data-instrument="trumpet">🎺 Trumpet</button>
-              <button class="instrument-option" data-instrument="sax">🎷 Alto Saxophone</button>
+              <button class="instrument-option" data-instrument="sax_alto">🎷 Alto Saxophone</button>
+              <button class="instrument-option" data-instrument="sax_soprano">🎷 Soprano Saxophone</button>
               <button class="instrument-option" data-instrument="flute">🎶 Flute</button>
               <button class="instrument-option" data-instrument="violin">🎻 Violin</button>
               <button class="instrument-option" data-instrument="cello">🎻 Cello</button>
@@ -194,8 +196,8 @@
     <div class="modal-overlay" id="modalOverlay"></div>
     <div class="chord-edit-modal" id="chordEditModal">
       <div class="modal-title">Chỉnh sửa hợp âm Tone User</div>
-      <input type="text" id="chordNameInput" class="modal-input" placeholder="Nhập tên hợp âm (VD: Dm, A7, G, Cmaj7...)">
-      <div class="modal-hint">💡 Gõ tên hợp âm (VD Cm), thằng Nhựt nó sẽ tự tính nốt!</div>
+      <input type="text" id="chordNameInput" class="modal-input" placeholder="Nhập tên hợp âm (VD: Dm, A7, Dsus4, Edim...)">
+      <div class="modal-hint">💡 Gõ tên hợp âm (VD Cm, Dsus4, Edim), thằng Nhựt nó sẽ tự tính nốt!</div>
       <div class="modal-preview" id="chordPreview">
         <span style="opacity: 0.6;">Nhập hợp âm để xem nốt nhạc...</span>
       </div>
@@ -212,12 +214,15 @@
     </div>
   </div>
   <script>
+    // ✅ ĐÃ ĐỔI LINK ÂM THANH SANG GITHUB CỦA BẠN
     const sampleInstruments = {
         piano: { name: '🎹 Piano Thật', folder: 'acoustic_grand_piano-mp3' },
         guitar: { name: '🎸 Guitar Classic', folder: 'acoustic_guitar_nylon-mp3' },
-        epiano: { name: '🎹 Electric Piano', folder: 'electric_piano_1-mp3' },
+        epiano1: { name: '🎹 Electric Piano 1', folder: 'electric_piano_1-mp3' },
+        epiano2: { name: '🎹 Electric Piano 2', folder: 'electric_piano_2-mp3' },
         trumpet: { name: '🎺 Trumpet', folder: 'trumpet-mp3' },
-        sax: { name: '🎷 Alto Saxophone', folder: 'alto_sax-mp3' },
+        sax_alto: { name: '🎷 Alto Saxophone', folder: 'alto_sax-mp3' },
+        sax_soprano: { name: '🎷 Soprano Saxophone', folder: 'soprano_sax-mp3' },
         flute: { name: '🎶 Flute', folder: 'flute-mp3' },
         violin: { name: '🎻 Violin', folder: 'violin-mp3' },
         cello: { name: '🎻 Cello', folder: 'cello-mp3' },
@@ -226,7 +231,9 @@
         bass: { name: '🎸 Bass', folder: 'electric_bass_finger-mp3' },
         drum: { name: '🥁 Drum Kit', folder: 'standard_kit-mp3', isDrum: true }
     };
-    const sampleBaseURL = "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/";
+    
+    // ✅ LINK MỚI TỪ GITHUB CỦA BẠN
+    const sampleBaseURL = "https://nhut11790.github.io/tieng/";
 
     const notes = {
         'C3': 130.81, 'C#3': 138.59, 'D3': 146.83, 'D#3': 155.56,
@@ -397,18 +404,21 @@
     }
 
     const chords = {
-        'C': ['C3', 'E3', 'G3'], 'C#': ['C#3', 'F3', 'G#3'], 'Cm': ['C3', 'D#3', 'G3'],
-        'C#m': ['C#3', 'E3', 'G#3'], 'C7': ['C3', 'E3', 'G3', 'A#3'], 'C#7': ['C#3', 'F3', 'G#3', 'B3'],
-        'D': ['D3', 'F#3', 'A3'], 'D#': ['D#3', 'G3', 'A#3'], 'Dm': ['D3', 'F3', 'A3'],
-        'D#m': ['D#3', 'F#3', 'A#3'], 'D7': ['D3', 'F#3', 'A3', 'C4'], 'E': ['E3', 'G#3', 'B3'],
-        'Eb': ['D#3', 'G3', 'A#3'], 'Em': ['E3', 'G3', 'B3'], 'Em7': ['E3', 'G3', 'B3', 'D4'],
-        'E7': ['E3', 'G#3', 'B3', 'D4'], 'F': ['F3', 'A3', 'C4'], 'F#': ['F#3', 'A#3', 'C#4'],
-        'Fm': ['F3', 'G#3', 'C4'], 'F#m': ['F#3', 'A3', 'C#4'], 'F#7': ['F#3', 'A#3', 'C#4', 'E4'],
-        'G': ['G3', 'B3', 'D4'], 'G#': ['G#3', 'C4', 'D#4'], 'Gm': ['G3', 'A#3', 'D4'],
-        'G#m': ['G#3', 'B3', 'D#4'], 'G7': ['G3', 'B3', 'D4', 'F4'], 'A': ['A3', 'C#4', 'E4'],
-        'A#': ['A#3', 'D4', 'F4'], 'Am': ['A3', 'C4', 'E4'], 'A7': ['A3', 'C#4', 'E4', 'G3'],
-        'Am7': ['A3', 'C4', 'E4', 'G4'], 'B': ['B3', 'D#4', 'F#4'], 'Bm': ['B3', 'D4', 'F#4'],
-        'Bb': ['A#3', 'D4', 'F3'], 'D#m7': ['D#3', 'F#3', 'A#3', 'C#4'], 'Dm7': ['D3', 'F3', 'A3', 'C4'],
+        'C': ['C3', 'E3', 'G3'], 'C#': ['C#3', 'F3', 'G#3'], 'Cm': ['C3', 'D#3', 'G3'], 'Cdim': ['C3', 'D#3', 'F#3'], 'Csus4': ['C3', 'F3', 'G3'],
+        'C#m': ['C#3', 'E3', 'G#3'], 'C#dim': ['C#3', 'E3', 'G3'], 'C#sus4': ['C#3', 'F#3', 'G#3'], 'C7': ['C3', 'E3', 'G3', 'A#3'], 'C#7': ['C#3', 'F3', 'G#3', 'B3'],
+        'D': ['D3', 'F#3', 'A3'], 'D#': ['D#3', 'G3', 'A#3'], 'Dm': ['D3', 'F3', 'A3'], 'Ddim': ['D3', 'F3', 'A#3'], 'Dsus4': ['D3', 'G3', 'A3'],
+        'D#m': ['D#3', 'F#3', 'A#3'], 'D#dim': ['D#3', 'F#3', 'A3'], 'D#sus4': ['D#3', 'G#3', 'A#3'], 'D7': ['D3', 'F#3', 'A3', 'C4'],
+        'E': ['E3', 'G#3', 'B3'], 'Em': ['E3', 'G3', 'B3'], 'Edim': ['E3', 'G3', 'A#3'], 'Esus4': ['E3', 'A3', 'B3'], 'Em7': ['E3', 'G3', 'B3', 'D4'], 'E7': ['E3', 'G#3', 'B3', 'D4'],
+        'Eb': ['D#3', 'G3', 'A#3'], 'Ebdim': ['D#3', 'F#3', 'A3'], 'Ebsus4': ['D#3', 'G#3', 'A#3'],
+        'F': ['F3', 'A3', 'C4'], 'Fm': ['F3', 'G#3', 'C4'], 'Fdim': ['F3', 'G#3', 'B3'], 'Fsus4': ['F3', 'B3', 'C4'],
+        'F#': ['F#3', 'A#3', 'C#4'], 'F#m': ['F#3', 'A3', 'C#4'], 'F#dim': ['F#3', 'A3', 'C3'], 'F#sus4': ['F#3', 'B3', 'C#4'], 'F#7': ['F#3', 'A#3', 'C#4', 'E4'],
+        'G': ['G3', 'B3', 'D4'], 'Gm': ['G3', 'A#3', 'D4'], 'Gdim': ['G3', 'A#3', 'C#4'], 'Gsus4': ['G3', 'C4', 'D4'], 'G#': ['G#3', 'C4', 'D#4'],
+        'G#m': ['G#3', 'B3', 'D#4'], 'G#dim': ['G#3', 'B3', 'D3'], 'G#sus4': ['G#3', 'C#4', 'D#4'], 'G7': ['G3', 'B3', 'D4', 'F4'],
+        'A': ['A3', 'C#4', 'E4'], 'Am': ['A3', 'C4', 'E4'], 'Adim': ['A3', 'C4', 'D#4'], 'Asus4': ['A3', 'D4', 'E4'], 'A7': ['A3', 'C#4', 'E4', 'G3'], 'Am7': ['A3', 'C4', 'E4', 'G4'],
+        'A#': ['A#3', 'D4', 'F4'], 'A#m': ['A#3', 'C#4', 'F4'], 'A#dim': ['A#3', 'C#4', 'E3'], 'A#sus4': ['A#3', 'D#4', 'F4'],
+        'B': ['B3', 'D#4', 'F#4'], 'Bm': ['B3', 'D4', 'F#4'], 'Bdim': ['B3', 'D4', 'F3'], 'Bsus4': ['B3', 'E4', 'F#4'],
+        'Bb': ['A#3', 'D4', 'F3'], 'Bbm': ['A#3', 'C#4', 'F3'], 'Bbdim': ['A#3', 'C#4', 'E3'], 'Bbsus4': ['A#3', 'D#4', 'F3'],
+        'D#m7': ['D#3', 'F#3', 'A#3', 'C#4'], 'Dm7': ['D3', 'F3', 'A3', 'C4'],
         'F#m7': ['F#3', 'A3', 'C#4', 'E4'], 'Db': ['C#3', 'F3', 'G#3']
     };
 
@@ -418,7 +428,7 @@
         'Am': ['Am', 'Dm', 'G', 'Bb', 'Eb', 'A', 'D7', 'Em', 'B'],
         'D#m': ['D#m', 'G#m', 'B', 'C#', 'F#', 'G#', 'C#7', 'C#m', 'F#7'],
         'Gm': ['Gm', 'Cm', 'Bb', 'Db', 'F', 'G', 'D7', 'D', 'A'],
-        'User': ['Em', 'Am', 'G', 'Bb', 'D', 'E', 'A7', 'Bm', 'F#']
+        'User': ['Dm', 'Gm', 'Bb', 'C', 'F', 'G', 'A7', 'Am', 'E']
     };
 
     let userChords = JSON.parse(JSON.stringify(chords));
@@ -499,11 +509,23 @@
                 btn.textContent = chordName;
                 
                 if (isEditMode && tone === 'User') {
-                    btn.addEventListener('click', () => openChordEditor(chordName, index));
+                    btn.addEventListener('click', (function(name, idx) {
+                        return function() { openChordEditor(name, idx); };
+                    })(chordName, index));
                 } else {
-                    btn.addEventListener('touchstart', (e) => { e.preventDefault(); playChord(chordName); showChordOnKeys(chordName); });
-                    btn.addEventListener('click', () => { playChord(chordName); showChordOnKeys(chordName); });
+                    btn.addEventListener('click', (function(name) {
+                        return function() { playChord(name); showChordOnKeys(name); };
+                    })(chordName));
+                    
+                    btn.addEventListener('touchstart', (function(name) {
+                        return function(e) { 
+                            e.preventDefault(); 
+                            playChord(name); 
+                            showChordOnKeys(name); 
+                        };
+                    })(chordName));
                 }
+                
                 grid.appendChild(btn);
             });
         }
@@ -540,7 +562,6 @@
         showChordOnKeys(toneChords[currentTone][0]);
     }
 
-    // ==== CHORD EDITOR ====
     const modal = document.getElementById('chordEditModal');
     const overlay = document.getElementById('modalOverlay');
     const editModeBtn = document.getElementById('editModeBtn');
@@ -551,7 +572,6 @@
 
     let currentPreviewNotes = [];
 
-    // Hàm cập nhật preview khi người dùng gõ
     chordNameInput.addEventListener('input', () => {
         const inputChord = chordNameInput.value.trim();
         updateChordPreview(inputChord);
@@ -564,7 +584,6 @@
             return;
         }
 
-        // Tìm hợp âm trong danh sách có sẵn
         const chordNotes = chords[chordName];
         
         if (chordNotes) {
@@ -586,7 +605,6 @@
         modal.classList.add('active');
         overlay.classList.add('active');
         
-        // Focus vào input
         setTimeout(() => chordNameInput.focus(), 100);
     }
 
@@ -616,26 +634,20 @@
             return;
         }
         
-        // Kiểm tra xem hợp âm có tồn tại trong danh sách không
         if (!chords[newName]) {
-            alert(`❌ Hợp âm "${newName}" chưa có trong danh sách!\n\nCác hợp âm có sẵn: ${Object.keys(chords).slice(0, 20).join(', ')}...`);
+            alert(`❌ Hợp âm "${newName}" chưa có trong danh sách!\n\n💡 Các hợp âm có sẵn gồm: bình thường (C, D...), m (Cm, Dm...), dim (Cdim, Ddim...), sus4 (Csus4, Dsus4...), 7, m7 v.v...`);
             return;
         }
         
-        // Lấy nốt nhạc từ danh sách hợp âm có sẵn
         const chordNotes = chords[newName];
         
-        // Lưu vào userChords
         userChords[newName] = [...chordNotes];
-        
-        // Cập nhật tên trong danh sách tone User
         userToneChords[editingChordIndex] = newName;
         
         closeChordEditor();
         renderChords('User');
         showChordOnKeys(newName);
         
-        // Hiển thị thông báo thành công
         alert(`✅ Đã lưu hợp âm "${newName}" với các nốt: ${chordNotes.join(', ')}`);
     });
 
