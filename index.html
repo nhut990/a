@@ -106,7 +106,9 @@
     .chords-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 4px; }
     .chord-btn { background: linear-gradient(145deg, #4CAF50, #45a049); color: white; border: 2px solid rgba(255,255,255,0.4); border-radius: 5px; padding: 6px 2px; font-size: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3); transition: all 0.1s; touch-action: manipulation; position: relative; }
     .chord-btn:active { transform: scale(0.95); box-shadow: 0 2px 3px rgba(0,0,0,0.3); background: linear-gradient(145deg, #66BB6A, #5CB860); }
-    .piano-container { background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border-radius: 10px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow-x: auto; overflow-y: visible; width: 100%; max-width: 800px; position: relative; z-index: 1; }
+    .piano-container { background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border-radius: 10px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow-x: auto; overflow-y: visible; width: 100%; max-width: 800px; position: relative; z-index: 1; cursor: grab; -webkit-overflow-scrolling: touch; }
+    .piano-container:active { cursor: grabbing; }
+    .piano-container.dragging { cursor: grabbing; user-select: none; }
     .piano { position: relative; height: 140px; width: 1050px; margin: 0 auto; }
     .white-key { position: absolute; width: 35px; height: 140px; background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%); border: 2px solid #222; border-radius: 0 0 4px 4px; cursor: pointer; user-select: none; touch-action: manipulation; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; font-size: 8px; color: #666; font-weight: bold; transition: all 0.05s; }
     .white-key.active { background: linear-gradient(145deg, #b3e5fc 0%, #4fc3f7 100%); color: #0277bd; }
