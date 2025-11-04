@@ -1,586 +1,166 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Organ - Rumba & Cha-cha</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .start-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        
-        .start-button {
-            padding: 30px 60px;
-            font-size: 2em;
-            background: linear-gradient(145deg, #51cf66, #40c057);
-            color: white;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: bold;
-            box-shadow: 0 10px 30px rgba(81, 207, 102, 0.5);
-            animation: bounce 2s infinite;
-        }
-        
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        .organ-container {
-            background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
-            padding: 30px 20px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            max-width: 1400px;
-            width: 100%;
-        }
-        
-        .title {
-            text-align: center;
-            color: #ffd700;
-            font-size: 2em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-        
-        .subtitle {
-            text-align: center;
-            color: #ff6b6b;
-            font-size: 1em;
-            margin-bottom: 20px;
-        }
-        
-        .controls {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        
-        .control-group {
-            text-align: center;
-        }
-        
-        .control-label {
-            color: #fff;
-            margin-bottom: 8px;
-            font-size: 0.9em;
-            font-weight: bold;
-        }
-        
-        .rhythm-buttons {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        
-        button {
-            padding: 12px 20px;
-            font-size: 1em;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: bold;
-            touch-action: manipulation;
-        }
-        
-        .rhythm-btn {
-            background: linear-gradient(145deg, #ff6b6b, #ee5555);
-            color: white;
-            min-width: 100px;
-        }
-        
-        .rhythm-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255,107,107,0.4);
-        }
-        
-        .rhythm-btn.active {
-            background: linear-gradient(145deg, #51cf66, #40c057);
-            animation: pulse 1s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        
-        .tempo-control, .volume-control {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        input[type="range"] {
-            width: 150px;
-            cursor: pointer;
-        }
-        
-        .tempo-value {
-            color: #ffd700;
-            font-size: 1.1em;
-            font-weight: bold;
-        }
-        
-        .keyboard {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-            position: relative;
-            height: 200px;
-            overflow-x: auto;
-        }
-        
-        .octave {
-            display: flex;
-            position: relative;
-        }
-        
-        .key {
-            border: 2px solid #000;
-            cursor: pointer;
-            transition: all 0.1s;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            padding-bottom: 8px;
-            font-weight: bold;
-            user-select: none;
-            font-size: 0.75em;
-            touch-action: manipulation;
-        }
-        
-        .white-key {
-            width: 45px;
-            height: 180px;
-            background: linear-gradient(to bottom, #fff 0%, #f0f0f0 100%);
-            margin: 0 1px;
-            border-radius: 0 0 8px 8px;
-            z-index: 1;
-            position: relative;
-        }
-        
-        .white-key:hover {
-            background: linear-gradient(to bottom, #f0f0f0 0%, #e0e0e0 100%);
-        }
-        
-        .white-key.active {
-            background: linear-gradient(to bottom, #ffd700 0%, #ffed4e 100%);
-            transform: translateY(2px);
-        }
-        
-        .black-key {
-            width: 32px;
-            height: 110px;
-            background: linear-gradient(to bottom, #000 0%, #333 100%);
-            position: absolute;
-            border-radius: 0 0 6px 6px;
-            z-index: 2;
-            color: #fff;
-            font-size: 0.7em;
-        }
-        
-        .black-key:hover {
-            background: linear-gradient(to bottom, #333 0%, #555 100%);
-        }
-        
-        .black-key.active {
-            background: linear-gradient(to bottom, #ff6b6b 0%, #ff8787 100%);
-            transform: translateY(2px);
-        }
-        
-        .keyboard-hint {
-            text-align: center;
-            color: #aaa;
-            margin-top: 15px;
-            font-size: 0.85em;
-            padding: 0 10px;
-        }
-
-        .rhythm-display {
-            text-align: center;
-            color: #ffd700;
-            font-size: 1.3em;
-            margin: 15px 0;
-            font-weight: bold;
-        }
-        
-        @media (max-width: 768px) {
-            .title {
-                font-size: 1.5em;
-            }
-            .subtitle {
-                font-size: 0.9em;
-            }
-            .controls {
-                gap: 10px;
-            }
-            .rhythm-btn {
-                min-width: 80px;
-                padding: 10px 15px;
-                font-size: 0.9em;
-            }
-            input[type="range"] {
-                width: 120px;
-            }
-            .white-key {
-                width: 38px;
-                height: 160px;
-            }
-            .black-key {
-                width: 28px;
-                height: 100px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>App Tạo Ảnh Thẻ AI</title>
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <div class="start-overlay" id="startOverlay">
-        <button class="start-button" id="startButton">🎹 BẮT ĐẦU 🎹</button>
-    </div>
-    
-    <div class="organ-container">
-        <h1 class="title">🎹 ORGAN LATINO 🎹</h1>
-        <p class="subtitle">Rumba & Cha-cha Style</p>
-        
-        <div class="rhythm-display" id="rhythmDisplay">♪ Chọn một rhythm để bắt đầu ♪</div>
-        
-        <div class="controls">
-            <div class="control-group">
-                <div class="control-label">🥁 RHYTHM</div>
-                <div class="rhythm-buttons">
-                    <button class="rhythm-btn" id="rumbaBtn">RUMBA</button>
-                    <button class="rhythm-btn" id="chachaBtn">CHA-CHA</button>
-                    <button class="rhythm-btn" id="stopBtn">STOP</button>
-                </div>
+<body class="bg-gray-100">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    // --- Các icon SVG ---
+    const UploadCloud = ({ className="w-6 h-6" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+        stroke="currentColor" strokeWidth="2" className={className}>
+        <path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2" />
+        <path d="M12 12v9" />
+        <path d="m16 16-4-4-4 4" />
+      </svg>
+    );
+
+    const Download = ({ className="w-6 h-6" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+        stroke="currentColor" strokeWidth="2" className={className}>
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </svg>
+    );
+
+    const Wand2 = ({ className="w-6 h-6" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+        stroke="currentColor" strokeWidth="2" className={className}>
+        <path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.71 0L11.5 9.51..." />
+      </svg>
+    );
+
+    const Loader = ({ className="w-6 h-6" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+        stroke="currentColor" strokeWidth="2" className={className + " animate-spin"}>
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+      </svg>
+    );
+
+    // --- Tùy chọn trang phục ---
+    const clothingOptions = [
+      { value: "white shirt and tie", label: "Sơ mi trắng và cà vạt" },
+      { value: "business suit with shirt and tie", label: "Vest doanh nhân" },
+      { value: "graduation gown with shirt and tie", label: "Lễ phục tốt nghiệp" },
+      { value: "polo shirt", label: "Áo polo" },
+    ];
+
+    // --- Hàm gọi API Gemini (tạm để trống API Key) ---
+    const callGeminiApi = async (base64Data, mimeType, prompt) => {
+      const apiKey = ""; // điền API key thật nếu có
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+      const payload = {
+        contents: [{
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType, data: base64Data } }
+          ]
+        }],
+        generationConfig: { responseModalities: ['IMAGE'] },
+      };
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+      const img = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+      return img ? `data:${img.inlineData.mimeType};base64,${img.inlineData.data}` : null;
+    };
+
+    // --- Thành phần chính ---
+    function App() {
+      const [originalImage, setOriginalImage] = useState(null);
+      const [originalMimeType, setOriginalMimeType] = useState('');
+      const [selectedClothing, setSelectedClothing] = useState(clothingOptions[0].value);
+      const [whiteBg, setWhiteBg] = useState(null);
+      const [blueBg, setBlueBg] = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState(null);
+
+      const handleUpload = e => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setOriginalMimeType(file.type);
+        const reader = new FileReader();
+        reader.onload = ev => setOriginalImage(ev.target.result);
+        reader.readAsDataURL(file);
+      };
+
+      const buildPrompt = (cloth, bg) => `
+        Create a 4x6 ID photo. Replace outfit with ${cloth}.
+        Background: ${bg === 'white' ? 'pure white (#FFFFFF)' : 'royal blue (#4169E1)'}.
+      `;
+
+      const generate = async () => {
+        if (!originalImage) return setError("Vui lòng tải ảnh trước.");
+        setLoading(true);
+        setError(null);
+        const base64 = originalImage.split(',')[1];
+        try {
+          const white = await callGeminiApi(base64, originalMimeType, buildPrompt(selectedClothing, "white"));
+          setWhiteBg(white);
+          const blue = await callGeminiApi(base64, originalMimeType, buildPrompt(selectedClothing, "blue"));
+          setBlueBg(blue);
+        } catch (e) {
+          setError("Lỗi khi tạo ảnh: " + e.message);
+        }
+        setLoading(false);
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col items-center py-6">
+          <h1 className="text-3xl font-bold mb-4">App Tạo Ảnh Thẻ AI</h1>
+          <p className="text-gray-600 mb-6">Tải ảnh chân dung, chọn trang phục và tạo nền trắng hoặc xanh tự động.</p>
+
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-4xl grid gap-6 md:grid-cols-3">
+            <div className="space-y-4">
+              <label className="block font-semibold">Tải ảnh chân dung:</label>
+              <input type="file" accept="image/*" onChange={handleUpload} className="border p-2 rounded w-full" />
+              {originalImage && <img src={originalImage} className="rounded-lg" alt="Ảnh gốc" />}
+              <label className="block font-semibold">Chọn trang phục:</label>
+              <select value={selectedClothing} onChange={e => setSelectedClothing(e.target.value)} className="border p-2 rounded w-full">
+                {clothingOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <button onClick={generate} disabled={loading} className="bg-blue-600 text-white w-full py-2 rounded hover:bg-blue-700 disabled:opacity-50">
+                {loading ? "Đang xử lý..." : "Tạo lại ảnh"}
+              </button>
+              {error && <div className="text-red-600 text-sm">{error}</div>}
             </div>
-            
-            <div class="control-group">
-                <div class="control-label">⚡ TEMPO</div>
-                <div class="tempo-control">
-                    <input type="range" id="tempo" min="80" max="160" value="120">
-                    <div class="tempo-value" id="tempoValue">120 BPM</div>
-                </div>
+
+            <div className="md:col-span-2 grid grid-cols-2 gap-4">
+              <div className="border p-2 rounded text-center">
+                <h3 className="font-semibold mb-2">Nền trắng</h3>
+                {loading ? <Loader className="w-8 h-8 mx-auto"/> :
+                  whiteBg ? <img src={whiteBg} alt="Nền trắng" className="rounded"/> :
+                  <div className="text-gray-500">Chưa có ảnh</div>}
+              </div>
+              <div className="border p-2 rounded text-center">
+                <h3 className="font-semibold mb-2">Nền xanh</h3>
+                {loading ? <Loader className="w-8 h-8 mx-auto"/> :
+                  blueBg ? <img src={blueBg} alt="Nền xanh" className="rounded"/> :
+                  <div className="text-gray-500">Chưa có ảnh</div>}
+              </div>
             </div>
-            
-            <div class="control-group">
-                <div class="control-label">🔊 VOLUME</div>
-                <div class="volume-control">
-                    <input type="range" id="volume" min="0" max="100" value="70">
-                    <div class="tempo-value" id="volumeValue">70%</div>
-                </div>
-            </div>
+          </div>
         </div>
-        
-        <div class="keyboard" id="keyboard"></div>
-        
-        <div class="keyboard-hint">
-            💡 Nhấn vào phím hoặc dùng bàn phím: A S D F G H J K L (trắng) | W E T Y U O P (đen)
-        </div>
-    </div>
+      );
+    }
 
-    <script>
-        let synth, drumSynth, bassSynth;
-        let rhythmLoop;
-        let currentRhythm = null;
-        let tempo = 120;
-        let isPlaying = false;
-        let activeNotes = {};
-        let audioInitialized = false;
-
-        // Khởi tạo âm thanh khi người dùng nhấn nút
-        document.getElementById('startButton').addEventListener('click', async function() {
-            try {
-                await Tone.start();
-                await initAudio();
-                document.getElementById('startOverlay').classList.add('hidden');
-                audioInitialized = true;
-            } catch (error) {
-                console.error('Lỗi khởi tạo audio:', error);
-                alert('Không thể khởi tạo âm thanh. Vui lòng thử lại.');
-            }
-        });
-
-        async function initAudio() {
-            // Organ synth
-            synth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: {
-                    type: "sine"
-                },
-                envelope: {
-                    attack: 0.02,
-                    decay: 0.1,
-                    sustain: 0.8,
-                    release: 0.3
-                }
-            }).toDestination();
-            synth.volume.value = -10;
-            
-            // Drum synth
-            drumSynth = new Tone.MembraneSynth({
-                pitchDecay: 0.05,
-                octaves: 4,
-                envelope: {
-                    attack: 0.001,
-                    decay: 0.2,
-                    sustain: 0,
-                    release: 0.2
-                }
-            }).toDestination();
-            drumSynth.volume.value = -8;
-            
-            // Bass synth
-            bassSynth = new Tone.Synth({
-                oscillator: {
-                    type: "triangle"
-                },
-                envelope: {
-                    attack: 0.01,
-                    decay: 0.2,
-                    sustain: 0.3,
-                    release: 0.3
-                }
-            }).toDestination();
-            bassSynth.volume.value = -5;
-        }
-
-        const rumbaPattern = [
-            { time: 0, drum: 'C2', bass: 'C2' },
-            { time: 0.5, drum: 'G2', bass: null },
-            { time: 1, drum: 'E2', bass: null },
-            { time: 1.5, drum: 'G2', bass: null },
-            { time: 2, drum: 'C2', bass: 'G1' },
-            { time: 2.5, drum: 'G2', bass: null },
-            { time: 3, drum: 'E2', bass: null },
-            { time: 3.25, drum: 'G2', bass: null },
-            { time: 3.5, drum: 'G2', bass: 'C2' }
-        ];
-
-        const chachaPattern = [
-            { time: 0, drum: 'C2', bass: 'C2' },
-            { time: 0.5, drum: 'G2', bass: null },
-            { time: 1, drum: 'E2', bass: null },
-            { time: 1.5, drum: 'G2', bass: null },
-            { time: 2, drum: 'C2', bass: 'G1' },
-            { time: 2.5, drum: 'E2', bass: null },
-            { time: 3, drum: 'E2', bass: null },
-            { time: 3.25, drum: 'G2', bass: null },
-            { time: 3.5, drum: 'G2', bass: 'C2' }
-        ];
-
-        function setRhythm(type) {
-            if (!audioInitialized) return;
-            
-            stopRhythm();
-            currentRhythm = type;
-            
-            document.getElementById('rumbaBtn').classList.remove('active');
-            document.getElementById('chachaBtn').classList.remove('active');
-            
-            if (type === 'rumba') {
-                document.getElementById('rumbaBtn').classList.add('active');
-                document.getElementById('rhythmDisplay').textContent = '🎺 RUMBA CUBANA 🎺';
-                startRhythm(rumbaPattern);
-            } else if (type === 'chacha') {
-                document.getElementById('chachaBtn').classList.add('active');
-                document.getElementById('rhythmDisplay').textContent = '💃 CHA-CHA-CHÁ 💃';
-                startRhythm(chachaPattern);
-            }
-        }
-
-        function startRhythm(pattern) {
-            if (rhythmLoop) rhythmLoop.dispose();
-            
-            const beatDuration = 60 / tempo;
-            
-            rhythmLoop = new Tone.Part((time, note) => {
-                if (note.drum) {
-                    drumSynth.triggerAttackRelease(note.drum, "16n", time);
-                }
-                if (note.bass) {
-                    bassSynth.triggerAttackRelease(note.bass, "8n", time);
-                }
-            }, pattern.map(p => [p.time * beatDuration, p]));
-            
-            rhythmLoop.loop = true;
-            rhythmLoop.loopEnd = 4 * beatDuration;
-            rhythmLoop.start(0);
-            
-            Tone.Transport.start();
-            isPlaying = true;
-        }
-
-        function stopRhythm() {
-            if (rhythmLoop) {
-                rhythmLoop.stop();
-                rhythmLoop.dispose();
-                rhythmLoop = null;
-            }
-            Tone.Transport.stop();
-            currentRhythm = null;
-            isPlaying = false;
-            
-            document.getElementById('rumbaBtn').classList.remove('active');
-            document.getElementById('chachaBtn').classList.remove('active');
-            document.getElementById('rhythmDisplay').textContent = '♪ Rhythm đã dừng ♪';
-        }
-
-        function updateTempo(value) {
-            tempo = parseInt(value);
-            document.getElementById('tempoValue').textContent = tempo + ' BPM';
-            Tone.Transport.bpm.value = tempo;
-            
-            if (isPlaying && currentRhythm) {
-                setRhythm(currentRhythm);
-            }
-        }
-
-        function updateVolume(value) {
-            if (!audioInitialized) return;
-            const volume = parseInt(value);
-            document.getElementById('volumeValue').textContent = volume + '%';
-            const dbValue = -40 + (volume * 0.4);
-            synth.volume.value = dbValue;
-            drumSynth.volume.value = dbValue + 2;
-            bassSynth.volume.value = dbValue + 5;
-        }
-
-        function createKeyboard() {
-            const keyboard = document.getElementById('keyboard');
-            const notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-            
-            for (let octave = 4; octave <= 5; octave++) {
-                const octaveDiv = document.createElement('div');
-                octaveDiv.className = 'octave';
-                
-                notes.forEach((note, index) => {
-                    const noteName = note + octave;
-                    const whiteKey = document.createElement('div');
-                    whiteKey.className = 'white-key key';
-                    whiteKey.dataset.note = noteName;
-                    
-                    whiteKey.addEventListener('touchstart', (e) => {
-                        e.preventDefault();
-                        playNote(noteName, whiteKey);
-                    });
-                    whiteKey.addEventListener('touchend', (e) => {
-                        e.preventDefault();
-                        stopNote(noteName, whiteKey);
-                    });
-                    whiteKey.addEventListener('mousedown', () => playNote(noteName, whiteKey));
-                    whiteKey.addEventListener('mouseup', () => stopNote(noteName, whiteKey));
-                    whiteKey.addEventListener('mouseleave', () => stopNote(noteName, whiteKey));
-                    
-                    octaveDiv.appendChild(whiteKey);
-                    
-                    if (note !== 'E' && note !== 'B') {
-                        const blackNote = note + '#' + octave;
-                        const blackKey = document.createElement('div');
-                        blackKey.className = 'black-key key';
-                        blackKey.dataset.note = blackNote;
-                        blackKey.style.left = (index * 46 + 31) + 'px';
-                        
-                        blackKey.addEventListener('touchstart', (e) => {
-                            e.preventDefault();
-                            playNote(blackNote, blackKey);
-                        });
-                        blackKey.addEventListener('touchend', (e) => {
-                            e.preventDefault();
-                            stopNote(blackNote, blackKey);
-                        });
-                        blackKey.addEventListener('mousedown', () => playNote(blackNote, blackKey));
-                        blackKey.addEventListener('mouseup', () => stopNote(blackNote, blackKey));
-                        blackKey.addEventListener('mouseleave', () => stopNote(blackNote, blackKey));
-                        
-                        octaveDiv.appendChild(blackKey);
-                    }
-                });
-                
-                keyboard.appendChild(octaveDiv);
-                if (octave < 5) break;
-            }
-        }
-
-        function playNote(note, element) {
-            if (!synth || !audioInitialized) return;
-            element.classList.add('active');
-            synth.triggerAttack(note);
-            activeNotes[note] = element;
-        }
-
-        function stopNote(note, element) {
-            if (!synth || !audioInitialized) return;
-            element.classList.remove('active');
-            synth.triggerRelease(note);
-            delete activeNotes[note];
-        }
-
-        // Event listeners
-        document.getElementById('rumbaBtn').addEventListener('click', () => setRhythm('rumba'));
-        document.getElementById('chachaBtn').addEventListener('click', () => setRhythm('chacha'));
-        document.getElementById('stopBtn').addEventListener('click', stopRhythm);
-        document.getElementById('tempo').addEventListener('input', (e) => updateTempo(e.target.value));
-        document.getElementById('volume').addEventListener('input', (e) => updateVolume(e.target.value));
-
-        // Bàn phím máy tính
-        const keyMap = {
-            'A': 'C4', 'W': 'C#4', 'S': 'D4', 'E': 'D#4', 'D': 'E4',
-            'F': 'F4', 'T': 'F#4', 'G': 'G4', 'Y': 'G#4', 'H': 'A4',
-            'U': 'A#4', 'J': 'B4', 'K': 'C5', 'O': 'C#5', 'L': 'D5', 'P': 'D#5'
-        };
-
-        document.addEventListener('keydown', (e) => {
-            const key = e.key.toUpperCase();
-            if (keyMap[key] && !activeNotes[keyMap[key]]) {
-                const element = document.querySelector(`[data-note="${keyMap[key]}"]`);
-                if (element) playNote(keyMap[key], element);
-            }
-        });
-
-        document.addEventListener('keyup', (e) => {
-            const key = e.key.toUpperCase();
-            if (keyMap[key]) {
-                const element = document.querySelector(`[data-note="${keyMap[key]}"]`);
-                if (element) stopNote(keyMap[key], element);
-            }
-        });
-
-        createKeyboard();
-    </script>
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
 </body>
 </html>
