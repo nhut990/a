@@ -348,7 +348,7 @@
         ensureSamples('piano');
     });
 
-    // ✅ NÚT KÍCH HOẠT ÂM THANH CHO iOS - TƯƠNG THÍCH iOS 11
+    // ✅ NÚT KÍCH HOẠT ÂM THANH CHO iOS - ĐƠN GIẢN HÓA TỐI ĐA
     const soundToggle = document.getElementById('soundToggle');
     const soundIcon = document.getElementById('soundIcon');
     const soundStatus = document.getElementById('soundStatus');
@@ -360,72 +360,56 @@
         soundIcon.textContent = '⏳';
         soundStatus.textContent = 'Đang kích hoạt...';
         
-        initAudioContext();
-        
-        // ✅ Phát âm thanh test bằng Audio element
-        var testAudio = new Audio('https://github.com/Nhut11790/nhut11790.github.io/raw/refs/heads/main/tieng/acoustic_grand_piano-mp3/D2.mp3');
-        testAudio.volume = 0.3;
-        
-        var playAttempted = false;
-        var activated = false;
-        
-        testAudio.addEventListener('canplaythrough', function() {
-            if (playAttempted) return;
-            playAttempted = true;
+        try {
+            // ✅ Tạo AudioContext đơn giản
+            if (!audioContext) {
+                var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                audioContext = new AudioContextClass();
+            }
             
-            testAudio.play()
-                .then(function() {
-                    setTimeout(function() {
-                        testAudio.pause();
-                        testAudio.currentTime = 0;
-                        
-                        if (!activated) {
-                            activated = true;
-                            // Resume AudioContext
-                            if (audioContext && audioContext.state === 'suspended') {
-                                audioContext.resume();
-                            }
-                            
-                            isAudioActivated = true;
-                            isMuted = false;
-                            soundToggle.classList.remove('muted');
-                            soundToggle.style.opacity = '0.6';
-                            soundToggle.style.cursor = 'not-allowed';
-                            soundIcon.textContent = '🔊';
-                            soundStatus.textContent = '✔️ Âm thanh bật';
-                            console.log('✅ Âm thanh đã kích hoạt!');
-                        }
-                    }, 300);
-                })
-                .catch(function(error) {
-                    console.error('❌ Lỗi play:', error);
-                    soundToggle.disabled = false;
-                    soundIcon.textContent = '🔇';
-                    soundStatus.textContent = 'Thử lại';
-                    alert('⚠️ Không thể phát âm thanh.\n\nLỗi: ' + error.message);
-                });
-        }, { once: true });
-        
-        testAudio.addEventListener('error', function(e) {
-            console.error('❌ Lỗi load audio:', e);
+            // ✅ Tạo oscillator ngắn để kích hoạt (không cần tải file)
+            var oscillator = audioContext.createOscillator();
+            var gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Tạo âm thanh nhỏ
+            oscillator.frequency.value = 440; // A4
+            gainNode.gain.value = 0.1; // Volume thấp
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1); // 0.1 giây
+            
+            // ✅ Tạo MediaStreamDestination cho ghi âm
+            if (!audioDest && audioContext.createMediaStreamDestination) {
+                audioDest = audioContext.createMediaStreamDestination();
+            }
+            
+            // Resume nếu bị suspended
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            
+            // ✅ Đợi một chút rồi kích hoạt
+            setTimeout(function() {
+                isAudioActivated = true;
+                isMuted = false;
+                soundToggle.classList.remove('muted');
+                soundToggle.style.opacity = '0.6';
+                soundToggle.style.cursor = 'not-allowed';
+                soundIcon.textContent = '🔊';
+                soundStatus.textContent = '✔️ Âm thanh bật';
+                console.log('✅ Âm thanh đã kích hoạt!');
+            }, 200);
+            
+        } catch (error) {
+            console.error('❌ Lỗi kích hoạt:', error);
             soundToggle.disabled = false;
             soundIcon.textContent = '🔇';
             soundStatus.textContent = 'Thử lại';
-            alert('⚠️ Không thể tải file âm thanh.\n\nVui lòng kiểm tra kết nối internet.');
-        }, { once: true });
-        
-        // Timeout 5 giây
-        setTimeout(function() {
-            if (!activated && !playAttempted) {
-                testAudio.pause();
-                soundToggle.disabled = false;
-                soundIcon.textContent = '🔇';
-                soundStatus.textContent = 'Thử lại';
-                alert('⚠️ Timeout khi tải âm thanh.\n\nVui lòng thử lại.');
-            }
-        }, 5000);
-        
-        testAudio.load();
+            alert('⚠️ Lỗi kích hoạt âm thanh.\n\n' + error.message);
+        }
     });
 
     // ✅ TẠO PHÍM ĐÀN PIANO
