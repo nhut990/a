@@ -265,139 +265,167 @@
         return note;
     }
 
-    // ✅ PRELOAD SAMPLES - ĐÃ FIX CHUYỂN # SANG b
-    async function preloadSamples(instrument) {
+    // ✅ PRELOAD SAMPLES - TƯƠNG THÍCH iOS CŨ (iOS 11+)
+    function preloadSamples(instrument) {
         let notesList = Object.keys(notes);
         let folder = sampleInstruments[instrument].folder;
         let successCount = 0;
+        let totalNotes = notesList.length;
         
         console.log(`⏳ Đang tải ${instrument} từ: ${sampleBaseURL}${folder}/`);
         document.getElementById('loadingStatus').textContent = `⏳ Đang tải ${sampleInstruments[instrument].name}...`;
         
-        let promises = notesList.map(note => {
-            // ✅ FIX: Chuyển C#3 → Db3, D#3 → Eb3...
-            let flatNote = convertSharpToFlat(note);
-            let fileName = flatNote + '.mp3';
-            let url = `${sampleBaseURL}${folder}/${fileName}`;
-            
-            console.log(`Đang tải: ${note} → ${flatNote} | URL: ${url}`);
-            
-            return fetch(url)
-                .then(res => {
-                    if (!res.ok) {
-                        console.warn(`❌ Không tải được: ${url}`);
-                        return null;
-                    }
-                    return res.arrayBuffer();
-                })
-                .then(buf => buf ? audioContext.decodeAudioData(buf) : null)
-                .then(audioBuf => {
-                    if(audioBuf) {
-                        sampleBuffers[instrument][note] = audioBuf;
-                        successCount++;
-                        document.getElementById('loadingStatus').textContent = 
-                            `⏳ Đang tải ${sampleInstruments[instrument].name}... (${successCount}/${notesList.length})`;
-                    }
-                })
-                .catch(err => {
-                    console.warn(`❌ Lỗi tải ${note} cho ${instrument}:`, err);
-                });
+        let promises = notesList.map(function(note) {
+            return new Promise(function(resolve) {
+                let flatNote = convertSharpToFlat(note);
+                let fileName = flatNote + '.mp3';
+                let url = sampleBaseURL + folder + '/' + fileName;
+                
+                console.log('Đang tải: ' + note + ' → ' + flatNote + ' | URL: ' + url);
+                
+                fetch(url)
+                    .then(function(res) {
+                        if (!res.ok) {
+                            console.warn('❌ Không tải được: ' + url);
+                            resolve(null);
+                            return null;
+                        }
+                        return res.arrayBuffer();
+                    })
+                    .then(function(buf) {
+                        if (!buf) return null;
+                        return audioContext.decodeAudioData(buf);
+                    })
+                    .then(function(audioBuf) {
+                        if(audioBuf) {
+                            sampleBuffers[instrument][note] = audioBuf;
+                            successCount++;
+                            document.getElementById('loadingStatus').textContent = 
+                                '⏳ Đang tải ' + sampleInstruments[instrument].name + '... (' + successCount + '/' + totalNotes + ')';
+                        }
+                        resolve();
+                    })
+                    .catch(function(err) {
+                        console.warn('❌ Lỗi tải ' + note + ' cho ' + instrument + ':', err);
+                        resolve();
+                    });
+            });
         });
         
-        await Promise.all(promises);
-        console.log(`✅ ${instrument}: Đã tải ${successCount}/${notesList.length} nốt nhạc`);
-        
-        if (successCount === 0) {
-            document.getElementById('loadingStatus').textContent = `❌ Không thể tải nhạc cụ ${sampleInstruments[instrument].name}`;
-            alert(`⚠️ Không thể tải nhạc cụ ${sampleInstruments[instrument].name}. Vui lòng kiểm tra:\n1. Kết nối internet\n2. Cấu trúc thư mục GitHub\n3. Tên file trên GitHub phải đúng (C#3.mp3, D#3.mp3...)`);
-        } else {
-            document.getElementById('loadingStatus').textContent = `✅ Đã tải xong ${sampleInstruments[instrument].name} (${successCount} nốt)`;
-            setTimeout(() => {
-                document.getElementById('loadingStatus').style.display = 'none';
-            }, 2000);
-        }
+        return Promise.all(promises).then(function() {
+            console.log('✅ ' + instrument + ': Đã tải ' + successCount + '/' + totalNotes + ' nốt nhạc');
+            
+            if (successCount === 0) {
+                document.getElementById('loadingStatus').textContent = '❌ Không thể tải nhạc cụ ' + sampleInstruments[instrument].name;
+                alert('⚠️ Không thể tải nhạc cụ ' + sampleInstruments[instrument].name + '.\n\nVui lòng kiểm tra:\n1. Kết nối internet\n2. Cấu trúc thư mục GitHub\n3. Tên file trên GitHub (C#3.mp3 hoặc Db3.mp3)');
+            } else {
+                document.getElementById('loadingStatus').textContent = '✅ Đã tải xong ' + sampleInstruments[instrument].name + ' (' + successCount + ' nốt)';
+                setTimeout(function() {
+                    document.getElementById('loadingStatus').style.display = 'none';
+                }, 2000);
+            }
+        });
     }
 
     let hasPreload = {};
     for(const key in sampleInstruments) hasPreload[key] = false;
 
-    async function ensureSamples(instrument) {
+    function ensureSamples(instrument) {
         initAudioContext();
         if (!hasPreload[instrument]) {
             document.getElementById('loadingStatus').style.display = 'block';
-            await preloadSamples(instrument);
-            hasPreload[instrument] = true;
+            return preloadSamples(instrument).then(function() {
+                hasPreload[instrument] = true;
+            });
         }
+        return Promise.resolve();
     }
 
     // ✅ TỰ ĐỘNG TẢI PIANO KHI LOAD TRANG
-    window.addEventListener('load', async () => {
+    window.addEventListener('load', function() {
         initAudioContext();
         document.getElementById('instrumentName').textContent = sampleInstruments[currentInstrument].name;
-        await ensureSamples('piano');
+        ensureSamples('piano');
     });
 
-    // ✅ NÚT KÍCH HOẠT ÂM THANH CHO iOS - PHÁT THỬ 1 NỐT NHẠC
+    // ✅ NÚT KÍCH HOẠT ÂM THANH CHO iOS - TƯƠNG THÍCH iOS 11
     const soundToggle = document.getElementById('soundToggle');
     const soundIcon = document.getElementById('soundIcon');
     const soundStatus = document.getElementById('soundStatus');
 
-    soundToggle.addEventListener('click', async () => {
-        if (isAudioActivated) return; // ✅ Đã kích hoạt rồi thì không làm gì
+    soundToggle.addEventListener('click', function() {
+        if (isAudioActivated) return;
         
         soundToggle.disabled = true;
         soundIcon.textContent = '⏳';
         soundStatus.textContent = 'Đang kích hoạt...';
         
-        try {
-            initAudioContext();
+        initAudioContext();
+        
+        // ✅ Phát âm thanh test bằng Audio element
+        var testAudio = new Audio('https://github.com/Nhut11790/nhut11790.github.io/raw/refs/heads/main/tieng/acoustic_grand_piano-mp3/D2.mp3');
+        testAudio.volume = 0.3;
+        
+        var playAttempted = false;
+        var activated = false;
+        
+        testAudio.addEventListener('canplaythrough', function() {
+            if (playAttempted) return;
+            playAttempted = true;
             
-            // ✅ CÁCH 1: Dùng Audio element để phát âm thanh test
-            const testAudio = new Audio('https://github.com/Nhut11790/nhut11790.github.io/raw/refs/heads/main/tieng/acoustic_grand_piano-mp3/D2.mp3');
-            testAudio.volume = 0.3;
-            
-            // Chờ audio load và phát
-            await new Promise((resolve, reject) => {
-                testAudio.addEventListener('canplaythrough', () => {
-                    testAudio.play()
-                        .then(() => {
-                            setTimeout(() => {
-                                testAudio.pause();
-                                testAudio.currentTime = 0;
-                                resolve();
-                            }, 300);
-                        })
-                        .catch(reject);
-                }, { once: true });
-                
-                testAudio.addEventListener('error', reject, { once: true });
-                testAudio.load();
-                
-                // Timeout sau 5 giây
-                setTimeout(() => reject(new Error('Timeout')), 5000);
-            });
-            
-            // Resume AudioContext cho Web Audio API
-            await audioContext.resume();
-            
-            // ✅ THÀNH CÔNG - KÍCH HOẠT ÂM THANH
-            isAudioActivated = true;
-            isMuted = false;
-            soundToggle.classList.remove('muted');
-            soundToggle.style.opacity = '0.6';
-            soundToggle.style.cursor = 'not-allowed';
-            soundIcon.textContent = '🔊';
-            soundStatus.textContent = '✔️ Âm thanh bật';
-            
-            console.log('✅ Âm thanh đã được kích hoạt thành công!');
-            
-        } catch (error) {
-            console.error('❌ Lỗi kích hoạt âm thanh:', error);
+            testAudio.play()
+                .then(function() {
+                    setTimeout(function() {
+                        testAudio.pause();
+                        testAudio.currentTime = 0;
+                        
+                        if (!activated) {
+                            activated = true;
+                            // Resume AudioContext
+                            if (audioContext && audioContext.state === 'suspended') {
+                                audioContext.resume();
+                            }
+                            
+                            isAudioActivated = true;
+                            isMuted = false;
+                            soundToggle.classList.remove('muted');
+                            soundToggle.style.opacity = '0.6';
+                            soundToggle.style.cursor = 'not-allowed';
+                            soundIcon.textContent = '🔊';
+                            soundStatus.textContent = '✔️ Âm thanh bật';
+                            console.log('✅ Âm thanh đã kích hoạt!');
+                        }
+                    }, 300);
+                })
+                .catch(function(error) {
+                    console.error('❌ Lỗi play:', error);
+                    soundToggle.disabled = false;
+                    soundIcon.textContent = '🔇';
+                    soundStatus.textContent = 'Thử lại';
+                    alert('⚠️ Không thể phát âm thanh.\n\nLỗi: ' + error.message);
+                });
+        }, { once: true });
+        
+        testAudio.addEventListener('error', function(e) {
+            console.error('❌ Lỗi load audio:', e);
             soundToggle.disabled = false;
             soundIcon.textContent = '🔇';
             soundStatus.textContent = 'Thử lại';
-            alert('⚠️ Không thể kích hoạt âm thanh.\n\nLỗi: ' + error.message + '\n\nVui lòng:\n1. Kiểm tra kết nối internet\n2. Thử lại lần nữa\n3. Nếu vẫn lỗi, thử refresh trang');
-        }
+            alert('⚠️ Không thể tải file âm thanh.\n\nVui lòng kiểm tra kết nối internet.');
+        }, { once: true });
+        
+        // Timeout 5 giây
+        setTimeout(function() {
+            if (!activated && !playAttempted) {
+                testAudio.pause();
+                soundToggle.disabled = false;
+                soundIcon.textContent = '🔇';
+                soundStatus.textContent = 'Thử lại';
+                alert('⚠️ Timeout khi tải âm thanh.\n\nVui lòng thử lại.');
+            }
+        }, 5000);
+        
+        testAudio.load();
     });
 
     // ✅ TẠO PHÍM ĐÀN PIANO
@@ -439,8 +467,11 @@
     blackKeysData.forEach(data => piano.appendChild(createKey(true, data)));
 
     // ✅ PHÁT ÂM THANH SAMPLE
-    async function playSample(instrument, note, volume = 1.0, duration = 1200) {
+    function playSample(instrument, note, volume, duration) {
         if (!audioContext || !isAudioActivated) return;
+        
+        volume = volume || 1.0;
+        duration = duration || 1200;
         
         let sampleBuffer = sampleBuffers[instrument][note];
         let rootNote = note;
@@ -484,22 +515,27 @@
     }
 
     // ✅ PHÁT NỐT NHẠC
-    async function playNote(note, keyElement, isChord = false) {
+    function playNote(note, keyElement, isChord) {
         if (!isAudioActivated) {
             alert('⚠️ Vui lòng ấn nút "🔇 Tắt âm" để kích hoạt âm thanh trước!');
             return;
         }
+        
+        isChord = isChord || false;
         initAudioContext();
         
         if (keyElement) {
-            const activeClass = isChord ? 'chord-active' : 'active';
+            var activeClass = isChord ? 'chord-active' : 'active';
             keyElement.classList.add(activeClass);
-            let duration = 1200;
-            setTimeout(() => { keyElement.classList.remove(activeClass); }, duration);
+            var duration = 1200;
+            setTimeout(function() { 
+                keyElement.classList.remove(activeClass); 
+            }, duration);
         }
         
-        await ensureSamples(currentInstrument);
-        playSample(currentInstrument, note, 1.0, 1200);
+        ensureSamples(currentInstrument).then(function() {
+            playSample(currentInstrument, note, 1.0, 1200);
+        });
     }
 
     // ✅ ĐỊNH NGHĨA HỢP ÂM
@@ -524,14 +560,15 @@
     };
 
     // ✅ PHÁT HỢP ÂM
-    async function playChord(chordName) {
-        const chordNotes = chords[chordName];
+    function playChord(chordName) {
+        var chordNotes = chords[chordName];
         if (!chordNotes) {
-            alert(`Hợp âm ${chordName} chưa được hỗ trợ!`);
+            alert('Hợp âm ' + chordName + ' chưa được hỗ trợ!');
             return;
         }
-        for (const note of chordNotes) {
-            const keyElement = document.querySelector(`[data-note="${note}"]`);
+        for (var i = 0; i < chordNotes.length; i++) {
+            var note = chordNotes[i];
+            var keyElement = document.querySelector('[data-note="' + note + '"]');
             playNote(note, keyElement, true);
         }
     }
@@ -614,11 +651,11 @@
         dropdownArrow.textContent = instrumentDropdown.classList.contains('open') ? '▲' : '▼';
     });
     
-    document.querySelectorAll('.instrument-option').forEach(btn => {
-        btn.addEventListener('click', async () => {
+    document.querySelectorAll('.instrument-option').forEach(function(btn) {
+        btn.addEventListener('click', function() {
             currentInstrument = btn.dataset.instrument;
             instrumentName.textContent = sampleInstruments[currentInstrument].name;
-            await ensureSamples(currentInstrument);
+            ensureSamples(currentInstrument);
             instrumentDropdown.classList.remove('open');
             dropdownArrow.textContent = '▼';
         });
