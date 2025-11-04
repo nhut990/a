@@ -106,9 +106,7 @@
     .chords-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 4px; }
     .chord-btn { background: linear-gradient(145deg, #4CAF50, #45a049); color: white; border: 2px solid rgba(255,255,255,0.4); border-radius: 5px; padding: 6px 2px; font-size: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3); transition: all 0.1s; touch-action: manipulation; position: relative; }
     .chord-btn:active { transform: scale(0.95); box-shadow: 0 2px 3px rgba(0,0,0,0.3); background: linear-gradient(145deg, #66BB6A, #5CB860); }
-    .piano-container { background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border-radius: 10px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow-x: auto; overflow-y: visible; width: 100%; max-width: 800px; position: relative; z-index: 1; cursor: grab; -webkit-overflow-scrolling: touch; }
-    .piano-container:active { cursor: grabbing; }
-    .piano-container.dragging { cursor: grabbing; user-select: none; }
+    .piano-container { background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border-radius: 10px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow-x: auto; overflow-y: visible; width: 100%; max-width: 800px; position: relative; z-index: 1; }
     .piano { position: relative; height: 140px; width: 1050px; margin: 0 auto; }
     .white-key { position: absolute; width: 35px; height: 140px; background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%); border: 2px solid #222; border-radius: 0 0 4px 4px; cursor: pointer; user-select: none; touch-action: manipulation; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; font-size: 8px; color: #666; font-weight: bold; transition: all 0.05s; }
     .white-key.active { background: linear-gradient(145deg, #b3e5fc 0%, #4fc3f7 100%); color: #0277bd; }
@@ -126,6 +124,13 @@
     }
     .black-key:active { background: linear-gradient(145deg, #b3e5fc 0%, #4fc3f7 100%); color: #0277bd; }
     .info2 { text-align: center; color: white; margin-top: 8px; font-size: 11px; line-height: 1.4; }
+    .loading-status {
+      text-align: center;
+      color: #FFD700;
+      font-size: 14px;
+      margin: 10px 0;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -139,6 +144,7 @@
     <h1 class="title" style="margin: 0;">🎹 Đàn Piano Nhạc Cụ Thật</h1>
     <div class="created-by">Created by Minh Nhựt</div>
     <div class="info">Chơi đàn, ghi âm, nghe lại và tải về file .wav!</div>
+    <div class="loading-status" id="loadingStatus">⏳ Đang tải nhạc cụ...</div>
     <div class="recorder-controls">
       <div class="recording-status" id="recordingStatus">🔴 ĐANG GHI ÂM</div>
       <div class="recording-timer" id="recordingTimer" style="display:none;">00:00</div>
@@ -223,6 +229,7 @@
     let audioContext = null;
     let audioDest = null;
     let isMuted = true;
+    let isAudioActivated = false; // ✅ Trạng thái kích hoạt âm thanh
     let currentTone = 'Dm';
     let currentInstrument = 'piano';
     let sampleBuffers = {};
@@ -240,16 +247,41 @@
         }
     }
 
-    // ✅ PRELOAD SAMPLES
+    // ✅ CHUYỂN ĐỔI TÊN FILE: # → b (C# → Db, D# → Eb...)
+    function convertSharpToFlat(note) {
+        const sharpToFlat = {
+            'C#': 'Db',
+            'D#': 'Eb',
+            'F#': 'Gb',
+            'G#': 'Ab',
+            'A#': 'Bb'
+        };
+        
+        for (let sharp in sharpToFlat) {
+            if (note.startsWith(sharp)) {
+                return note.replace(sharp, sharpToFlat[sharp]);
+            }
+        }
+        return note;
+    }
+
+    // ✅ PRELOAD SAMPLES - ĐÃ FIX CHUYỂN # SANG b
     async function preloadSamples(instrument) {
         let notesList = Object.keys(notes);
         let folder = sampleInstruments[instrument].folder;
         let successCount = 0;
         
         console.log(`⏳ Đang tải ${instrument} từ: ${sampleBaseURL}${folder}/`);
+        document.getElementById('loadingStatus').textContent = `⏳ Đang tải ${sampleInstruments[instrument].name}...`;
         
         let promises = notesList.map(note => {
-            let url = `${sampleBaseURL}${folder}/${note}.mp3`;
+            // ✅ FIX: Chuyển C#3 → Db3, D#3 → Eb3...
+            let flatNote = convertSharpToFlat(note);
+            let fileName = flatNote + '.mp3';
+            let url = `${sampleBaseURL}${folder}/${fileName}`;
+            
+            console.log(`Đang tải: ${note} → ${flatNote} | URL: ${url}`);
+            
             return fetch(url)
                 .then(res => {
                     if (!res.ok) {
@@ -263,6 +295,8 @@
                     if(audioBuf) {
                         sampleBuffers[instrument][note] = audioBuf;
                         successCount++;
+                        document.getElementById('loadingStatus').textContent = 
+                            `⏳ Đang tải ${sampleInstruments[instrument].name}... (${successCount}/${notesList.length})`;
                     }
                 })
                 .catch(err => {
@@ -274,7 +308,13 @@
         console.log(`✅ ${instrument}: Đã tải ${successCount}/${notesList.length} nốt nhạc`);
         
         if (successCount === 0) {
-            alert(`⚠️ Không thể tải nhạc cụ ${sampleInstruments[instrument].name}. Vui lòng kiểm tra kết nối.`);
+            document.getElementById('loadingStatus').textContent = `❌ Không thể tải nhạc cụ ${sampleInstruments[instrument].name}`;
+            alert(`⚠️ Không thể tải nhạc cụ ${sampleInstruments[instrument].name}. Vui lòng kiểm tra:\n1. Kết nối internet\n2. Cấu trúc thư mục GitHub\n3. Tên file trên GitHub phải đúng (C#3.mp3, D#3.mp3...)`);
+        } else {
+            document.getElementById('loadingStatus').textContent = `✅ Đã tải xong ${sampleInstruments[instrument].name} (${successCount} nốt)`;
+            setTimeout(() => {
+                document.getElementById('loadingStatus').style.display = 'none';
+            }, 2000);
         }
     }
 
@@ -284,6 +324,7 @@
     async function ensureSamples(instrument) {
         initAudioContext();
         if (!hasPreload[instrument]) {
+            document.getElementById('loadingStatus').style.display = 'block';
             await preloadSamples(instrument);
             hasPreload[instrument] = true;
         }
@@ -296,17 +337,67 @@
         await ensureSamples('piano');
     });
 
-    // ✅ NÚT BẬT/TẮT ÂM THANH
+    // ✅ NÚT KÍCH HOẠT ÂM THANH CHO iOS - PHÁT THỬ 1 NỐT NHẠC
     const soundToggle = document.getElementById('soundToggle');
     const soundIcon = document.getElementById('soundIcon');
     const soundStatus = document.getElementById('soundStatus');
 
-    soundToggle.addEventListener('click', () => {
-        initAudioContext();
-        isMuted = !isMuted;
-        soundToggle.classList.toggle('muted', isMuted);
-        soundIcon.textContent = isMuted ? '🔇' : '🔊';
-        soundStatus.textContent = isMuted ? 'Tắt âm' : 'Bật âm';
+    soundToggle.addEventListener('click', async () => {
+        if (isAudioActivated) return; // ✅ Đã kích hoạt rồi thì không làm gì
+        
+        soundToggle.disabled = true;
+        soundIcon.textContent = '⏳';
+        soundStatus.textContent = 'Đang kích hoạt...';
+        
+        try {
+            initAudioContext();
+            
+            // ✅ CÁCH 1: Dùng Audio element để phát âm thanh test
+            const testAudio = new Audio('https://github.com/Nhut11790/nhut11790.github.io/raw/refs/heads/main/tieng/acoustic_grand_piano-mp3/D2.mp3');
+            testAudio.volume = 0.3;
+            
+            // Chờ audio load và phát
+            await new Promise((resolve, reject) => {
+                testAudio.addEventListener('canplaythrough', () => {
+                    testAudio.play()
+                        .then(() => {
+                            setTimeout(() => {
+                                testAudio.pause();
+                                testAudio.currentTime = 0;
+                                resolve();
+                            }, 300);
+                        })
+                        .catch(reject);
+                }, { once: true });
+                
+                testAudio.addEventListener('error', reject, { once: true });
+                testAudio.load();
+                
+                // Timeout sau 5 giây
+                setTimeout(() => reject(new Error('Timeout')), 5000);
+            });
+            
+            // Resume AudioContext cho Web Audio API
+            await audioContext.resume();
+            
+            // ✅ THÀNH CÔNG - KÍCH HOẠT ÂM THANH
+            isAudioActivated = true;
+            isMuted = false;
+            soundToggle.classList.remove('muted');
+            soundToggle.style.opacity = '0.6';
+            soundToggle.style.cursor = 'not-allowed';
+            soundIcon.textContent = '🔊';
+            soundStatus.textContent = '✔️ Âm thanh bật';
+            
+            console.log('✅ Âm thanh đã được kích hoạt thành công!');
+            
+        } catch (error) {
+            console.error('❌ Lỗi kích hoạt âm thanh:', error);
+            soundToggle.disabled = false;
+            soundIcon.textContent = '🔇';
+            soundStatus.textContent = 'Thử lại';
+            alert('⚠️ Không thể kích hoạt âm thanh.\n\nLỗi: ' + error.message + '\n\nVui lòng:\n1. Kiểm tra kết nối internet\n2. Thử lại lần nữa\n3. Nếu vẫn lỗi, thử refresh trang');
+        }
     });
 
     // ✅ TẠO PHÍM ĐÀN PIANO
@@ -349,7 +440,7 @@
 
     // ✅ PHÁT ÂM THANH SAMPLE
     async function playSample(instrument, note, volume = 1.0, duration = 1200) {
-        if (!audioContext || isMuted) return;
+        if (!audioContext || !isAudioActivated) return;
         
         let sampleBuffer = sampleBuffers[instrument][note];
         let rootNote = note;
@@ -394,7 +485,10 @@
 
     // ✅ PHÁT NỐT NHẠC
     async function playNote(note, keyElement, isChord = false) {
-        if (isMuted) return;
+        if (!isAudioActivated) {
+            alert('⚠️ Vui lòng ấn nút "🔇 Tắt âm" để kích hoạt âm thanh trước!');
+            return;
+        }
         initAudioContext();
         
         if (keyElement) {
@@ -408,7 +502,7 @@
         playSample(currentInstrument, note, 1.0, 1200);
     }
 
-    // ✅ ĐỊNH NGHĨA HỢP ÂM - CHỈ GIỮ CÁC HỢP ÂM ĐANG DÙNG
+    // ✅ ĐỊNH NGHĨA HỢP ÂM
     const chords = {
         'Dm': ['D3', 'F3', 'A3'],
         'Gm': ['G3', 'A#3', 'D4'],
@@ -423,7 +517,7 @@
         'E': ['E3', 'G#3', 'B3']
     };
 
-    // ✅ HỢP ÂM THEO TONE - ĐÃ CẬP NHẬT
+    // ✅ HỢP ÂM THEO TONE
     const toneChords = {
         'Dm': ['Dm', 'Gm', 'Bb', 'C', 'F', 'G', 'A7', 'Am', 'E'],
         'Dm_2': ['Dm', 'Gm', 'Bb', 'C', 'F', 'D7', 'A7', 'Am', 'Em']
