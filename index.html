@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Karaoke App (with Recorder)</title>
+    <title>Karaoke App (v1 + Recorder)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); min-height:100vh; padding:10px; }
-        .container { max-width:100%; margin:0 auto; background:rgba(255,255,255,0.95); border-radius:15px; padding:15px; box-shadow:0 10px 30px rgba(0,0,0,0.3); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); min-height:100vh; padding:10px; display:flex; flex-direction:column; }
+        .container { max-width:100%; margin:0 auto; background:rgba(255,255,255,0.95); border-radius:15px; padding:15px; box-shadow:0 10px 30px rgba(0,0,0,0.3); flex: 1 0 auto; }
         h1 { text-align:center; color:#667eea; margin-bottom:15px; font-size:1.5em; }
         .input-section { margin-bottom:15px; }
         .input-box { display:flex; flex-direction:column; gap:8px; }
@@ -37,6 +37,9 @@
         .row { display:flex; gap:8px; align-items:center; }
         .small-btn { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; background:#667eea; color:white; font-weight:bold; }
         .danger { background:#f56565; }
+        .footer { text-align:center; color:#fff; margin-top:12px; font-weight:600; }
+        #playback { width: 100%; margin-top:8px; display:none; }
+        #recordTimer { font-weight:bold; color:#d9534f; margin-left:8px; min-width:48px; display:inline-block; text-align:center; }
         @media (min-width:768px) { .container { max-width:1000px; padding:25px; } h1 { font-size:2em; margin-bottom:20px; } .controls-grid { grid-template-columns:repeat(2,1fr); } }
     </style>
 </head>
@@ -47,18 +50,18 @@
         <div class="instructions">
             <h4>📌 Hướng dẫn:</h4>
             <ul>
-                <li>Dán link YouTube video karaoke và "Tải Video".</li>
+                <li>Dán link YouTube video karaoke và "Xem Video".</li>
                 <li>Nhấn "Bật Micro" để bật micro (dùng cho live playback/FX).</li>
                 <li>Để ghi âm âm thanh web (tab) hoặc micro: chọn nguồn và "Bắt đầu ghi".</li>
                 <li>Ghi âm tab yêu cầu trình duyệt hỗ trợ getDisplayMedia audio (Chrome/Edge trên desktop tốt nhất). iOS thường không cho phép capture tab audio.</li>
-                <li>Sau khi dừng ghi, nhấn "Tải WAV" để lưu file .wav</li>
+                <li>Sau khi dừng ghi, bạn có thể nghe lại hoặc nhấn "Tải WAV" để lưu file .wav</li>
             </ul>
         </div>
 
         <div class="input-section">
             <div class="input-box">
                 <input type="text" id="videoInput" placeholder="Dán link YouTube (VD: https://youtu.be/xxxxx hoặc https://www.youtube.com/watch?v=xxxxx)" />
-                <button id="loadBtn">▶️ Tải Video</button>
+                <button id="loadBtn">▶️ Xem Video</button>
             </div>
         </div>
 
@@ -89,7 +92,7 @@
                 <div class="control-row">
                     <div class="control-label">
                         <span class="label-text">Nguồn ghi</span>
-                        <span class="value-display" id="recordSourceVal">Mic</span>
+                        <span class="value-display" id="recordSourceVal">Micro</span>
                     </div>
                     <div class="row">
                         <select id="recordSource">
@@ -101,12 +104,21 @@
                 </div>
 
                 <div class="control-row">
-                    <div class="row" style="width:100%;">
+                    <div class="row" style="width:100%; align-items:center;">
                         <button id="startRecordBtn" class="small-btn">🔴 Bắt đầu ghi</button>
                         <button id="stopRecordBtn" class="small-btn danger" disabled>⏹ Dừng</button>
                         <button id="downloadWavBtn" class="small-btn" disabled>Tải WAV</button>
+                        <span id="recordTimer">00:00</span>
                     </div>
                     <div style="font-size:12px;color:#444;margin-top:8px;">Lưu ý: file sẽ được xuất dưới dạng WAV (16-bit PCM) chứa âm thanh đã ghi.</div>
+                </div>
+
+                <div class="control-row" id="playbackRow" style="display:none;">
+                    <div class="control-label">
+                        <span class="label-text">Nghe lại</span>
+                        <span class="value-display" id="playbackStatus">Sẵn sàng</span>
+                    </div>
+                    <audio id="playback" controls></audio>
                 </div>
 
                 <hr />
@@ -198,6 +210,8 @@
         </div>
     </div>
 
+    <div class="footer">Created by Minh Nhựt</div>
+
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
         // === Core vars from v1 (kept) ===
@@ -227,6 +241,12 @@
         let recNumChannels = 2;
         let recSources = []; // { type: 'mic'|'tab', stream, sourceNode }
         let recStreamsToStop = []; // mediastreams to stop on end
+        let mediaRecorderBlobUrl = null;
+
+        // Timer for recording
+        let recordStartTimestamp = 0;
+        let recordTimerInterval = null;
+        const recordTimerEl = document.getElementById('recordTimer');
 
         // YouTube player
         function onYouTubeIframeAPIReady() {
@@ -241,7 +261,6 @@
         function onPlayerReady(event) {
             playerReady = true;
             safeSetYouTubeVolume(10);
-            // try mute/unmute to coax iOS
             try {
                 player.mute();
                 setTimeout(() => { player.unMute(); player.setVolume(10); }, 100);
@@ -254,8 +273,9 @@
             try {
                 player.setVolume(val);
                 document.getElementById('youtubeVolumeVal').textContent = val + '%';
-                document.getElementById('musicVolume').value = val;
-                document.getElementById('musicVolumeVal').textContent = val + '%';
+                // also sync legacy
+                const musicSlider = document.getElementById('musicVolume');
+                if (musicSlider) { musicSlider.value = val; document.getElementById('musicVolumeVal').textContent = val + '%'; }
                 const muteBtn = document.getElementById('youtubeMuteBtn');
                 muteBtn.textContent = (val === 0) ? 'Unmute' : 'Mute';
             } catch (e) {
@@ -298,7 +318,7 @@
         // === AudioContext + FX init (based on v1) ===
         function initAudioContext() {
             if (audioContext) return;
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            audioContext = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
             recSampleRate = audioContext.sampleRate || 44100;
 
             // main processing nodes
@@ -411,8 +431,6 @@
                 }
             } else {
                 try {
-                    // Best-effort disconnect; we don't have direct references for splitter/merger here but
-                    // disconnect main nodes that may be connected.
                     if (microphone) { try { microphone.disconnect(); } catch(e){} microphone = null; }
                     if (micGainNode) micGainNode.disconnect();
                     if (bassFilter) bassFilter.disconnect();
@@ -514,10 +532,7 @@
         // Create recorder node: Try AudioWorklet first, fallback to ScriptProcessor
         async function createRecorderNode() {
             if (!audioContext) initAudioContext();
-            // If already created, return
-            if (recorderNode) return recorderNode;
-
-            // prepare recordedBuffers
+            // reset buffers
             recordedBuffers = [];
             recordedBuffers.length = recNumChannels;
             for (let i=0;i<recNumChannels;i++) recordedBuffers[i] = [];
@@ -528,26 +543,23 @@
                 try {
                     const workletCode = `
                         class RecorderProcessor extends AudioWorkletProcessor {
-                            constructor() {
-                                super();
-                            }
+                            constructor() { super(); }
                             process (inputs, outputs) {
                                 const input = inputs[0];
                                 const output = outputs[0];
                                 if (input && input.length > 0) {
-                                    // copy input to output (pass-through)
-                                    for (let ch = 0; ch < input.length; ch++) {
-                                        output[ch].set(input[ch]);
+                                    // pass-through to output if exists
+                                    if (output && output.length > 0) {
+                                        for (let ch = 0; ch < output.length; ch++) {
+                                            output[ch].set(input[ch] || input[0] || new Float32Array(output[ch].length));
+                                        }
                                     }
-                                    // prepare transferable buffers
                                     const buffers = [];
                                     for (let ch = 0; ch < ${recNumChannels}; ch++) {
-                                        // ensure channel exists
-                                        const chanData = input[ch] || new Float32Array(input[0] ? input[0].length : 128).fill(0);
+                                        const chanData = input[ch] || input[0] || new Float32Array(128);
                                         const copy = new Float32Array(chanData);
                                         buffers.push(copy);
                                     }
-                                    // transfer underlying ArrayBuffers to main thread for zero-copy
                                     this.port.postMessage({ samples: buffers }, buffers.map(b => b.buffer));
                                 }
                                 return true;
@@ -561,7 +573,6 @@
                     const node = new AudioWorkletNode(audioContext, 'recorder-processor', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [recNumChannels] });
                     node.port.onmessage = (e) => {
                         const { samples } = e.data;
-                        // samples is array of Float32Array (transferred)
                         if (!samples) return;
                         const len = samples[0].length;
                         for (let ch=0; ch<recNumChannels; ch++) {
@@ -577,7 +588,7 @@
                 }
             }
 
-            // Fallback: ScriptProcessorNode (deprecated but works widely)
+            // Fallback: ScriptProcessorNode
             try {
                 const bufferSize = 4096;
                 const scriptNode = audioContext.createScriptProcessor(bufferSize, recNumChannels, recNumChannels);
@@ -598,6 +609,22 @@
             }
         }
 
+        // Timer helpers
+        function startRecordTimer() {
+            recordStartTimestamp = Date.now();
+            recordTimerEl.textContent = '00:00';
+            if (recordTimerInterval) clearInterval(recordTimerInterval);
+            recordTimerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - recordStartTimestamp) / 1000);
+                const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                const ss = String(elapsed % 60).padStart(2, '0');
+                recordTimerEl.textContent = mm + ':' + ss;
+            }, 250);
+        }
+        function stopRecordTimer() {
+            if (recordTimerInterval) { clearInterval(recordTimerInterval); recordTimerInterval = null; }
+        }
+
         // Start recording based on selected source
         document.getElementById('startRecordBtn').addEventListener('click', async function() {
             if (recording) return;
@@ -607,6 +634,15 @@
             const source = document.getElementById('recordSource').value;
             recSources = [];
             recStreamsToStop = [];
+            // Reset playback UI
+            const playbackEl = document.getElementById('playback');
+            const playbackRow = document.getElementById('playbackRow');
+            playbackEl.pause();
+            playbackEl.src = '';
+            playbackEl.style.display = 'none';
+            playbackRow.style.display = 'none';
+            document.getElementById('playbackStatus').textContent = 'Sẵn sàng';
+
             try {
                 // Acquire streams as requested
                 if (source === 'mic' || source === 'mix') {
@@ -615,15 +651,11 @@
                     recStreamsToStop.push(micStream);
                 }
                 if (source === 'tab' || source === 'mix') {
-                    // user will have to pick a tab/window/screen that provides audio
                     const dispStream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: false });
-                    // Some browsers return a stream without audio even if requested; check
                     if (dispStream && dispStream.getAudioTracks().length > 0) {
                         recSources.push({ type: 'tab', stream: dispStream });
                         recStreamsToStop.push(dispStream);
                     } else {
-                        // try alternative hint for Chrome
-                        // (no reliable fallback; inform user)
                         alert('Không tìm thấy audio từ tab/screen. Một số trình duyệt không cho phép capture audio hoặc bạn đã chọn nguồn không có âm thanh.');
                     }
                 }
@@ -633,40 +665,37 @@
                     return;
                 }
 
-                // create recorder node
+                // create recorder node (resets buffers)
                 const node = await createRecorderNode();
 
-                // Create a mixing node for the recording graph
+                // Create a gain node to mix recording sources
                 const recGain = audioContext.createGain();
                 recGain.gain.value = 1.0;
 
-                // Connect recorder node in pass-through mode: recGain -> recorderNode -> (if node has output) audioContext.destination
-                // For AudioWorkletNode created above, it has outputs, so we can connect it to masterGain to keep live monitoring; for ScriptProcessor, it processes ononaudio and passes audio automatically
-                // We will route recGain -> recorderNode -> (if recorderNode.connect exists) -> audioContext.destination (mute-able)
+                // connect recGain -> recorderNode
                 recGain.connect(node);
-                // If recorderNode has outputs, connect to audioContext.destination for monitoring (you can comment this out to avoid monitoring)
+                // For nodes with outputs, ensure they are connected so it processes; connect recorderNode to masterGain for monitoring
                 try {
-                    node.connect(masterGain); // forward recorded audio into main master (so you can hear the captured mix)
+                    node.connect(masterGain);
                 } catch (e) {
-                    // some nodes (ScriptProcessor) may not accept connect in same way; ignore
                     try { node.connect(audioContext.destination); } catch (ee) {}
                 }
 
-                // For each source stream, create source node and connect to recGain
+                // Connect each source to recGain
                 for (const s of recSources) {
                     const srcNode = audioContext.createMediaStreamSource(s.stream);
-                    // If source is mono, duplicate into stereo by linking to a channel merger
-                    // But simplest: connect directly; AudioWorklet will handle channel mapping.
                     srcNode.connect(recGain);
                     s.sourceNode = srcNode;
                 }
 
+                // Update UI states
                 recording = true;
                 document.getElementById('startRecordBtn').disabled = true;
                 document.getElementById('stopRecordBtn').disabled = false;
                 document.getElementById('downloadWavBtn').disabled = true;
-                console.log('Recording started. Sources:', recSources.map(r => r.type));
+                startRecordTimer();
 
+                console.log('Recording started. Sources:', recSources.map(r => r.type));
             } catch (err) {
                 console.error('Start recording failed:', err);
                 alert('Bắt đầu ghi thất bại: ' + (err.message || err));
@@ -674,9 +703,14 @@
         });
 
         document.getElementById('stopRecordBtn').addEventListener('click', async function() {
-            if (!recording) return;
+            if (!recording) return; // ensure stop only acts when recording
             recording = false;
-            // disconnect and stop source streams
+
+            // stop timer
+            stopRecordTimer();
+            recordTimerEl.textContent = '00:00';
+
+            // disconnect recording sources and stop their streams
             try {
                 for (const s of recSources) {
                     try { if (s.sourceNode) s.sourceNode.disconnect(); } catch (e) {}
@@ -684,34 +718,66 @@
                 for (const ms of recStreamsToStop) {
                     try { ms.getTracks().forEach(t => t.stop()); } catch (e) {}
                 }
-                recSources = [];
-                recStreamsToStop = [];
             } catch (e) {
                 console.warn('Error cleaning rec sources:', e);
             }
 
-            // Wait a tick to ensure collected buffers are flushed
-            await new Promise(r => setTimeout(r, 100));
+            // disconnect and cleanup recorderNode
+            try {
+                if (recorderNode) {
+                    try { recorderNode.disconnect(); } catch (e) {}
+                    // for AudioWorkletNode, release port
+                    try { if (recorderNode.port) recorderNode.port.close(); } catch(e) {}
+                    recorderNode = null;
+                }
+            } catch (e) {
+                console.warn('Error disconnecting recorderNode:', e);
+            }
+
+            recSources = [];
+            recStreamsToStop = [];
+
+            // small delay to ensure processors finish sending last buffers
+            await new Promise(r => setTimeout(r, 150));
+
+            // encode WAV and prepare playback + download
+            if (recordedLength > 0) {
+                const wavBlob = encodeWAV(recordedBuffers, recSampleRate);
+                // revoke old url
+                if (mediaRecorderBlobUrl) { URL.revokeObjectURL(mediaRecorderBlobUrl); mediaRecorderBlobUrl = null; }
+                mediaRecorderBlobUrl = URL.createObjectURL(wavBlob);
+
+                // setup playback element
+                const playbackEl = document.getElementById('playback');
+                playbackEl.src = mediaRecorderBlobUrl;
+                playbackEl.style.display = 'block';
+                document.getElementById('playbackRow').style.display = 'block';
+                document.getElementById('playbackStatus').textContent = 'Sẵn sàng';
+
+                // enable download button and set up download link behavior
+                document.getElementById('downloadWavBtn').disabled = false;
+                document.getElementById('downloadWavBtn').onclick = function() {
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = mediaRecorderBlobUrl;
+                    const now = new Date();
+                    const filename = `recording_${now.toISOString().replace(/[:.]/g,'-')}.wav`;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => { document.body.removeChild(a); }, 1000);
+                };
+            } else {
+                alert('Không có dữ liệu ghi âm (dữ liệu rỗng).');
+                document.getElementById('downloadWavBtn').disabled = true;
+            }
 
             document.getElementById('startRecordBtn').disabled = false;
             document.getElementById('stopRecordBtn').disabled = true;
-            document.getElementById('downloadWavBtn').disabled = false;
             console.log('Recording stopped. Collected length:', recordedLength);
         });
 
-        // WAV export (interleave and encode 16-bit PCM)
-        function interleave(buffers, totalLen) {
-            const result = new Float32Array(totalLen * recNumChannels);
-            let offset = 0;
-            const channelCount = recNumChannels;
-            for (let i = 0; i < totalLen; i++) {
-                for (let ch = 0; ch < channelCount; ch++) {
-                    // not used here — we will assemble from channel arrays
-                }
-            }
-            return result;
-        }
-
+        // WAV export helpers
         function flattenChannel(chunks, length) {
             const result = new Float32Array(length);
             let offset = 0;
@@ -730,31 +796,18 @@
             const buffer = new ArrayBuffer(44 + samples * blockAlign);
             const view = new DataView(buffer);
 
-            /* RIFF identifier */
             writeString(view, 0, 'RIFF');
-            /* file length */
             view.setUint32(4, 36 + samples * blockAlign, true);
-            /* RIFF type */
             writeString(view, 8, 'WAVE');
-            /* format chunk identifier */
             writeString(view, 12, 'fmt ');
-            /* format chunk length */
             view.setUint32(16, 16, true);
-            /* sample format (raw) */
             view.setUint16(20, 1, true);
-            /* channel count */
             view.setUint16(22, channelCount, true);
-            /* sample rate */
             view.setUint32(24, sampleRate, true);
-            /* byte rate (sampleRate * blockAlign) */
             view.setUint32(28, sampleRate * blockAlign, true);
-            /* block align (channelCount * bytesPerSample) */
             view.setUint16(32, blockAlign, true);
-            /* bits per sample */
             view.setUint16(34, 8 * bytesPerSample, true);
-            /* data chunk identifier */
             writeString(view, 36, 'data');
-            /* data chunk length */
             view.setUint32(40, samples * blockAlign, true);
 
             // merge interleaved samples
@@ -764,10 +817,8 @@
             }
 
             let offset = 44;
-            // interleave and write 16-bit PCM
             for (let i = 0; i < recordedLength; i++) {
                 for (let ch = 0; ch < channelCount; ch++) {
-                    // clamp
                     let sample = channelData[ch][i];
                     if (isNaN(sample)) sample = 0;
                     sample = Math.max(-1, Math.min(1, sample));
@@ -786,32 +837,14 @@
             }
         }
 
-        document.getElementById('downloadWavBtn').addEventListener('click', function() {
-            if (recordedLength <= 0) { alert('Không có dữ liệu ghi âm.'); return; }
-            const wavBlob = encodeWAV(recordedBuffers, recSampleRate);
-            const url = URL.createObjectURL(wavBlob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            const now = new Date();
-            const filename = `recording_${now.toISOString().replace(/[:.]/g,'-')}.wav`;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => {
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }, 1000);
-        });
-
         // Clean up on page unload
         window.addEventListener('beforeunload', function() {
             if (audioContext && audioContext.state !== 'closed') {
                 try { audioContext.close(); } catch (e) {}
             }
+            if (mediaRecorderBlobUrl) { URL.revokeObjectURL(mediaRecorderBlobUrl); mediaRecorderBlobUrl = null; }
         });
 
-        // ==== End recording logic ====
     </script>
 </body>
 </html>
