@@ -3,21 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Piano Chord Finder</title>
+    <title>Piano Chord Finder (Responsive)</title>
     <style>
+        :root{
+            /* Biến kích thước mặc định */
+            --white-key-width: 50px;
+            --white-key-height: 200px;
+            --black-key-width: 35px;
+            --black-key-height: 120px;
+            /* offset tính cho phím đen (nửa chiều rộng phím đen + border fudge) */
+            --black-key-offset: 17.5px;
+            --label-font-size: 12px;
+            --black-label-font-size: 10px;
+        }
+
+        /* Responsive: trên màn nhỏ (điện thoại) giảm kích thước phím để thấy nhiều phím hơn */
+        @media (max-width: 600px) {
+            :root{
+                --white-key-width: 40px;
+                --white-key-height: 120px;
+                --black-key-width: 28px;
+                --black-key-height: 80px;
+                --black-key-offset: 14px;
+                --label-font-size: 11px;
+                --black-label-font-size: 9px;
+            }
+
+            /* Nếu muốn còn nhỏ hơn nữa (ví dụ very small screens), bạn có thể thêm media query khác */
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -26,14 +53,14 @@
             padding: 30px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
-        
+
         h1 {
             text-align: center;
             color: #333;
             margin-bottom: 30px;
             font-size: 2.5em;
         }
-        
+
         .controls {
             display: flex;
             gap: 20px;
@@ -42,19 +69,19 @@
             align-items: center;
             justify-content: center;
         }
-        
+
         .control-group {
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
-        
+
         label {
             font-weight: 600;
             color: #555;
             font-size: 14px;
         }
-        
+
         select {
             padding: 12px 20px;
             font-size: 16px;
@@ -64,22 +91,22 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-        
+
         select:hover {
             border-color: #667eea;
         }
-        
+
         select:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-        
+
         .play-buttons {
             display: flex;
             gap: 10px;
         }
-        
+
         button {
             padding: 12px 24px;
             font-size: 16px;
@@ -90,52 +117,52 @@
             transition: all 0.3s;
             color: white;
         }
-        
+
         .btn-arpeggio {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
-        
+
         .btn-chord {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
-        
+
         button:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
-        
+
         button:active {
             transform: translateY(0);
         }
-        
+
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
         }
-        
+
         .piano-container {
             overflow-x: auto;
             padding: 20px 0;
         }
-        
+
         .piano {
             display: flex;
             position: relative;
-            height: 200px;
+            height: var(--white-key-height);
             margin: 0 auto;
             width: fit-content;
         }
-        
+
         .key {
             position: relative;
             cursor: pointer;
             user-select: none;
         }
-        
+
         .white-key {
-            width: 50px;
-            height: 200px;
+            width: var(--white-key-width);
+            height: var(--white-key-height);
             background: white;
             border: 2px solid #333;
             border-radius: 0 0 5px 5px;
@@ -143,29 +170,29 @@
             align-items: flex-end;
             justify-content: center;
             padding-bottom: 10px;
-            font-size: 12px;
+            font-size: var(--label-font-size);
             color: #666;
             transition: all 0.1s;
         }
-        
+
         .white-key:hover {
             background: #f0f0f0;
         }
-        
+
         .white-key.active {
             background: #ff8c00;
             box-shadow: 0 0 20px rgba(255, 140, 0, 0.6);
         }
-        
+
         .white-key.playing {
             background: #00ff00;
             box-shadow: 0 0 30px rgba(0, 255, 0, 0.8);
             transform: translateY(3px);
         }
-        
+
         .black-key {
-            width: 35px;
-            height: 120px;
+            width: var(--black-key-width);
+            height: var(--black-key-height);
             background: linear-gradient(to bottom, #222, #000);
             border: 2px solid #000;
             border-radius: 0 0 3px 3px;
@@ -176,25 +203,25 @@
             align-items: flex-end;
             justify-content: center;
             padding-bottom: 8px;
-            font-size: 10px;
+            font-size: var(--black-label-font-size);
             transition: all 0.1s;
         }
-        
+
         .black-key:hover {
             background: linear-gradient(to bottom, #333, #111);
         }
-        
+
         .black-key.active {
             background: linear-gradient(to bottom, #ff8c00, #ff6600);
             box-shadow: 0 0 20px rgba(255, 140, 0, 0.8);
         }
-        
+
         .black-key.playing {
             background: linear-gradient(to bottom, #00ff00, #00cc00);
             box-shadow: 0 0 30px rgba(0, 255, 0, 0.9);
             transform: translateY(2px);
         }
-        
+
         .chord-info {
             text-align: center;
             margin-top: 30px;
@@ -202,7 +229,7 @@
             background: #f8f9fa;
             border-radius: 10px;
         }
-        
+
         .loading-status {
             text-align: center;
             margin-bottom: 20px;
@@ -212,33 +239,41 @@
             font-weight: 600;
             color: #1976d2;
         }
-        
+
         .loading-status.loaded {
             background: #e8f5e9;
             color: #2e7d32;
         }
-        
+
         .chord-name {
             font-size: 24px;
             font-weight: bold;
             color: #667eea;
             margin-bottom: 10px;
         }
-        
+
         .chord-notes {
             font-size: 18px;
             color: #555;
+        }
+
+        /* Nếu muốn thu gọn thêm UI trên điện thoại (ví dụ label, padding), có thể thêm rules tại đây */
+        @media (max-width: 420px) {
+            .container { padding: 18px; }
+            h1 { font-size: 1.8em; }
+            .controls { gap: 12px; }
+            .chord-name { font-size: 20px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🎹 Piano Chord Finder</h1>
-        
+
         <div class="loading-status" id="loading-status">
             🔄 Đang tải âm thanh... 0%
         </div>
-        
+
         <div class="controls">
             <div class="control-group">
                 <label for="root-select">Nốt gốc:</label>
@@ -257,7 +292,7 @@
                     <option value="B">B</option>
                 </select>
             </div>
-            
+
             <div class="control-group">
                 <label for="chord-select">Loại hợp âm:</label>
                 <select id="chord-select">
@@ -287,7 +322,7 @@
                     </optgroup>
                 </select>
             </div>
-            
+
             <div class="control-group">
                 <label>Phát âm:</label>
                 <div class="play-buttons">
@@ -296,11 +331,11 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="piano-container">
             <div class="piano" id="piano"></div>
         </div>
-        
+
         <div class="chord-info">
             <div class="chord-name" id="chord-name">C Major</div>
             <div class="chord-notes" id="chord-notes">Các nốt: C - E - G</div>
@@ -309,7 +344,7 @@
 
     <script>
         const BASE_URL = 'https://raw.githubusercontent.com/Nhut11790/nhut11790.github.io/main/tieng/acoustic_grand_piano-mp3/';
-        
+
         // Ánh xạ từ tên hiển thị sang tên file (# -> b)
         const noteToFile = {
             'C': 'C', 'C#': 'Db', 'Db': 'Db',
@@ -320,7 +355,7 @@
             'A': 'A', 'A#': 'Bb', 'Bb': 'Bb',
             'B': 'B'
         };
-        
+
         // Định nghĩa các phím piano từ C3 đến C6
         const pianoKeys = [
             {note: 'C', octave: 3, type: 'white'},
@@ -361,7 +396,7 @@
             {note: 'B', octave: 5, type: 'white'},
             {note: 'C', octave: 6, type: 'white'}
         ];
-        
+
         // Công thức hợp âm (khoảng cách từ nốt gốc)
         const chordFormulas = {
             'major': [0, 4, 7],
@@ -381,7 +416,7 @@
             'm9': [0, 3, 7, 10, 14],
             'add9': [0, 4, 7, 14]
         };
-        
+
         const chordNames = {
             'major': 'Major',
             'minor': 'Minor (m)',
@@ -400,15 +435,15 @@
             'm9': 'Minor 9th (m9)',
             'add9': 'Add 9 (add9)'
         };
-        
+
         const chromaticScale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        
+
         let currentChordNotes = [];
-        let audioCache = {}; // cache gốc (1 audio element cho mỗi file)
+        let audioCache = {}; // cache gốc
         let isPlaying = false;
         let audioLoaded = false;
         let audioContext = null;
-        
+
         // Khởi tạo Audio Context cho iOS
         function initAudioContext() {
             if (!audioContext) {
@@ -419,30 +454,29 @@
                 }
             }
         }
-        
+
         // Tải trước tất cả âm thanh
         async function preloadAllAudio() {
             const loadingStatus = document.getElementById('loading-status');
             const totalNotes = pianoKeys.length;
             let loadedCount = 0;
-            
+
             const loadPromises = pianoKeys.map(async (key) => {
                 const fileNote = noteToFile[key.note];
                 const fileName = `${fileNote}${key.octave}.mp3`;
                 const url = BASE_URL + fileName;
-                
-                // Nếu đã cache rồi (cùng file name) thì skip tạo lại
+
                 if (audioCache[fileName]) {
                     loadedCount++;
                     const percent = Math.round((loadedCount / totalNotes) * 100);
                     loadingStatus.textContent = `🔄 Đang tải âm thanh... ${percent}%`;
                     return;
                 }
-                
+
                 try {
                     const audio = new Audio(url);
                     audio.preload = 'auto';
-                    
+
                     await new Promise((resolve) => {
                         audio.addEventListener('canplaythrough', () => {
                             audioCache[fileName] = audio; // lưu bản gốc
@@ -451,18 +485,15 @@
                             loadingStatus.textContent = `🔄 Đang tải âm thanh... ${percent}%`;
                             resolve();
                         }, { once: true });
-                        
+
                         audio.addEventListener('error', (e) => {
                             console.warn(`Không tải được ${fileName}`);
-                            // vẫn tăng counter và cập nhật phần trăm để không treo progress
                             loadedCount++;
                             const percent = Math.round((loadedCount / totalNotes) * 100);
                             loadingStatus.textContent = `🔄 Đang tải âm thanh... ${percent}% (một số file lỗi)`;
-                            // không lưu file vào cache nếu lỗi
                             resolve();
                         }, { once: true });
-                        
-                        // Thử load
+
                         audio.load();
                     });
                 } catch (error) {
@@ -472,102 +503,107 @@
                     loadingStatus.textContent = `🔄 Đang tải âm thanh... ${percent}% (lỗi)`;
                 }
             });
-            
+
             await Promise.all(loadPromises);
             audioLoaded = true;
             loadingStatus.textContent = '✅ Đã tải xong tất cả âm thanh!';
             loadingStatus.classList.add('loaded');
-            
+
             // Bật nút play sau khi tải xong
             document.getElementById('btn-arpeggio').disabled = false;
             document.getElementById('btn-chord').disabled = false;
-            
+
             // Ẩn thông báo sau 2 giây
             setTimeout(() => {
                 loadingStatus.style.display = 'none';
             }, 2000);
         }
-        
+
         // Tạo bàn phím piano
         function createPiano() {
             const piano = document.getElementById('piano');
             let whiteKeyIndex = 0;
-            
+
+            // Đọc kích thước phím từ CSS variables (để responsive)
+            const rootStyle = getComputedStyle(document.documentElement);
+            const WHITE_KEY_WIDTH = parseFloat(rootStyle.getPropertyValue('--white-key-width')) || 50;
+            const BLACK_KEY_OFFSET = parseFloat(rootStyle.getPropertyValue('--black-key-offset')) || 17.5;
+
             pianoKeys.forEach((key, index) => {
                 const keyElement = document.createElement('div');
                 keyElement.className = `key ${key.type}-key`;
                 keyElement.dataset.note = key.note;
                 keyElement.dataset.octave = key.octave;
                 keyElement.dataset.index = index;
-                
+
                 const label = document.createElement('span');
                 label.textContent = key.note + key.octave;
                 keyElement.appendChild(label);
-                
+
                 if (key.type === 'white') {
                     piano.appendChild(keyElement);
                     whiteKeyIndex++;
                 } else {
-                    keyElement.style.left = `${(whiteKeyIndex * 50) - 17.5}px`;
+                    keyElement.style.left = `${(whiteKeyIndex * WHITE_KEY_WIDTH) - BLACK_KEY_OFFSET}px`;
                     piano.appendChild(keyElement);
                 }
-                
+
                 keyElement.addEventListener('click', () => playNote(key.note, key.octave, true));
             });
         }
-        
+
         // Tính các nốt trong hợp âm
         function getChordNotes(root, chordType) {
             // Chuẩn hóa root note (Db -> C#)
-            const normalizedRoot = root === 'Db' ? 'C#' : 
-                                   root === 'Eb' ? 'D#' : 
-                                   root === 'Gb' ? 'F#' : 
-                                   root === 'Ab' ? 'G#' : 
+            const normalizedRoot = root === 'Db' ? 'C#' :
+                                   root === 'Eb' ? 'D#' :
+                                   root === 'Gb' ? 'F#' :
+                                   root === 'Ab' ? 'G#' :
                                    root === 'Bb' ? 'A#' : root;
-            
+
             const rootIndex = chromaticScale.indexOf(normalizedRoot);
             const formula = chordFormulas[chordType];
             const notes = [];
-            
+
             // Tìm nốt gốc trong phạm vi C3-C5
             let rootOctave = 4; // Bắt đầu từ octave 4
             const rootKey = pianoKeys.find(k => k.note === normalizedRoot && k.octave === rootOctave);
             if (!rootKey) {
                 rootOctave = 3; // Nếu không có ở octave 4, thử octave 3
             }
-            
+
             formula.forEach(interval => {
                 const noteIndex = (rootIndex + interval) % 12;
                 const noteName = chromaticScale[noteIndex];
-                
+
                 // Tính octave dựa trên interval
                 let octaveOffset = Math.floor((rootIndex + interval) / 12);
                 let targetOctave = rootOctave + octaveOffset;
-                
+
                 // Đảm bảo trong phạm vi C3-C6
                 if (targetOctave < 3) targetOctave = 3;
                 if (targetOctave > 6) targetOctave = 6;
-                
+
                 // Tìm nốt trong phạm vi
                 const key = pianoKeys.find(k => k.note === noteName && k.octave === targetOctave);
                 if (key) {
                     notes.push({note: noteName, octave: targetOctave});
                 }
             });
-            
+
             return notes;
         }
-        
+
         // Cập nhật hiển thị hợp âm
         function updateChordDisplay() {
             const root = document.getElementById('root-select').value;
             const chordType = document.getElementById('chord-select').value;
-            
+
             // Xóa highlight cũ
             document.querySelectorAll('.key').forEach(key => key.classList.remove('active'));
-            
+
             currentChordNotes = getChordNotes(root, chordType);
-            
+
             // Highlight các nốt trong hợp âm
             currentChordNotes.forEach(({note, octave}) => {
                 const keyElement = document.querySelector(`.key[data-note="${note}"][data-octave="${octave}"]`);
@@ -575,33 +611,31 @@
                     keyElement.classList.add('active');
                 }
             });
-            
+
             // Hiển thị tên hợp âm (ngắn)
             const displayRoot = root === 'Db' ? 'C#' : root;
             const suffix = chordType === 'major' ? '' : chordType === 'minor' ? 'm' : chordType;
-            
+
             document.getElementById('chord-name').textContent = `${displayRoot}${suffix}`;
-            document.getElementById('chord-notes').textContent = 
+            document.getElementById('chord-notes').textContent =
                 `Các nốt: ${currentChordNotes.map(n => n.note + n.octave).join(' - ')}`;
         }
-        
+
         // Phát âm thanh
         async function playNote(note, octave, highlight = false) {
             // Khởi tạo audio context cho iOS khi người dùng tương tác lần đầu
             initAudioContext();
-            
+
             const fileNote = noteToFile[note];
             const fileName = `${fileNote}${octave}.mp3`;
             const url = BASE_URL + fileName;
-            
+
             // Nếu chưa preload thành công, tạo audio mới tạm thời
             if (!audioCache[fileName]) {
-                // tạo audio tạm (không lưu) để phát (có thể gây tải mạng nếu file chưa preload)
                 try {
                     const tempAudio = new Audio(url);
                     tempAudio.currentTime = 0;
-                    
-                    // highlight
+
                     if (highlight) {
                         const keyElement = document.querySelector(`.key[data-note="${note}"][data-octave="${octave}"]`);
                         if (keyElement) {
@@ -609,7 +643,7 @@
                             setTimeout(() => keyElement.classList.remove('playing'), 300);
                         }
                     }
-                    
+
                     await tempAudio.play();
                     return;
                 } catch (err) {
@@ -617,12 +651,12 @@
                     return;
                 }
             }
-            
+
             const cachedAudio = audioCache[fileName];
             // clone để hỗ trợ polyphony (mỗi lần phát 1 instance riêng)
             const audioToPlay = cachedAudio.cloneNode(true);
             audioToPlay.currentTime = 0;
-            
+
             // Highlight phím đang phát
             if (highlight) {
                 const keyElement = document.querySelector(`.key[data-note="${note}"][data-octave="${octave}"]`);
@@ -633,62 +667,56 @@
                     }, 300);
                 }
             }
-            
+
             try {
                 await audioToPlay.play();
-                // Optionally remove node from memory after playback ends
                 audioToPlay.addEventListener('ended', () => {
-                    // no-op: allow GC
+                    // allow GC
                 }, { once: true });
             } catch (error) {
                 console.error('Lỗi phát âm thanh:', error);
             }
         }
-        
-        // Phát lần lượt (arpeggio) - Kích hoạt audio cho iOS
+
+        // Phát lần lượt (arpeggio)
         async function playArpeggio() {
-            // Khởi tạo audio context cho iOS
             initAudioContext();
             if (audioContext && audioContext.state === 'suspended') {
                 await audioContext.resume();
             }
-            
+
             if (isPlaying) return;
             isPlaying = true;
-            
+
             for (const {note, octave} of currentChordNotes) {
                 await playNote(note, octave, true);
                 await new Promise(resolve => setTimeout(resolve, 400));
             }
-            
+
             isPlaying = false;
         }
-        
+
         // Phát cùng lúc
         async function playChord() {
-            // Khởi tạo audio context cho iOS
             initAudioContext();
             if (audioContext && audioContext.state === 'suspended') {
                 await audioContext.resume();
             }
-            
+
             if (isPlaying) return;
             isPlaying = true;
-            
-            // Highlight tất cả phím cùng lúc
+
             currentChordNotes.forEach(({note, octave}) => {
                 const keyElement = document.querySelector(`.key[data-note="${note}"][data-octave="${octave}"]`);
                 if (keyElement) {
                     keyElement.classList.add('playing');
                 }
             });
-            
-            // Phát song song (mỗi nốt sẽ clone audio để đảm bảo polyphony)
+
             await Promise.all(
                 currentChordNotes.map(({note, octave}) => playNote(note, octave, false))
             );
-            
-            // Xóa highlight sau 300ms
+
             setTimeout(() => {
                 currentChordNotes.forEach(({note, octave}) => {
                     const keyElement = document.querySelector(`.key[data-note="${note}"][data-octave="${octave}"]`);
@@ -699,16 +727,16 @@
                 isPlaying = false;
             }, 300);
         }
-        
+
         // Khởi tạo
         async function initialize() {
             createPiano();
             updateChordDisplay();
             await preloadAllAudio();
         }
-        
+
         initialize();
-        
+
         document.getElementById('root-select').addEventListener('change', updateChordDisplay);
         document.getElementById('chord-select').addEventListener('change', updateChordDisplay);
     </script>
