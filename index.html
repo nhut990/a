@@ -1,850 +1,638 @@
 <!DOCTYPE html>
+
 <html lang="vi">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Karaoke App (v1 + Recorder)</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDI Analyzer & Player</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); min-height:100vh; padding:10px; display:flex; flex-direction:column; }
-        .container { max-width:100%; margin:0 auto; background:rgba(255,255,255,0.95); border-radius:15px; padding:15px; box-shadow:0 10px 30px rgba(0,0,0,0.3); flex: 1 0 auto; }
-        h1 { text-align:center; color:#667eea; margin-bottom:15px; font-size:1.5em; }
-        .input-section { margin-bottom:15px; }
-        .input-box { display:flex; flex-direction:column; gap:8px; }
-        #videoInput { width:100%; padding:12px; font-size:14px; border:2px solid #667eea; border-radius:8px; outline:none; }
-        #loadBtn { padding:12px; background:#667eea; color:white; border:none; border-radius:8px; cursor:pointer; font-size:15px; font-weight:bold; }
-        .video-section { margin-bottom:15px; position:relative; padding-bottom:56.25%; height:0; overflow:hidden; }
-        #youtubePlayer { position:absolute; top:0; left:0; width:100%; height:100%; border-radius:10px; }
-        .mic-control { background:linear-gradient(135deg,#f5f7fa 0%,#c3cfe2 100%); padding:12px; border-radius:10px; margin-bottom:10px; }
-        .mic-toggle-btn { width:100%; padding:15px; font-size:16px; background:#48bb78; margin-bottom:8px; }
-        .mic-status { padding:8px; border-radius:8px; text-align:center; font-weight:bold; font-size:14px; }
-        .mic-on { background:#48bb78; color:white; }
-        .mic-off { background:#f56565; color:white; }
-        .controls-grid { display:grid; grid-template-columns:1fr; gap:10px; }
-        .control-panel { background:linear-gradient(135deg,#f5f7fa 0%,#c3cfe2 100%); padding:12px; border-radius:10px; }
-        .panel-title { color:#667eea; margin-bottom:10px; font-size:1em; font-weight:bold; display:flex; align-items:center; gap:5px; }
-        .control-row { margin-bottom:10px; }
-        .control-label { display:flex; justify-content:space-between; margin-bottom:5px; font-size:13px; color:#333; }
-        .label-text { font-weight:600; }
-        .value-display { color:#667eea; font-weight:bold; }
-        input[type="range"] { width:100%; height:6px; border-radius:3px; background:#ddd; outline:none; -webkit-appearance:none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#667eea; cursor:pointer; }
-        input[type="range"]::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:#667eea; cursor:pointer; border:none; }
-        .instructions { background:#fff3cd; padding:12px; border-radius:8px; margin-bottom:15px; border-left:3px solid #ffc107; font-size:13px; }
-        .instructions h4 { color:#856404; margin-bottom:8px; font-size:14px; }
-        .instructions ul { margin-left:18px; color:#856404; line-height:1.5; }
-        .instructions li { margin-bottom:3px; }
-        .row { display:flex; gap:8px; align-items:center; }
-        .small-btn { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; background:#667eea; color:white; font-weight:bold; }
-        .danger { background:#f56565; }
-        .footer { text-align:center; color:#fff; margin-top:12px; font-weight:600; }
-        #playback { width: 100%; margin-top:8px; display:none; }
-        #recordTimer { font-weight:bold; color:#d9534f; margin-left:8px; min-width:48px; display:inline-block; text-align:center; }
-        @media (min-width:768px) { .container { max-width:1000px; padding:25px; } h1 { font-size:2em; margin-bottom:20px; } .controls-grid { grid-template-columns:repeat(2,1fr); } }
-    </style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+```
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+        text-align: center;
+        color: #667eea;
+        margin-bottom: 30px;
+        font-size: 2.5em;
+    }
+
+    .upload-area {
+        border: 3px dashed #667eea;
+        border-radius: 15px;
+        padding: 60px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 30px;
+        background: #f8f9ff;
+    }
+
+    .upload-area:hover {
+        border-color: #764ba2;
+        background: #f0f1ff;
+    }
+
+    .upload-area p {
+        color: #667eea;
+        font-size: 1.2em;
+        font-weight: 600;
+    }
+
+    #fileInput {
+        display: none;
+    }
+
+    .controls {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        color: white;
+        display: none;
+    }
+
+    .controls.show {
+        display: block;
+    }
+
+    .control-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .tempo-info {
+        text-align: center;
+    }
+
+    .tempo-info p {
+        font-size: 0.9em;
+        opacity: 0.9;
+        margin-bottom: 5px;
+    }
+
+    .tempo-value {
+        font-size: 2.5em;
+        font-weight: bold;
+    }
+
+    .play-btn {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: white;
+        border: none;
+        cursor: pointer;
+        font-size: 2em;
+        color: #667eea;
+        transition: all 0.3s;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .play-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .duration-info {
+        text-align: center;
+    }
+
+    .duration-info p {
+        font-size: 0.9em;
+        opacity: 0.9;
+        margin-bottom: 5px;
+    }
+
+    .duration-value {
+        font-size: 1.5em;
+        font-weight: bold;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 15px;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: white;
+        width: 0%;
+        transition: width 0.1s linear;
+    }
+
+    .tracks-container {
+        display: none;
+    }
+
+    .tracks-container.show {
+        display: block;
+    }
+
+    .tracks-title {
+        font-size: 1.8em;
+        color: #667eea;
+        margin-bottom: 20px;
+    }
+
+    .track {
+        background: #f8f9ff;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        border: 2px solid #e0e5ff;
+        transition: all 0.3s;
+    }
+
+    .track:hover {
+        border-color: #667eea;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+    }
+
+    .track-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .track-info h3 {
+        color: #333;
+        font-size: 1.2em;
+        margin-bottom: 5px;
+    }
+
+    .track-info p {
+        color: #666;
+        font-size: 0.9em;
+    }
+
+    .mute-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .mute-btn.active {
+        background: #4caf50;
+        color: white;
+    }
+
+    .mute-btn.muted {
+        background: #f44336;
+        color: white;
+    }
+
+    .volume-control {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .volume-icon {
+        color: #667eea;
+        font-size: 1.3em;
+    }
+
+    .volume-slider {
+        flex: 1;
+        height: 8px;
+        border-radius: 10px;
+        background: #e0e5ff;
+        outline: none;
+        cursor: pointer;
+    }
+
+    .volume-slider::-webkit-slider-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #667eea;
+        cursor: pointer;
+    }
+
+    .volume-value {
+        font-weight: bold;
+        color: #667eea;
+        min-width: 45px;
+        text-align: right;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+    }
+
+    .empty-state p {
+        font-size: 1.1em;
+    }
+</style>
+```
+
 </head>
 <body>
     <div class="container">
-        <h1>🎤 Karaoke App (v1 + Recorder)</h1>
+        <h1>🎵 MIDI Analyzer & Player</h1>
 
-        <div class="instructions">
-            <h4>📌 Hướng dẫn:</h4>
-            <ul>
-                <li>Dán link YouTube video karaoke và "Xem Video".</li>
-                <li>Nhấn "Bật Micro" để bật micro (dùng cho live playback/FX).</li>
-                <li>Để ghi âm âm thanh web (tab) hoặc micro: chọn nguồn và "Bắt đầu ghi".</li>
-                <li>Ghi âm tab yêu cầu trình duyệt hỗ trợ getDisplayMedia audio (Chrome/Edge trên desktop tốt nhất). iOS thường không cho phép capture tab audio.</li>
-                <li>Sau khi dừng ghi, bạn có thể nghe lại hoặc nhấn "Tải WAV" để lưu file .wav</li>
-            </ul>
-        </div>
+```
+    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+        <p>📁 Click để tải lên file MIDI (.mid)</p>
+        <input type="file" id="fileInput" accept=".mid,.midi">
+    </div>
 
-        <div class="input-section">
-            <div class="input-box">
-                <input type="text" id="videoInput" placeholder="Dán link YouTube (VD: https://youtu.be/xxxxx hoặc https://www.youtube.com/watch?v=xxxxx)" />
-                <button id="loadBtn">▶️ Xem Video</button>
+    <div class="controls" id="controls">
+        <div class="control-row">
+            <div class="tempo-info">
+                <p>Tempo</p>
+                <div class="tempo-value" id="tempo">120 BPM</div>
+            </div>
+
+            <button class="play-btn" id="playBtn">▶️</button>
+
+            <div class="duration-info">
+                <p>Thời lượng</p>
+                <div class="duration-value" id="duration">0:00</div>
             </div>
         </div>
-
-        <div class="video-section">
-            <div id="youtubePlayer"></div>
-        </div>
-
-        <div class="mic-control">
-            <button class="mic-toggle-btn" id="micToggle">🎤 Bật Micro</button>
-            <div class="mic-status mic-off" id="micStatus">Micro: TẮT</div>
-        </div>
-
-        <div class="controls-grid">
-            <div class="control-panel">
-                <div class="panel-title">🔊 Âm lượng & Ghi âm</div>
-
-                <div class="control-row">
-                    <div class="control-label">
-                        <span class="label-text">YouTube (chính thức)</span>
-                        <span class="value-display" id="youtubeVolumeVal">10%</span>
-                    </div>
-                    <div class="row">
-                        <input type="range" id="youtubeVolume" min="0" max="100" value="10" />
-                        <button id="youtubeMuteBtn" class="small-btn" title="Mute/Unmute">Mute</button>
-                    </div>
-                </div>
-
-                <div class="control-row">
-                    <div class="control-label">
-                        <span class="label-text">Nguồn ghi</span>
-                        <span class="value-display" id="recordSourceVal">Micro</span>
-                    </div>
-                    <div class="row">
-                        <select id="recordSource">
-                            <option value="mic">Micro (getUserMedia)</option>
-                            <option value="tab">Tab / System (getDisplayMedia)</option>
-                            <option value="mix">Mic + Tab</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="control-row">
-                    <div class="row" style="width:100%; align-items:center;">
-                        <button id="startRecordBtn" class="small-btn">🔴 Bắt đầu ghi</button>
-                        <button id="stopRecordBtn" class="small-btn danger" disabled>⏹ Dừng</button>
-                        <button id="downloadWavBtn" class="small-btn" disabled>Tải WAV</button>
-                        <span id="recordTimer">00:00</span>
-                    </div>
-                    <div style="font-size:12px;color:#444;margin-top:8px;">Lưu ý: file sẽ được xuất dưới dạng WAV (16-bit PCM) chứa âm thanh đã ghi.</div>
-                </div>
-
-                <div class="control-row" id="playbackRow" style="display:none;">
-                    <div class="control-label">
-                        <span class="label-text">Nghe lại</span>
-                        <span class="value-display" id="playbackStatus">Sẵn sàng</span>
-                    </div>
-                    <audio id="playback" controls></audio>
-                </div>
-
-                <hr />
-
-                <div class="control-row">
-                    <div class="control-label">
-                        <span class="label-text">Micro</span>
-                        <span class="value-display" id="micVolumeVal">300%</span>
-                    </div>
-                    <input type="range" id="micVolume" min="0" max="400" value="300" />
-                </div>
-
-                <div class="control-row">
-                    <div class="control-label">
-                        <span class="label-text">Nhạc (iOS: dùng nút trên video)</span>
-                        <span class="value-display" id="musicVolumeVal">10%</span>
-                    </div>
-                    <input type="range" id="musicVolume" min="0" max="100" value="10" />
-                </div>
-            </div>
-
-            <div class="control-panel">
-                <div class="panel-title">🎵 Echo</div>
-                <div class="control-row">
-                    <div class="control-label">
-                        <span class="label-text">Độ trễ</span>
-                        <span class="value-display" id="delayTimeVal">0.3s</span>
-                    </div>
-                    <input type="range" id="delayTime" min="0" max="1" step="0.05" value="0.3" />
-                </div>
-                <div class="control-row">
-                    <div class="control-label">
-                        <span class="label-text">Phản hồi</span>
-                        <span class="value-display" id="feedbackVal">40%</span>
-                    </div>
-                    <input type="range" id="feedback" min="0" max="90" value="40" />
-                </div>
-                <div class="control-row">
-                    <div class="control-label">
-                        <span class="label-text">Mix</span>
-                        <span class="value-display" id="wetVal">30%</span>
-                    </div>
-                    <input type="range" id="wet" min="0" max="100" value="30" />
-                </div>
-            </div>
-
-            <div class="control-panel">
-                <div class="panel-title">🎼 Reverb</div>
-                <div class="control-row">
-                    <div class="control-label">
-                        <span class="label-text">Thời gian</span>
-                        <span class="value-display" id="reverbDecayVal">2.0s</span>
-                    </div>
-                    <input type="range" id="reverbDecay" min="0" max="10" step="0.1" value="2" />
-                </div>
-                <div class="control-row">
-                    <div class="control-label">
-                        <span class="label-text">Mix</span>
-                        <span class="value-display" id="reverbWetVal">20%</span>
-                    </div>
-                    <input type="range" id="reverbWet" min="0" max="100" value="20" />
-                </div>
-            </div>
-
-            <div class="control-panel">
-                <div class="panel-title">🎚️ EQ</div>
-                <div class="control-row">
-                    <div class="control-label">
-                        <span class="label-text">Bass</span>
-                        <span class="value-display" id="bassVal">0 dB</span>
-                    </div>
-                    <input type="range" id="bass" min="-12" max="12" value="0" />
-                </div>
-                <div class="control-row">
-                    <div class="control-label">
-                        <span class="label-text">Mid</span>
-                        <span class="value-display" id="midVal">0 dB</span>
-                    </div>
-                    <input type="range" id="mid" min="-12" max="12" value="0" />
-                </div>
-                <div class="control-row">
-                    <div class="control-label">
-                        <span class="label-text">Treble</span>
-                        <span class="value-display" id="trebleVal">0 dB</span>
-                    </div>
-                    <input type="range" id="treble" min="-12" max="12" value="0" />
-                </div>
-            </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
         </div>
     </div>
 
-    <div class="footer">Created by Minh Nhựt</div>
+    <div class="tracks-container" id="tracksContainer">
+        <h2 class="tracks-title">Tracks (<span id="trackCount">0</span>)</h2>
+        <div id="tracksList"></div>
+    </div>
 
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <script>
-        // === Core vars from v1 (kept) ===
-        let audioContext;
-        let microphone; // used by micToggle flow (live FX)
-        let micGainNode;
-        let delayNode;
-        let feedbackGainNode;
-        let wetGainNode;
-        let dryGainNode;
-        let convolverNode;
-        let reverbGainNode;
-        let bassFilter;
-        let midFilter;
-        let trebleFilter;
-        let isMicActive = false;
-        let player;
-        let playerReady = false;
-        let masterGain; // central master output - good for tapping/recording
+    <div class="empty-state" id="emptyState">
+        <p>Tải lên file MIDI để bắt đầu</p>
+    </div>
+</div>
 
-        // === Recorder-specific vars ===
-        let recording = false;
-        let recorderNode = null; // AudioWorkletNode or ScriptProcessorNode
-        let recordedBuffers = []; // array per channel of Float32Array chunks
-        let recordedLength = 0;
-        let recSampleRate = 44100; // will be set from audioContext
-        let recNumChannels = 2;
-        let recSources = []; // { type: 'mic'|'tab', stream, sourceNode }
-        let recStreamsToStop = []; // mediastreams to stop on end
-        let mediaRecorderBlobUrl = null;
+<script>
+    let midiData = null;
+    let tracks = [];
+    let synths = [];
+    let parts = [];
+    let isPlaying = false;
+    let timeInterval = null;
 
-        // Timer for recording
-        let recordStartTimestamp = 0;
-        let recordTimerInterval = null;
-        const recordTimerEl = document.getElementById('recordTimer');
+    document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+    document.getElementById('playBtn').addEventListener('click', togglePlay);
 
-        // YouTube player
-        function onYouTubeIframeAPIReady() {
-            player = new YT.Player('youtubePlayer', {
-                height: '100%',
-                width: '100%',
-                videoId: '',
-                playerVars: { 'autoplay': 0, 'controls': 1, 'rel': 0 },
-                events: { 'onReady': onPlayerReady }
+    async function handleFileUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const data = new Uint8Array(arrayBuffer);
+            midiData = parseMidi(data);
+            tracks = midiData.tracks;
+            
+            displayMidiInfo();
+            renderTracks();
+            
+            document.getElementById('controls').classList.add('show');
+            document.getElementById('tracksContainer').classList.add('show');
+            document.getElementById('emptyState').style.display = 'none';
+        } catch (error) {
+            alert('Lỗi khi đọc file MIDI: ' + error.message);
+        }
+    }
+
+    function parseMidi(data) {
+        let pos = 0;
+        
+        const readBytes = (n) => {
+            const bytes = data.slice(pos, pos + n);
+            pos += n;
+            return bytes;
+        };
+
+        const readVarLen = () => {
+            let value = 0;
+            let byte;
+            do {
+                byte = data[pos++];
+                value = (value << 7) | (byte & 0x7f);
+            } while (byte & 0x80);
+            return value;
+        };
+
+        // Read header
+        const header = String.fromCharCode(...readBytes(4));
+        if (header !== 'MThd') throw new Error('File MIDI không hợp lệ');
+        
+        readBytes(4); // header length
+        const format = new DataView(data.buffer).getUint16(pos);
+        pos += 2;
+        const trackCount = new DataView(data.buffer).getUint16(pos);
+        pos += 2;
+        const timeDivision = new DataView(data.buffer).getUint16(pos);
+        pos += 2;
+
+        const tracks = [];
+        let globalTempo = 120;
+
+        for (let i = 0; i < trackCount; i++) {
+            const trackHeader = String.fromCharCode(...readBytes(4));
+            if (trackHeader !== 'MTrk') continue;
+            
+            const trackLength = new DataView(data.buffer).getUint32(pos);
+            pos += 4;
+            const trackEnd = pos + trackLength;
+            
+            const events = [];
+            let time = 0;
+            let lastStatus = 0;
+            let trackName = `Track ${i + 1}`;
+            let instrumentName = 'Piano';
+
+            while (pos < trackEnd) {
+                const delta = readVarLen();
+                time += delta;
+                
+                let status = data[pos];
+                
+                if (status < 0x80) {
+                    status = lastStatus;
+                } else {
+                    pos++;
+                    lastStatus = status;
+                }
+
+                const type = status >> 4;
+                const channel = status & 0x0f;
+
+                if (type === 0x9) {
+                    const note = data[pos++];
+                    const velocity = data[pos++];
+                    if (velocity > 0) {
+                        events.push({ type: 'noteOn', time, note, velocity, channel });
+                    } else {
+                        events.push({ type: 'noteOff', time, note, channel });
+                    }
+                } else if (type === 0x8) {
+                    const note = data[pos++];
+                    pos++;
+                    events.push({ type: 'noteOff', time, note, channel });
+                } else if (type === 0xc) {
+                    const program = data[pos++];
+                    instrumentName = getInstrumentName(program);
+                } else if (type === 0xb || type === 0xe) {
+                    pos += 2;
+                } else if (type === 0xd || type === 0xa) {
+                    pos += 1;
+                } else if (status === 0xff) {
+                    const metaType = data[pos++];
+                    const length = readVarLen();
+                    const metaData = readBytes(length);
+                    
+                    if (metaType === 0x03) {
+                        trackName = String.fromCharCode(...metaData);
+                    } else if (metaType === 0x51 && length === 3) {
+                        const microsecondsPerBeat = (metaData[0] << 16) | (metaData[1] << 8) | metaData[2];
+                        globalTempo = Math.round(60000000 / microsecondsPerBeat);
+                    }
+                } else if (status === 0xf0 || status === 0xf7) {
+                    const length = readVarLen();
+                    pos += length;
+                }
+            }
+
+            if (events.length > 0) {
+                tracks.push({
+                    name: trackName,
+                    instrument: instrumentName,
+                    events,
+                    volume: 0.7,
+                    muted: false
+                });
+            }
+        }
+
+        return { tracks, tempo: globalTempo, timeDivision };
+    }
+
+    function getInstrumentName(program) {
+        const instruments = [
+            'Piano', 'Piano', 'Piano', 'Piano', 'E.Piano', 'E.Piano', 'Harpsichord', 'Clavinet',
+            'Celesta', 'Glockenspiel', 'Music Box', 'Vibraphone', 'Marimba', 'Xylophone', 'Tubular Bells', 'Dulcimer',
+            'Organ', 'Organ', 'Organ', 'Church Organ', 'Reed Organ', 'Accordion', 'Harmonica', 'Bandoneon',
+            'Nylon Guitar', 'Steel Guitar', 'Jazz Guitar', 'Clean Guitar', 'Muted Guitar', 'Overdrive Guitar', 'Distortion Guitar', 'Guitar Harmonics',
+            'Acoustic Bass', 'Fingered Bass', 'Picked Bass', 'Fretless Bass', 'Slap Bass', 'Slap Bass', 'Synth Bass', 'Synth Bass',
+            'Violin', 'Viola', 'Cello', 'Contrabass', 'Tremolo Strings', 'Pizzicato', 'Harp', 'Timpani',
+            'Strings', 'Strings', 'Synth Strings', 'Synth Strings', 'Choir', 'Voice Oohs', 'Synth Voice', 'Orchestra Hit',
+            'Trumpet', 'Trombone', 'Tuba', 'Muted Trumpet', 'French Horn', 'Brass', 'Synth Brass', 'Synth Brass',
+            'Soprano Sax', 'Alto Sax', 'Tenor Sax', 'Baritone Sax', 'Oboe', 'English Horn', 'Bassoon', 'Clarinet',
+            'Piccolo', 'Flute', 'Recorder', 'Pan Flute', 'Bottle', 'Shakuhachi', 'Whistle', 'Ocarina',
+            'Square Wave', 'Saw Wave', 'Synth Calliope', 'Chiffer Lead', 'Charang', 'Solo Vox', 'Fifth Sawtooth', 'Bass & Lead',
+            'Fantasia', 'Warm Pad', 'Polysynth', 'Space Voice', 'Bowed Glass', 'Metal Pad', 'Halo Pad', 'Sweep Pad',
+            'Ice Rain', 'Soundtrack', 'Crystal', 'Atmosphere', 'Brightness', 'Goblin', 'Echo Drops', 'Star Theme',
+            'Sitar', 'Banjo', 'Shamisen', 'Koto', 'Kalimba', 'Bagpipe', 'Fiddle', 'Shanai',
+            'Tinkle Bell', 'Agogo', 'Steel Drums', 'Woodblock', 'Taiko', 'Melodic Tom', 'Synth Drum', 'Reverse Cymbal',
+            'Guitar Fret', 'Breath', 'Seashore', 'Bird', 'Telephone', 'Helicopter', 'Applause', 'Gunshot'
+        ];
+        return instruments[program] || 'Unknown';
+    }
+
+    function displayMidiInfo() {
+        document.getElementById('tempo').textContent = midiData.tempo + ' BPM';
+        
+        let maxTime = 0;
+        midiData.tracks.forEach(track => {
+            track.events.forEach(event => {
+                if (event.time > maxTime) maxTime = event.time;
             });
-        }
-        function onPlayerReady(event) {
-            playerReady = true;
-            safeSetYouTubeVolume(10);
-            try {
-                player.mute();
-                setTimeout(() => { player.unMute(); player.setVolume(10); }, 100);
-            } catch (e) {}
-        }
+        });
+        
+        const duration = maxTime / midiData.timeDivision;
+        document.getElementById('duration').textContent = formatTime(duration);
+    }
 
-        // --- Helper: YouTube volume controls ---
-        function safeSetYouTubeVolume(val) {
-            if (!player || !player.setVolume) return;
-            try {
-                player.setVolume(val);
-                document.getElementById('youtubeVolumeVal').textContent = val + '%';
-                // also sync legacy
-                const musicSlider = document.getElementById('musicVolume');
-                if (musicSlider) { musicSlider.value = val; document.getElementById('musicVolumeVal').textContent = val + '%'; }
-                const muteBtn = document.getElementById('youtubeMuteBtn');
-                muteBtn.textContent = (val === 0) ? 'Unmute' : 'Mute';
-            } catch (e) {
-                console.warn('setVolume failed (likely on iOS):', e);
+    function renderTracks() {
+        const tracksList = document.getElementById('tracksList');
+        const trackCount = document.getElementById('trackCount');
+        
+        trackCount.textContent = tracks.length;
+        tracksList.innerHTML = '';
+
+        tracks.forEach((track, index) => {
+            const trackDiv = document.createElement('div');
+            trackDiv.className = 'track';
+            trackDiv.innerHTML = `
+                <div class="track-header">
+                    <div class="track-info">
+                        <h3>${track.name}</h3>
+                        <p>${track.instrument}</p>
+                    </div>
+                    <button class="mute-btn active" onclick="toggleMute(${index})">
+                        Active
+                    </button>
+                </div>
+                <div class="volume-control">
+                    <span class="volume-icon">🔊</span>
+                    <input type="range" class="volume-slider" min="0" max="100" value="70" 
+                           onchange="changeVolume(${index}, this.value)">
+                    <span class="volume-value" id="volume-${index}">70%</span>
+                </div>
+            `;
+            tracksList.appendChild(trackDiv);
+        });
+    }
+
+    function toggleMute(index) {
+        tracks[index].muted = !tracks[index].muted;
+        const btn = document.querySelectorAll('.mute-btn')[index];
+        
+        if (tracks[index].muted) {
+            btn.classList.remove('active');
+            btn.classList.add('muted');
+            btn.textContent = 'Muted';
+            if (synths[index]) {
+                synths[index].volume.value = -Infinity;
+            }
+        } else {
+            btn.classList.remove('muted');
+            btn.classList.add('active');
+            btn.textContent = 'Active';
+            if (synths[index]) {
+                synths[index].volume.value = Tone.gainToDb(tracks[index].volume);
             }
         }
+    }
 
-        function extractVideoId(url) {
-            const patterns = [
-                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-                /^([a-zA-Z0-9_-]{11})$/
-            ];
-            for (let pattern of patterns) {
-                const match = url.match(pattern);
-                if (match) return match[1];
-            }
-            return null;
+    function changeVolume(index, value) {
+        const volume = value / 100;
+        tracks[index].volume = volume;
+        document.getElementById(`volume-${index}`).textContent = value + '%';
+        
+        if (synths[index] && !tracks[index].muted) {
+            synths[index].volume.value = Tone.gainToDb(volume);
         }
+    }
 
-        document.getElementById('loadBtn').addEventListener('click', loadVideo);
-        document.getElementById('videoInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') loadVideo(); });
-
-        function loadVideo() {
-            const input = document.getElementById('videoInput').value.trim();
-            if (!input) { alert('Vui lòng nhập link YouTube!'); return; }
-            const videoId = extractVideoId(input);
-            if (videoId) {
-                if (playerReady && player) {
-                    player.loadVideoById(videoId);
-                    player.playVideo();
-                    setTimeout(() => { safeSetYouTubeVolume(parseInt(document.getElementById('youtubeVolume').value,10) || 10); }, 500);
-                } else {
-                    alert('Player chưa sẵn sàng, vui lòng đợi vài giây và thử lại!');
-                }
-            } else {
-                alert('Link YouTube không hợp lệ! Vui lòng nhập link đúng định dạng.');
-            }
+    async function togglePlay() {
+        if (isPlaying) {
+            stopPlayback();
+        } else {
+            await startPlayback();
         }
+    }
 
-        // === AudioContext + FX init (based on v1) ===
-        function initAudioContext() {
-            if (audioContext) return;
-            audioContext = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
-            recSampleRate = audioContext.sampleRate || 44100;
+    async function startPlayback() {
+        await Tone.start();
+        
+        synths = tracks.map(() => 
+            new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'triangle' },
+                envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
+            }).toDestination()
+        );
 
-            // main processing nodes
-            micGainNode = audioContext.createGain();
-            delayNode = audioContext.createDelay(5.0);
-            feedbackGainNode = audioContext.createGain();
-            wetGainNode = audioContext.createGain();
-            dryGainNode = audioContext.createGain();
-            convolverNode = audioContext.createConvolver();
-            reverbGainNode = audioContext.createGain();
+        Tone.Transport.bpm.value = midiData.tempo;
 
-            bassFilter = audioContext.createBiquadFilter();
-            bassFilter.type = 'lowshelf';
-            bassFilter.frequency.value = 200;
+        parts = tracks.map((track, trackIndex) => {
+            if (track.muted) return null;
 
-            midFilter = audioContext.createBiquadFilter();
-            midFilter.type = 'peaking';
-            midFilter.frequency.value = 1000;
-            midFilter.Q.value = 0.5;
+            const synth = synths[trackIndex];
+            synth.volume.value = Tone.gainToDb(track.volume);
 
-            trebleFilter = audioContext.createBiquadFilter();
-            trebleFilter.type = 'highshelf';
-            trebleFilter.frequency.value = 3000;
+            const notes = [];
+            const noteOnMap = new Map();
 
-            // central masterGain so we can attach recorder easily
-            masterGain = audioContext.createGain();
-            masterGain.gain.value = 1.0;
-            masterGain.connect(audioContext.destination);
-
-            // default values
-            micGainNode.gain.value = 3.0;
-            delayNode.delayTime.value = 0.3;
-            feedbackGainNode.gain.value = 0.4;
-            wetGainNode.gain.value = 0.3;
-            dryGainNode.gain.value = 1.0;
-            reverbGainNode.gain.value = 0.2;
-
-            createReverbImpulse(2.0);
-        }
-
-        function createReverbImpulse(duration) {
-            if (!audioContext) return;
-            const sampleRate = audioContext.sampleRate;
-            const length = Math.floor(sampleRate * duration);
-            const impulse = audioContext.createBuffer(2, length, sampleRate);
-            const impulseL = impulse.getChannelData(0);
-            const impulseR = impulse.getChannelData(1);
-            for (let i = 0; i < length; i++) {
-                const decay = Math.exp(-i / (sampleRate * duration * 0.5));
-                impulseL[i] = (Math.random() * 2 - 1) * decay;
-                impulseR[i] = (Math.random() * 2 - 1) * decay;
-            }
-            convolverNode.buffer = impulse;
-        }
-
-        // === Mic toggle (live FX) ===
-        document.getElementById('micToggle').addEventListener('click', async function() {
-            if (!isMicActive) {
-                try {
-                    initAudioContext();
-                    if (audioContext.state === 'suspended') await audioContext.resume();
-
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 2 } }
+            track.events.forEach(event => {
+                const time = event.time / midiData.timeDivision;
+                
+                if (event.type === 'noteOn') {
+                    noteOnMap.set(event.note, time);
+                } else if (event.type === 'noteOff' && noteOnMap.has(event.note)) {
+                    const startTime = noteOnMap.get(event.note);
+                    const duration = time - startTime;
+                    notes.push({
+                        time: startTime,
+                        note: Tone.Frequency(event.note, 'midi'),
+                        duration: duration,
+                        velocity: event.velocity / 127
                     });
-
-                    microphone = audioContext.createMediaStreamSource(stream);
-
-                    // ensure stereo output even if mic is mono: splitter/merger trick
-                    const settings = stream.getAudioTracks()[0].getSettings ? stream.getAudioTracks()[0].getSettings() : {};
-                    const trackChannels = settings.channelCount || 1;
-                    const splitter = audioContext.createChannelSplitter(Math.max(1, trackChannels));
-                    const merger = audioContext.createChannelMerger(2);
-                    microphone.connect(splitter);
-                    if (trackChannels === 1) {
-                        splitter.connect(merger, 0, 0);
-                        splitter.connect(merger, 0, 1);
-                    } else {
-                        splitter.connect(merger, 0, 0);
-                        splitter.connect(merger, 1, 1);
-                    }
-
-                    merger.connect(micGainNode);
-                    micGainNode.connect(bassFilter);
-                    bassFilter.connect(midFilter);
-                    midFilter.connect(trebleFilter);
-
-                    // connect FX outputs to masterGain (so both playback and recorder see same mixed output)
-                    trebleFilter.connect(dryGainNode);
-                    dryGainNode.connect(masterGain);
-
-                    trebleFilter.connect(delayNode);
-                    delayNode.connect(feedbackGainNode);
-                    feedbackGainNode.connect(delayNode);
-                    delayNode.connect(wetGainNode);
-                    wetGainNode.connect(masterGain);
-
-                    trebleFilter.connect(convolverNode);
-                    convolverNode.connect(reverbGainNode);
-                    reverbGainNode.connect(masterGain);
-
-                    isMicActive = true;
-                    this.textContent = '🔇 Tắt Micro';
-                    this.style.background = '#f56565';
-                    document.getElementById('micStatus').textContent = 'Micro: BẬT';
-                    document.getElementById('micStatus').className = 'mic-status mic-on';
-                } catch (error) {
-                    console.error('Lỗi micro:', error);
-                    alert('Không thể truy cập micro. Vui lòng kiểm tra quyền truy cập!');
+                    noteOnMap.delete(event.note);
                 }
-            } else {
-                try {
-                    if (microphone) { try { microphone.disconnect(); } catch(e){} microphone = null; }
-                    if (micGainNode) micGainNode.disconnect();
-                    if (bassFilter) bassFilter.disconnect();
-                    if (midFilter) midFilter.disconnect();
-                    if (trebleFilter) trebleFilter.disconnect();
-                    if (dryGainNode) dryGainNode.disconnect();
-                    if (delayNode) delayNode.disconnect();
-                    if (feedbackGainNode) feedbackGainNode.disconnect();
-                    if (wetGainNode) wetGainNode.disconnect();
-                    if (convolverNode) convolverNode.disconnect();
-                    if (reverbGainNode) reverbGainNode.disconnect();
-                } catch (e) {
-                    console.warn('Error when disconnecting mic:', e);
-                }
+            });
 
-                isMicActive = false;
-                this.textContent = '🎤 Bật Micro';
-                this.style.background = '#48bb78';
-                document.getElementById('micStatus').textContent = 'Micro: TẮT';
-                document.getElementById('micStatus').className = 'mic-status mic-off';
-            }
+            const part = new Tone.Part((time, note) => {
+                synth.triggerAttackRelease(note.note, note.duration, time, note.velocity);
+            }, notes);
+
+            part.start(0);
+            return part;
         });
 
-        // === FX controls ===
-        document.getElementById('micVolume').addEventListener('input', function() {
-            if (micGainNode) micGainNode.gain.value = this.value / 100;
-            document.getElementById('micVolumeVal').textContent = this.value + '%';
-        });
-        document.getElementById('delayTime').addEventListener('input', function() {
-            if (delayNode) delayNode.delayTime.value = parseFloat(this.value);
-            document.getElementById('delayTimeVal').textContent = this.value + 's';
-        });
-        document.getElementById('feedback').addEventListener('input', function() {
-            if (feedbackGainNode) feedbackGainNode.gain.value = this.value / 100;
-            document.getElementById('feedbackVal').textContent = this.value + '%';
-        });
-        document.getElementById('wet').addEventListener('input', function() {
-            if (wetGainNode) wetGainNode.gain.value = this.value / 100;
-            document.getElementById('wetVal').textContent = this.value + '%';
-        });
-        document.getElementById('reverbDecay').addEventListener('input', function() {
-            if (audioContext) createReverbImpulse(parseFloat(this.value));
-            document.getElementById('reverbDecayVal').textContent = this.value + 's';
-        });
-        document.getElementById('reverbWet').addEventListener('input', function() {
-            if (reverbGainNode) reverbGainNode.gain.value = this.value / 100;
-            document.getElementById('reverbWetVal').textContent = this.value + '%';
-        });
-        document.getElementById('bass').addEventListener('input', function() {
-            if (bassFilter) bassFilter.gain.value = parseFloat(this.value);
-            document.getElementById('bassVal').textContent = this.value + ' dB';
-        });
-        document.getElementById('mid').addEventListener('input', function() {
-            if (midFilter) midFilter.gain.value = parseFloat(this.value);
-            document.getElementById('midVal').textContent = this.value + ' dB';
-        });
-        document.getElementById('treble').addEventListener('input', function() {
-            if (trebleFilter) trebleFilter.gain.value = parseFloat(this.value);
-            document.getElementById('trebleVal').textContent = this.value + ' dB';
-        });
+        Tone.Transport.start();
+        isPlaying = true;
+        document.getElementById('playBtn').textContent = '⏸️';
 
-        // YouTube volume and mute
-        document.getElementById('youtubeVolume').addEventListener('input', function() {
-            const v = parseInt(this.value, 10);
-            safeSetYouTubeVolume(v);
-        });
-        document.getElementById('youtubeMuteBtn').addEventListener('click', function() {
-            if (!player) return;
-            try {
-                if (player.isMuted && player.isMuted()) {
-                    player.unMute();
-                    const v = parseInt(document.getElementById('youtubeVolume').value, 10) || 10;
-                    player.setVolume(v);
-                    this.textContent = 'Mute';
-                } else {
-                    player.mute();
-                    this.textContent = 'Unmute';
-                }
-            } catch (e) {
-                console.warn('Mute/unMute failed:', e);
-            }
-        });
+        timeInterval = setInterval(() => {
+            const progress = Tone.Transport.seconds / (document.getElementById('duration').textContent.split(':').reduce((a, b) => a * 60 + parseInt(b), 0));
+            document.getElementById('progressFill').style.width = (progress * 100) + '%';
+        }, 100);
+    }
 
-        // Keep legacy musicVolume slider in sync
-        document.getElementById('musicVolume').addEventListener('input', function() {
-            const v = parseInt(this.value, 10);
-            safeSetYouTubeVolume(v);
-            document.getElementById('musicVolumeVal').textContent = this.value + '%';
-        });
-
-        // ========================
-        // === Recording Logic  ===
-        // ========================
-
-        document.getElementById('recordSource').addEventListener('change', function() {
-            document.getElementById('recordSourceVal').textContent = this.options[this.selectedIndex].text;
-        });
-
-        // Create recorder node: Try AudioWorklet first, fallback to ScriptProcessor
-        async function createRecorderNode() {
-            if (!audioContext) initAudioContext();
-            // reset buffers
-            recordedBuffers = [];
-            recordedBuffers.length = recNumChannels;
-            for (let i=0;i<recNumChannels;i++) recordedBuffers[i] = [];
-            recordedLength = 0;
-
-            // Try AudioWorklet
-            if (audioContext.audioWorklet) {
-                try {
-                    const workletCode = `
-                        class RecorderProcessor extends AudioWorkletProcessor {
-                            constructor() { super(); }
-                            process (inputs, outputs) {
-                                const input = inputs[0];
-                                const output = outputs[0];
-                                if (input && input.length > 0) {
-                                    // pass-through to output if exists
-                                    if (output && output.length > 0) {
-                                        for (let ch = 0; ch < output.length; ch++) {
-                                            output[ch].set(input[ch] || input[0] || new Float32Array(output[ch].length));
-                                        }
-                                    }
-                                    const buffers = [];
-                                    for (let ch = 0; ch < ${recNumChannels}; ch++) {
-                                        const chanData = input[ch] || input[0] || new Float32Array(128);
-                                        const copy = new Float32Array(chanData);
-                                        buffers.push(copy);
-                                    }
-                                    this.port.postMessage({ samples: buffers }, buffers.map(b => b.buffer));
-                                }
-                                return true;
-                            }
-                        }
-                        registerProcessor('recorder-processor', RecorderProcessor);
-                    `;
-                    const blob = new Blob([workletCode], { type: 'application/javascript' });
-                    const url = URL.createObjectURL(blob);
-                    await audioContext.audioWorklet.addModule(url);
-                    const node = new AudioWorkletNode(audioContext, 'recorder-processor', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [recNumChannels] });
-                    node.port.onmessage = (e) => {
-                        const { samples } = e.data;
-                        if (!samples) return;
-                        const len = samples[0].length;
-                        for (let ch=0; ch<recNumChannels; ch++) {
-                            recordedBuffers[ch].push(samples[ch]);
-                        }
-                        recordedLength += len;
-                    };
-                    recorderNode = node;
-                    return recorderNode;
-                } catch (e) {
-                    console.warn('AudioWorklet not available or failed, falling back to ScriptProcessor:', e);
-                    recorderNode = null;
-                }
-            }
-
-            // Fallback: ScriptProcessorNode
-            try {
-                const bufferSize = 4096;
-                const scriptNode = audioContext.createScriptProcessor(bufferSize, recNumChannels, recNumChannels);
-                scriptNode.onaudioprocess = function(evt) {
-                    const inputBuffer = evt.inputBuffer;
-                    const len = inputBuffer.length;
-                    for (let ch = 0; ch < recNumChannels; ch++) {
-                        const channelData = inputBuffer.getChannelData(ch);
-                        recordedBuffers[ch].push(new Float32Array(channelData));
-                    }
-                    recordedLength += len;
-                };
-                recorderNode = scriptNode;
-                return recorderNode;
-            } catch (e) {
-                console.error('Both AudioWorklet and ScriptProcessor creation failed:', e);
-                throw e;
-            }
+    function stopPlayback() {
+        Tone.Transport.stop();
+        Tone.Transport.cancel();
+        
+        synths.forEach(synth => synth?.dispose());
+        parts.forEach(part => part?.dispose());
+        synths = [];
+        parts = [];
+        
+        if (timeInterval) {
+            clearInterval(timeInterval);
         }
+        
+        isPlaying = false;
+        document.getElementById('playBtn').textContent = '▶️';
+        document.getElementById('progressFill').style.width = '0%';
+    }
 
-        // Timer helpers
-        function startRecordTimer() {
-            recordStartTimestamp = Date.now();
-            recordTimerEl.textContent = '00:00';
-            if (recordTimerInterval) clearInterval(recordTimerInterval);
-            recordTimerInterval = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - recordStartTimestamp) / 1000);
-                const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
-                const ss = String(elapsed % 60).padStart(2, '0');
-                recordTimerEl.textContent = mm + ':' + ss;
-            }, 250);
-        }
-        function stopRecordTimer() {
-            if (recordTimerInterval) { clearInterval(recordTimerInterval); recordTimerInterval = null; }
-        }
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+</script>
+```
 
-        // Start recording based on selected source
-        document.getElementById('startRecordBtn').addEventListener('click', async function() {
-            if (recording) return;
-            initAudioContext();
-            if (audioContext.state === 'suspended') await audioContext.resume();
-
-            const source = document.getElementById('recordSource').value;
-            recSources = [];
-            recStreamsToStop = [];
-            // Reset playback UI
-            const playbackEl = document.getElementById('playback');
-            const playbackRow = document.getElementById('playbackRow');
-            playbackEl.pause();
-            playbackEl.src = '';
-            playbackEl.style.display = 'none';
-            playbackRow.style.display = 'none';
-            document.getElementById('playbackStatus').textContent = 'Sẵn sàng';
-
-            try {
-                // Acquire streams as requested
-                if (source === 'mic' || source === 'mix') {
-                    const micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
-                    recSources.push({ type: 'mic', stream: micStream });
-                    recStreamsToStop.push(micStream);
-                }
-                if (source === 'tab' || source === 'mix') {
-                    const dispStream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: false });
-                    if (dispStream && dispStream.getAudioTracks().length > 0) {
-                        recSources.push({ type: 'tab', stream: dispStream });
-                        recStreamsToStop.push(dispStream);
-                    } else {
-                        alert('Không tìm thấy audio từ tab/screen. Một số trình duyệt không cho phép capture audio hoặc bạn đã chọn nguồn không có âm thanh.');
-                    }
-                }
-
-                if (recSources.length === 0) {
-                    alert('Không có nguồn ghi được chọn/không thể truy cập nguồn.');
-                    return;
-                }
-
-                // create recorder node (resets buffers)
-                const node = await createRecorderNode();
-
-                // Create a gain node to mix recording sources
-                const recGain = audioContext.createGain();
-                recGain.gain.value = 1.0;
-
-                // connect recGain -> recorderNode
-                recGain.connect(node);
-                // For nodes with outputs, ensure they are connected so it processes; connect recorderNode to masterGain for monitoring
-                try {
-                    node.connect(masterGain);
-                } catch (e) {
-                    try { node.connect(audioContext.destination); } catch (ee) {}
-                }
-
-                // Connect each source to recGain
-                for (const s of recSources) {
-                    const srcNode = audioContext.createMediaStreamSource(s.stream);
-                    srcNode.connect(recGain);
-                    s.sourceNode = srcNode;
-                }
-
-                // Update UI states
-                recording = true;
-                document.getElementById('startRecordBtn').disabled = true;
-                document.getElementById('stopRecordBtn').disabled = false;
-                document.getElementById('downloadWavBtn').disabled = true;
-                startRecordTimer();
-
-                console.log('Recording started. Sources:', recSources.map(r => r.type));
-            } catch (err) {
-                console.error('Start recording failed:', err);
-                alert('Bắt đầu ghi thất bại: ' + (err.message || err));
-            }
-        });
-
-        document.getElementById('stopRecordBtn').addEventListener('click', async function() {
-            if (!recording) return; // ensure stop only acts when recording
-            recording = false;
-
-            // stop timer
-            stopRecordTimer();
-            recordTimerEl.textContent = '00:00';
-
-            // disconnect recording sources and stop their streams
-            try {
-                for (const s of recSources) {
-                    try { if (s.sourceNode) s.sourceNode.disconnect(); } catch (e) {}
-                }
-                for (const ms of recStreamsToStop) {
-                    try { ms.getTracks().forEach(t => t.stop()); } catch (e) {}
-                }
-            } catch (e) {
-                console.warn('Error cleaning rec sources:', e);
-            }
-
-            // disconnect and cleanup recorderNode
-            try {
-                if (recorderNode) {
-                    try { recorderNode.disconnect(); } catch (e) {}
-                    // for AudioWorkletNode, release port
-                    try { if (recorderNode.port) recorderNode.port.close(); } catch(e) {}
-                    recorderNode = null;
-                }
-            } catch (e) {
-                console.warn('Error disconnecting recorderNode:', e);
-            }
-
-            recSources = [];
-            recStreamsToStop = [];
-
-            // small delay to ensure processors finish sending last buffers
-            await new Promise(r => setTimeout(r, 150));
-
-            // encode WAV and prepare playback + download
-            if (recordedLength > 0) {
-                const wavBlob = encodeWAV(recordedBuffers, recSampleRate);
-                // revoke old url
-                if (mediaRecorderBlobUrl) { URL.revokeObjectURL(mediaRecorderBlobUrl); mediaRecorderBlobUrl = null; }
-                mediaRecorderBlobUrl = URL.createObjectURL(wavBlob);
-
-                // setup playback element
-                const playbackEl = document.getElementById('playback');
-                playbackEl.src = mediaRecorderBlobUrl;
-                playbackEl.style.display = 'block';
-                document.getElementById('playbackRow').style.display = 'block';
-                document.getElementById('playbackStatus').textContent = 'Sẵn sàng';
-
-                // enable download button and set up download link behavior
-                document.getElementById('downloadWavBtn').disabled = false;
-                document.getElementById('downloadWavBtn').onclick = function() {
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = mediaRecorderBlobUrl;
-                    const now = new Date();
-                    const filename = `recording_${now.toISOString().replace(/[:.]/g,'-')}.wav`;
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    setTimeout(() => { document.body.removeChild(a); }, 1000);
-                };
-            } else {
-                alert('Không có dữ liệu ghi âm (dữ liệu rỗng).');
-                document.getElementById('downloadWavBtn').disabled = true;
-            }
-
-            document.getElementById('startRecordBtn').disabled = false;
-            document.getElementById('stopRecordBtn').disabled = true;
-            console.log('Recording stopped. Collected length:', recordedLength);
-        });
-
-        // WAV export helpers
-        function flattenChannel(chunks, length) {
-            const result = new Float32Array(length);
-            let offset = 0;
-            for (let i = 0; i < chunks.length; i++) {
-                result.set(chunks[i], offset);
-                offset += chunks[i].length;
-            }
-            return result;
-        }
-
-        function encodeWAV(buffers, sampleRate) {
-            const channelCount = recNumChannels;
-            const samples = recordedLength;
-            const bytesPerSample = 2;
-            const blockAlign = channelCount * bytesPerSample;
-            const buffer = new ArrayBuffer(44 + samples * blockAlign);
-            const view = new DataView(buffer);
-
-            writeString(view, 0, 'RIFF');
-            view.setUint32(4, 36 + samples * blockAlign, true);
-            writeString(view, 8, 'WAVE');
-            writeString(view, 12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true);
-            view.setUint16(22, channelCount, true);
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * blockAlign, true);
-            view.setUint16(32, blockAlign, true);
-            view.setUint16(34, 8 * bytesPerSample, true);
-            writeString(view, 36, 'data');
-            view.setUint32(40, samples * blockAlign, true);
-
-            // merge interleaved samples
-            const channelData = [];
-            for (let ch = 0; ch < channelCount; ch++) {
-                channelData[ch] = flattenChannel(recordedBuffers[ch], recordedLength);
-            }
-
-            let offset = 44;
-            for (let i = 0; i < recordedLength; i++) {
-                for (let ch = 0; ch < channelCount; ch++) {
-                    let sample = channelData[ch][i];
-                    if (isNaN(sample)) sample = 0;
-                    sample = Math.max(-1, Math.min(1, sample));
-                    const s = Math.floor(sample * 0x7fff);
-                    view.setInt16(offset, s, true);
-                    offset += 2;
-                }
-            }
-
-            return new Blob([view], { type: 'audio/wav' });
-        }
-
-        function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        }
-
-        // Clean up on page unload
-        window.addEventListener('beforeunload', function() {
-            if (audioContext && audioContext.state !== 'closed') {
-                try { audioContext.close(); } catch (e) {}
-            }
-            if (mediaRecorderBlobUrl) { URL.revokeObjectURL(mediaRecorderBlobUrl); mediaRecorderBlobUrl = null; }
-        });
-
-    </script>
 </body>
 </html>
