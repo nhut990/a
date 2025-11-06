@@ -116,6 +116,11 @@
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
     }
 
+    .play-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
     .duration-info {
         text-align: center;
     }
@@ -238,6 +243,16 @@
         border-radius: 50%;
         background: #667eea;
         cursor: pointer;
+        -webkit-appearance: none;
+    }
+
+    .volume-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #667eea;
+        cursor: pointer;
+        border: none;
     }
 
     .volume-value {
@@ -255,6 +270,13 @@
 
     .empty-state p {
         font-size: 1.1em;
+    }
+
+    .status {
+        text-align: center;
+        margin-top: 10px;
+        font-size: 0.9em;
+        color: white;
     }
 </style>
 ```
@@ -287,6 +309,7 @@
         <div class="progress-bar">
             <div class="progress-fill" id="progressFill"></div>
         </div>
+        <div class="status" id="status"></div>
     </div>
 
     <div class="tracks-container" id="tracksContainer">
@@ -306,6 +329,7 @@
     let parts = [];
     let isPlaying = false;
     let timeInterval = null;
+    let duration = 0;
 
     document.getElementById('fileInput').addEventListener('change', handleFileUpload);
     document.getElementById('playBtn').addEventListener('click', togglePlay);
@@ -328,6 +352,7 @@
             document.getElementById('emptyState').style.display = 'none';
         } catch (error) {
             alert('Lỗi khi đọc file MIDI: ' + error.message);
+            console.error(error);
         }
     }
 
@@ -350,11 +375,10 @@
             return value;
         };
 
-        // Read header
         const header = String.fromCharCode(...readBytes(4));
         if (header !== 'MThd') throw new Error('File MIDI không hợp lệ');
         
-        readBytes(4); // header length
+        readBytes(4);
         const format = new DataView(data.buffer).getUint16(pos);
         pos += 2;
         const trackCount = new DataView(data.buffer).getUint16(pos);
@@ -477,7 +501,7 @@
             });
         });
         
-        const duration = maxTime / midiData.timeDivision;
+        duration = maxTime / midiData.timeDivision;
         document.getElementById('duration').textContent = formatTime(duration);
     }
 
@@ -497,14 +521,14 @@
                         <h3>${track.name}</h3>
                         <p>${track.instrument}</p>
                     </div>
-                    <button class="mute-btn active" onclick="toggleMute(${index})">
+                    <button class="mute-btn active" onclick="toggleMute(${index})" id="mute-${index}">
                         Active
                     </button>
                 </div>
                 <div class="volume-control">
                     <span class="volume-icon">🔊</span>
                     <input type="range" class="volume-slider" min="0" max="100" value="70" 
-                           onchange="changeVolume(${index}, this.value)">
+                           oninput="changeVolume(${index}, this.value)">
                     <span class="volume-value" id="volume-${index}">70%</span>
                 </div>
             `;
@@ -514,7 +538,7 @@
 
     function toggleMute(index) {
         tracks[index].muted = !tracks[index].muted;
-        const btn = document.querySelectorAll('.mute-btn')[index];
+        const btn = document.getElementById(`mute-${index}`);
         
         if (tracks[index].muted) {
             btn.classList.remove('active');
@@ -552,78 +576,136 @@
     }
 
     async function startPlayback() {
-        await Tone.start();
+        const playBtn = document.getElementById('playBtn');
+        const status = document.getElementById('status');
         
-        synths = tracks.map(() => 
-            new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'triangle' },
-                envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
-            }).toDestination()
-        );
-
-        Tone.Transport.bpm.value = midiData.tempo;
-
-        parts = tracks.map((track, trackIndex) => {
-            if (track.muted) return null;
-
-            const synth = synths[trackIndex];
-            synth.volume.value = Tone.gainToDb(track.volume);
-
-            const notes = [];
-            const noteOnMap = new Map();
-
-            track.events.forEach(event => {
-                const time = event.time / midiData.timeDivision;
-                
-                if (event.type === 'noteOn') {
-                    noteOnMap.set(event.note, time);
-                } else if (event.type === 'noteOff' && noteOnMap.has(event.note)) {
-                    const startTime = noteOnMap.get(event.note);
-                    const duration = time - startTime;
-                    notes.push({
-                        time: startTime,
-                        note: Tone.Frequency(event.note, 'midi'),
-                        duration: duration,
-                        velocity: event.velocity / 127
-                    });
-                    noteOnMap.delete(event.note);
-                }
+        try {
+            playBtn.disabled = true;
+            status.textContent = 'Đang khởi động âm thanh...';
+            
+            await Tone.start();
+            console.log('Tone.js started');
+            
+            status.textContent = 'Đang tạo synthesizers...';
+            
+            // Create synths
+            synths = tracks.map((track, i) => {
+                const synth = new Tone.PolySynth(Tone.Synth, {
+                    volume: track.muted ? -Infinity : Tone.gainToDb(track.volume),
+                    oscillator: { type: 'sine' },
+                    envelope: {
+                        attack: 0.005,
+                        decay: 0.1,
+                        sustain: 0.3,
+                        release: 0.8
+                    }
+                }).toDestination();
+                console.log(`Synth ${i} created`);
+                return synth;
             });
 
-            const part = new Tone.Part((time, note) => {
-                synth.triggerAttackRelease(note.note, note.duration, time, note.velocity);
-            }, notes);
+            status.textContent = 'Đang chuẩn bị notes...';
+            Tone.Transport.bpm.value = midiData.tempo;
+            Tone.Transport.position = 0;
 
-            part.start(0);
-            return part;
-        });
+            // Create parts
+            parts = tracks.map((track, trackIndex) => {
+                const notes = [];
+                const noteOnMap = new Map();
 
-        Tone.Transport.start();
-        isPlaying = true;
-        document.getElementById('playBtn').textContent = '⏸️';
+                track.events.forEach(event => {
+                    const time = event.time / midiData.timeDivision;
+                    
+                    if (event.type === 'noteOn') {
+                        noteOnMap.set(event.note, { time, velocity: event.velocity });
+                    } else if (event.type === 'noteOff' && noteOnMap.has(event.note)) {
+                        const noteOn = noteOnMap.get(event.note);
+                        const dur = Math.max(0.1, time - noteOn.time);
+                        notes.push({
+                            time: noteOn.time,
+                            note: Tone.Frequency(event.note, 'midi').toNote(),
+                            duration: dur,
+                            velocity: noteOn.velocity / 127
+                        });
+                        noteOnMap.delete(event.note);
+                    }
+                });
 
-        timeInterval = setInterval(() => {
-            const progress = Tone.Transport.seconds / (document.getElementById('duration').textContent.split(':').reduce((a, b) => a * 60 + parseInt(b), 0));
-            document.getElementById('progressFill').style.width = (progress * 100) + '%';
-        }, 100);
+                console.log(`Track ${trackIndex}: ${notes.length} notes`);
+
+                if (notes.length === 0 || track.muted) return null;
+
+                const part = new Tone.Part((time, note) => {
+                    synths[trackIndex].triggerAttackRelease(
+                        note.note, 
+                        note.duration, 
+                        time, 
+                        note.velocity
+                    );
+                }, notes);
+
+                part.start(0);
+                return part;
+            });
+
+            status.textContent = 'Đang phát...';
+            Tone.Transport.start();
+            isPlaying = true;
+            playBtn.textContent = '⏸️';
+            playBtn.disabled = false;
+
+            // Update progress
+            timeInterval = setInterval(() => {
+                const currentTime = Tone.Transport.seconds;
+                const progress = (currentTime / duration) * 100;
+                document.getElementById('progressFill').style.width = Math.min(100, progress) + '%';
+                
+                if (currentTime >= duration) {
+                    stopPlayback();
+                }
+            }, 50);
+
+            console.log('Playback started');
+            
+        } catch (error) {
+            console.error('Playback error:', error);
+            status.textContent = 'Lỗi: ' + error.message;
+            playBtn.disabled = false;
+            stopPlayback();
+        }
     }
 
     function stopPlayback() {
         Tone.Transport.stop();
-        Tone.Transport.cancel();
+        Tone.Transport.cancel(0);
+        Tone.Transport.position = 0;
         
-        synths.forEach(synth => synth?.dispose());
-        parts.forEach(part => part?.dispose());
+        synths.forEach(synth => {
+            if (synth) {
+                synth.releaseAll();
+                synth.dispose();
+            }
+        });
+        
+        parts.forEach(part => {
+            if (part) part.dispose();
+        });
+        
         synths = [];
         parts = [];
         
         if (timeInterval) {
             clearInterval(timeInterval);
+            timeInterval = null;
         }
         
         isPlaying = false;
         document.getElementById('playBtn').textContent = '▶️';
+        document.getElementById('playBtn').disabled = false;
         document.getElementById('progressFill').style.width = '0%';
+        document.getElementById('status').textContent = '';
+        
+        console.log('Playback stopped');
     }
 
     function formatTime(seconds) {
