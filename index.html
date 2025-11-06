@@ -291,8 +291,8 @@
             <div class="control-group">
                 <label>Phát âm:</label>
                 <div class="play-buttons">
-                    <button class="btn-arpeggio" onclick="playArpeggio()">🎵 Lần lượt</button>
-                    <button class="btn-chord" onclick="playChord()">🎶 Cùng lúc</button>
+                    <button id="btn-arpeggio" class="btn-arpeggio" onclick="playArpeggio()" disabled>🎵 Lần lượt</button>
+                    <button id="btn-chord" class="btn-chord" onclick="playChord()" disabled>🎶 Cùng lúc</button>
                 </div>
             </div>
         </div>
@@ -404,7 +404,7 @@
         const chromaticScale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         
         let currentChordNotes = [];
-        let audioCache = {};
+        let audioCache = {}; // cache gốc (1 audio element cho mỗi file)
         let isPlaying = false;
         let audioLoaded = false;
         let audioContext = null;
@@ -431,13 +431,21 @@
                 const fileName = `${fileNote}${key.octave}.mp3`;
                 const url = BASE_URL + fileName;
                 
+                // Nếu đã cache rồi (cùng file name) thì skip tạo lại
+                if (audioCache[fileName]) {
+                    loadedCount++;
+                    const percent = Math.round((loadedCount / totalNotes) * 100);
+                    loadingStatus.textContent = `🔄 Đang tải âm thanh... ${percent}%`;
+                    return;
+                }
+                
                 try {
                     const audio = new Audio(url);
                     audio.preload = 'auto';
                     
-                    await new Promise((resolve, reject) => {
+                    await new Promise((resolve) => {
                         audio.addEventListener('canplaythrough', () => {
-                            audioCache[fileName] = audio;
+                            audioCache[fileName] = audio; // lưu bản gốc
                             loadedCount++;
                             const percent = Math.round((loadedCount / totalNotes) * 100);
                             loadingStatus.textContent = `🔄 Đang tải âm thanh... ${percent}%`;
@@ -446,15 +454,22 @@
                         
                         audio.addEventListener('error', (e) => {
                             console.warn(`Không tải được ${fileName}`);
+                            // vẫn tăng counter và cập nhật phần trăm để không treo progress
                             loadedCount++;
-                            resolve(); // Vẫn tiếp tục dù có lỗi
+                            const percent = Math.round((loadedCount / totalNotes) * 100);
+                            loadingStatus.textContent = `🔄 Đang tải âm thanh... ${percent}% (một số file lỗi)`;
+                            // không lưu file vào cache nếu lỗi
+                            resolve();
                         }, { once: true });
                         
+                        // Thử load
                         audio.load();
                     });
                 } catch (error) {
                     console.error(`Lỗi tải ${fileName}:`, error);
                     loadedCount++;
+                    const percent = Math.round((loadedCount / totalNotes) * 100);
+                    loadingStatus.textContent = `🔄 Đang tải âm thanh... ${percent}% (lỗi)`;
                 }
             });
             
@@ -462,6 +477,10 @@
             audioLoaded = true;
             loadingStatus.textContent = '✅ Đã tải xong tất cả âm thanh!';
             loadingStatus.classList.add('loaded');
+            
+            // Bật nút play sau khi tải xong
+            document.getElementById('btn-arpeggio').disabled = false;
+            document.getElementById('btn-chord').disabled = false;
             
             // Ẩn thông báo sau 2 giây
             setTimeout(() => {
@@ -493,7 +512,7 @@
                     piano.appendChild(keyElement);
                 }
                 
-                keyElement.addEventListener('click', () => playNote(key.note, key.octave));
+                keyElement.addEventListener('click', () => playNote(key.note, key.octave, true));
             });
         }
         
@@ -557,9 +576,8 @@
                 }
             });
             
-            // Cập nhật thông tin hợp âm
+            // Hiển thị tên hợp âm (ngắn)
             const displayRoot = root === 'Db' ? 'C#' : root;
-            const chordName = chordNames[chordType];
             const suffix = chordType === 'major' ? '' : chordType === 'minor' ? 'm' : chordType;
             
             document.getElementById('chord-name').textContent = `${displayRoot}${suffix}`;
@@ -576,12 +594,34 @@
             const fileName = `${fileNote}${octave}.mp3`;
             const url = BASE_URL + fileName;
             
+            // Nếu chưa preload thành công, tạo audio mới tạm thời
             if (!audioCache[fileName]) {
-                audioCache[fileName] = new Audio(url);
+                // tạo audio tạm (không lưu) để phát (có thể gây tải mạng nếu file chưa preload)
+                try {
+                    const tempAudio = new Audio(url);
+                    tempAudio.currentTime = 0;
+                    
+                    // highlight
+                    if (highlight) {
+                        const keyElement = document.querySelector(`.key[data-note="${note}"][data-octave="${octave}"]`);
+                        if (keyElement) {
+                            keyElement.classList.add('playing');
+                            setTimeout(() => keyElement.classList.remove('playing'), 300);
+                        }
+                    }
+                    
+                    await tempAudio.play();
+                    return;
+                } catch (err) {
+                    console.error('Lỗi phát audio tạm:', err);
+                    return;
+                }
             }
             
-            const audio = audioCache[fileName];
-            audio.currentTime = 0;
+            const cachedAudio = audioCache[fileName];
+            // clone để hỗ trợ polyphony (mỗi lần phát 1 instance riêng)
+            const audioToPlay = cachedAudio.cloneNode(true);
+            audioToPlay.currentTime = 0;
             
             // Highlight phím đang phát
             if (highlight) {
@@ -595,7 +635,11 @@
             }
             
             try {
-                await audio.play();
+                await audioToPlay.play();
+                // Optionally remove node from memory after playback ends
+                audioToPlay.addEventListener('ended', () => {
+                    // no-op: allow GC
+                }, { once: true });
             } catch (error) {
                 console.error('Lỗi phát âm thanh:', error);
             }
@@ -639,6 +683,7 @@
                 }
             });
             
+            // Phát song song (mỗi nốt sẽ clone audio để đảm bảo polyphony)
             await Promise.all(
                 currentChordNotes.map(({note, octave}) => playNote(note, octave, false))
             );
