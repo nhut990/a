@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Karaoke App</title>
     <style>
         * {
@@ -366,8 +366,12 @@
         let trebleFilter;
         let isMicActive = false;
         let player;
-
         let playerReady = false;
+
+        // Channel nodes to fix "only one speaker" issue
+        let splitterNode = null;
+        let mergerNode = null;
+        let mediaStream = null; // keep ref to stop tracks on disable
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('youtubePlayer', {
@@ -466,6 +470,7 @@
             trebleFilter.type = 'highshelf';
             trebleFilter.frequency.value = 3000;
             
+            // default gains (mic slider maps value/100)
             micGainNode.gain.value = 3.0;
             delayNode.delayTime.value = 0.3;
             feedbackGainNode.gain.value = 0.4;
@@ -478,7 +483,7 @@
 
         function createReverbImpulse(duration) {
             const sampleRate = audioContext.sampleRate;
-            const length = sampleRate * duration;
+            const length = Math.floor(sampleRate * duration);
             const impulse = audioContext.createBuffer(2, length, sampleRate);
             const impulseL = impulse.getChannelData(0);
             const impulseR = impulse.getChannelData(1);
@@ -498,35 +503,70 @@
                     if (!audioContext) {
                         initAudioContext();
                     }
-                    
+                    // resume context if suspended (some mobile browsers require user gesture)
+                    if (audioContext.state === 'suspended') {
+                        await audioContext.resume();
+                    }
+
+                    // Try to request stereo if possible (browser may ignore)
                     const stream = await navigator.mediaDevices.getUserMedia({ 
                         audio: {
                             echoCancellation: false,
                             noiseSuppression: false,
-                            autoGainControl: false
+                            autoGainControl: false,
+                            channelCount: { ideal: 2 }
                         } 
                     });
-                    
+                    mediaStream = stream;
+
                     microphone = audioContext.createMediaStreamSource(stream);
-                    
-                    microphone.connect(micGainNode);
+
+                    // FIX: If the microphone is mono and played directly it may only go to one speaker.
+                    // Solution: use ChannelSplitter + ChannelMerger to duplicate mono channel into both left and right,
+                    // or pass through channels if already stereo.
+                    // We'll detect requested channelCount from track settings and branch accordingly.
+                    const settings = stream.getAudioTracks()[0].getSettings ? stream.getAudioTracks()[0].getSettings() : {};
+                    const trackChannels = settings.channelCount || 1;
+
+                    // create splitter & merger to ensure stereo output to destination
+                    splitterNode = audioContext.createChannelSplitter(Math.max(1, trackChannels));
+                    mergerNode = audioContext.createChannelMerger(2);
+
+                    // connect source -> splitter
+                    microphone.connect(splitterNode);
+
+                    if (trackChannels === 1) {
+                        // duplicate mono channel to both left and right
+                        splitterNode.connect(mergerNode, 0, 0);
+                        splitterNode.connect(mergerNode, 0, 1);
+                    } else {
+                        // if stereo, map left->left and right->right
+                        splitterNode.connect(mergerNode, 0, 0);
+                        splitterNode.connect(mergerNode, 1, 1);
+                    }
+
+                    // Now continue the processing chain from mergerNode (which produces 2 channels)
+                    mergerNode.connect(micGainNode);
                     micGainNode.connect(bassFilter);
                     bassFilter.connect(midFilter);
                     midFilter.connect(trebleFilter);
-                    
+
+                    // dry path
                     trebleFilter.connect(dryGainNode);
                     dryGainNode.connect(audioContext.destination);
-                    
+
+                    // echo path
                     trebleFilter.connect(delayNode);
                     delayNode.connect(feedbackGainNode);
                     feedbackGainNode.connect(delayNode);
                     delayNode.connect(wetGainNode);
                     wetGainNode.connect(audioContext.destination);
-                    
+
+                    // reverb path
                     trebleFilter.connect(convolverNode);
                     convolverNode.connect(reverbGainNode);
                     reverbGainNode.connect(audioContext.destination);
-                    
+
                     isMicActive = true;
                     this.textContent = '🔇 Tắt Micro';
                     this.style.background = '#f56565';
@@ -537,10 +577,41 @@
                     alert('Không thể truy cập micro. Vui lòng kiểm tra quyền truy cập!');
                 }
             } else {
-                if (microphone) {
-                    microphone.disconnect();
-                    microphone = null;
+                // disconnect everything and stop tracks
+                try {
+                    if (splitterNode) {
+                        splitterNode.disconnect();
+                        splitterNode = null;
+                    }
+                    if (mergerNode) {
+                        mergerNode.disconnect();
+                        mergerNode = null;
+                    }
+                    if (microphone) {
+                        microphone.disconnect();
+                        microphone = null;
+                    }
+                    // disconnect processing nodes
+                    if (micGainNode) micGainNode.disconnect();
+                    if (bassFilter) bassFilter.disconnect();
+                    if (midFilter) midFilter.disconnect();
+                    if (trebleFilter) trebleFilter.disconnect();
+                    if (dryGainNode) dryGainNode.disconnect();
+                    if (delayNode) delayNode.disconnect();
+                    if (feedbackGainNode) feedbackGainNode.disconnect();
+                    if (wetGainNode) wetGainNode.disconnect();
+                    if (convolverNode) convolverNode.disconnect();
+                    if (reverbGainNode) reverbGainNode.disconnect();
+
+                    // stop the tracks so microphone light goes off and permission dialog resets properly
+                    if (mediaStream) {
+                        mediaStream.getTracks().forEach(t => t.stop());
+                        mediaStream = null;
+                    }
+                } catch (e) {
+                    console.warn('Error when disconnecting mic:', e);
                 }
+
                 isMicActive = false;
                 this.textContent = '🎤 Bật Micro';
                 this.style.background = '#48bb78';
@@ -570,7 +641,9 @@
         });
 
         document.getElementById('reverbDecay').addEventListener('input', function() {
-            createReverbImpulse(parseFloat(this.value));
+            if (audioContext) {
+                createReverbImpulse(parseFloat(this.value));
+            }
             document.getElementById('reverbDecayVal').textContent = this.value + 's';
         });
 
