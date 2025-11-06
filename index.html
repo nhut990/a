@@ -240,8 +240,8 @@
                 <li>Dán link YouTube video karaoke</li>
                 <li>Nhấn "Bật Micro" và cho phép micro</li>
                 <li>Cắm tai nghe để tránh hú (quan trọng!)</li>
-                <li><strong>iOS:</strong> Dùng nút âm lượng trên video để giảm nhạc nền</li>
-                <li>Điều chỉnh hiệu ứng theo ý thích</li>
+                <li><strong>iOS:</strong> Nhấn vào video, dùng nút âm lượng (icon loa) để giảm nhạc nền xuống thấp nhất</li>
+                <li><strong>Nếu mic vẫn nhỏ:</strong> Kéo slider "Micro" lên 400%</li>
             </ul>
         </div>
         
@@ -267,16 +267,16 @@
                 <div class="control-row">
                     <div class="control-label">
                         <span class="label-text">Micro</span>
-                        <span class="value-display" id="micVolumeVal">150%</span>
+                        <span class="value-display" id="micVolumeVal">300%</span>
                     </div>
-                    <input type="range" id="micVolume" min="0" max="200" value="150" />
+                    <input type="range" id="micVolume" min="0" max="400" value="300" />
                 </div>
                 <div class="control-row">
                     <div class="control-label">
-                        <span class="label-text">Nhạc</span>
-                        <span class="value-display" id="musicVolumeVal">30%</span>
+                        <span class="label-text">Nhạc (iOS: dùng nút trên video)</span>
+                        <span class="value-display" id="musicVolumeVal">10%</span>
                     </div>
-                    <input type="range" id="musicVolume" min="0" max="100" value="30" />
+                    <input type="range" id="musicVolume" min="0" max="100" value="10" />
                 </div>
             </div>
             
@@ -387,7 +387,13 @@
 
         function onPlayerReady(event) {
             playerReady = true;
-            player.setVolume(50);
+            player.setVolume(10);
+            // Thử mute/unmute để force volume trên iOS
+            player.mute();
+            setTimeout(() => {
+                player.unMute();
+                player.setVolume(10);
+            }, 100);
         }
 
         function extractVideoId(url) {
@@ -424,6 +430,10 @@
                 if (playerReady && player) {
                     player.loadVideoById(videoId);
                     player.playVideo();
+                    // Set lại volume sau khi load
+                    setTimeout(() => {
+                        player.setVolume(10);
+                    }, 500);
                 } else {
                     alert('Player chưa sẵn sàng, vui lòng đợi vài giây và thử lại!');
                 }
@@ -456,7 +466,7 @@
             trebleFilter.type = 'highshelf';
             trebleFilter.frequency.value = 3000;
             
-            micGainNode.gain.value = 1.0;
+            micGainNode.gain.value = 3.0;
             delayNode.delayTime.value = 0.3;
             feedbackGainNode.gain.value = 0.4;
             wetGainNode.gain.value = 0.3;
