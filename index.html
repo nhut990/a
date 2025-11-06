@@ -1,95 +1,563 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>Karaoke Echo with YouTube</title>
-  <style>
-    body { font-family: sans-serif; background: #191624; color: #fff; text-align: center; }
-    #youtube-container { margin: 20px 0; }
-    .controls { margin: 25px 0; }
-    .slider { width: 300px; }
-    input[type="text"] { width: 350px; padding: 7px; border-radius: 4px; border: 1px solid #ccc; }
-    label { font-size: 1rem; }
-    button { padding: 8px 18px; border-radius: 5px; border: 1px solid #244; background: #5533cc; color: white; cursor: pointer; }
-    button:hover { background: #7755ee; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karaoke App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .search-section {
+            margin-bottom: 30px;
+        }
+        
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        #searchInput {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            outline: none;
+        }
+        
+        #searchBtn {
+            padding: 15px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        #searchBtn:hover {
+            background: #5568d3;
+        }
+        
+        .video-section {
+            margin-bottom: 30px;
+        }
+        
+        #youtubePlayer {
+            width: 100%;
+            height: 450px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .controls-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .control-group {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .control-group h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        .control-item {
+            margin-bottom: 15px;
+        }
+        
+        .control-item label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .value-display {
+            display: inline-block;
+            min-width: 50px;
+            text-align: right;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .mic-status {
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        
+        .mic-on {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .mic-off {
+            background: #f56565;
+            color: white;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .instructions {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .instructions h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            margin-left: 20px;
+            color: #856404;
+        }
+    </style>
 </head>
 <body>
-  <h1>Karaoke với Echo & YouTube</h1>
-  <div class="controls">
-    <input id="youtube-url" type="text" placeholder="Dán link YouTube karaoke vào đây" />
-    <button onclick="loadYouTube()">Phát nhạc Karaoke</button>
-  </div>
-  <div id="youtube-container"></div>
-  <div class="controls">
-    <button id="mic-btn" onclick="toggleMic()">Bật Mic</button>
-    <label for="echo">Echo mic (Delay):</label>
-    <input id="echo" class="slider" type="range" min="0" max="1" step="0.01" value="0.18" onchange="setEcho(this.value)" />
-    <span id="echo-value">0.18s</span>
-  </div>
-  <p>Bật mic, tăng giảm Echo để tạo hiệu ứng vọng, vừa hát vừa nghe nhạc karaoke ở YouTube.</p>
-  <script>
-    // YouTube embed logic
-    function getYoutubeId(url) {
-      const regExp = /(?:youtube\.com.*v=|youtu\.be\/)([a-zA-Z0-9_-]+)/i;
-      const match = url.match(regExp);
-      return match ? match[1] : '';
-    }
-    function loadYouTube() {
-      const url = document.getElementById('youtube-url').value.trim();
-      const id = getYoutubeId(url);
-      if (id) {
-        document.getElementById('youtube-container').innerHTML =
-          `<iframe width="560" height="315"
-            src="https://www.youtube.com/embed/${id}?autoplay=1"
-            frameborder="0" allow="autoplay; encrypted-media"
-            allowfullscreen></iframe>`;
-      } else {
-        alert('Link YouTube không đúng!');
-      }
-    }
+    <div class="container">
+        <h1>🎤 Karaoke App 🎵</h1>
+        
+        <div class="instructions">
+            <h4>📌 Hướng dẫn sử dụng:</h4>
+            <ul>
+                <li>Tìm kiếm video karaoke trên YouTube và nhấn Tìm kiếm</li>
+                <li>Nhấn "Bật Micro" và cho phép truy cập micro</li>
+                <li>Cắm tai nghe để tránh hú hồi âm (feedback)</li>
+                <li>Điều chỉnh các hiệu ứng micro và âm lượng theo ý muốn</li>
+            </ul>
+        </div>
+        
+        <div class="search-section">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Tìm kiếm video karaoke... (VD: 'Em của ngày hôm qua karaoke')" />
+                <button id="searchBtn">🔍 Tìm kiếm</button>
+            </div>
+        </div>
+        
+        <div class="video-section">
+            <div id="youtubePlayer"></div>
+        </div>
+        
+        <div class="controls-section">
+            <div class="control-group">
+                <h3>🎤 Điều khiển Micro</h3>
+                <button id="micToggle">Bật Micro</button>
+                <div class="mic-status mic-off" id="micStatus">Micro: TẮT</div>
+                
+                <div class="control-item">
+                    <label>🔊 Âm lượng Micro: <span class="value-display" id="micVolumeVal">100%</span></label>
+                    <input type="range" id="micVolume" min="0" max="200" value="100" />
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>🎵 Hiệu ứng Echo</h3>
+                <div class="control-item">
+                    <label>⏱️ Độ trễ Echo: <span class="value-display" id="delayTimeVal">0.3s</span></label>
+                    <input type="range" id="delayTime" min="0" max="1" step="0.05" value="0.3" />
+                </div>
+                
+                <div class="control-item">
+                    <label>🔁 Phản hồi Echo: <span class="value-display" id="feedbackVal">40%</span></label>
+                    <input type="range" id="feedback" min="0" max="90" value="40" />
+                </div>
+                
+                <div class="control-item">
+                    <label>💧 Mix Echo: <span class="value-display" id="wetVal">30%</span></label>
+                    <input type="range" id="wet" min="0" max="100" value="30" />
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>🎼 Hiệu ứng Reverb</h3>
+                <div class="control-item">
+                    <label>⏰ Thời gian Reverb: <span class="value-display" id="reverbDecayVal">2.0s</span></label>
+                    <input type="range" id="reverbDecay" min="0" max="10" step="0.1" value="2" />
+                </div>
+                
+                <div class="control-item">
+                    <label>💧 Mix Reverb: <span class="value-display" id="reverbWetVal">20%</span></label>
+                    <input type="range" id="reverbWet" min="0" max="100" value="20" />
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>🎚️ Bộ chỉnh âm (EQ)</h3>
+                <div class="control-item">
+                    <label>🔊 Bass (Trầm): <span class="value-display" id="bassVal">0 dB</span></label>
+                    <input type="range" id="bass" min="-12" max="12" value="0" />
+                </div>
+                
+                <div class="control-item">
+                    <label>🎵 Mid (Trung): <span class="value-display" id="midVal">0 dB</span></label>
+                    <input type="range" id="mid" min="-12" max="12" value="0" />
+                </div>
+                
+                <div class="control-item">
+                    <label>✨ Treble (Cao): <span class="value-display" id="trebleVal">0 dB</span></label>
+                    <input type="range" id="treble" min="-12" max="12" value="0" />
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>🎶 Âm lượng Nhạc</h3>
+                <div class="control-item">
+                    <label>🔊 Âm lượng YouTube: <span class="value-display" id="musicVolumeVal">50%</span></label>
+                    <input type="range" id="musicVolume" min="0" max="100" value="50" />
+                </div>
+            </div>
+        </div>
+    </div>
 
-    // Mic + Echo logic
-    let audioContext, micStream, delayNode, sourceNode;
-    let isMicOn = false;
-    function toggleMic() {
-      if (!isMicOn) {
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(stream => {
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        let audioContext;
+        let microphone;
+        let micGainNode;
+        let delayNode;
+        let feedbackGainNode;
+        let wetGainNode;
+        let dryGainNode;
+        let convolverNode;
+        let reverbGainNode;
+        let bassFilter;
+        let midFilter;
+        let trebleFilter;
+        let isMicActive = false;
+        let player;
+        const API_KEY = 'AIzaSyBCFp0a-57DPEhPNx_k1eBxTc-MrKCfr-8';
+
+        // YouTube Player API
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('youtubePlayer', {
+                height: '450',
+                width: '100%',
+                videoId: 'dQw4w9WgXcQ',
+                playerVars: {
+                    'autoplay': 0,
+                    'controls': 1,
+                    'rel': 0
+                },
+                events: {
+                    'onReady': onPlayerReady
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            player.setVolume(50);
+        }
+
+        // Tìm kiếm YouTube
+        document.getElementById('searchBtn').addEventListener('click', searchYouTube);
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchYouTube();
+            }
+        });
+
+        function searchYouTube() {
+            const query = document.getElementById('searchInput').value;
+            if (!query) return;
+
+            fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${encodeURIComponent(query)}&type=video&key=${API_KEY}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.items && data.items.length > 0) {
+                        const videoId = data.items[0].id.videoId;
+                        player.loadVideoById(videoId);
+                    } else {
+                        alert('Không tìm thấy video!');
+                    }
+                })
+                .catch(error => {
+                    console.error('Lỗi tìm kiếm:', error);
+                    alert('Lỗi tìm kiếm video. Vui lòng thử lại!');
+                });
+        }
+
+        // Khởi tạo Audio Context
+        function initAudioContext() {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            micStream = stream;
-            sourceNode = audioContext.createMediaStreamSource(stream);
+            
+            // Tạo các node
+            micGainNode = audioContext.createGain();
+            delayNode = audioContext.createDelay(5.0);
+            feedbackGainNode = audioContext.createGain();
+            wetGainNode = audioContext.createGain();
+            dryGainNode = audioContext.createGain();
+            convolverNode = audioContext.createConvolver();
+            reverbGainNode = audioContext.createGain();
+            
+            // EQ Filters
+            bassFilter = audioContext.createBiquadFilter();
+            bassFilter.type = 'lowshelf';
+            bassFilter.frequency.value = 200;
+            
+            midFilter = audioContext.createBiquadFilter();
+            midFilter.type = 'peaking';
+            midFilter.frequency.value = 1000;
+            midFilter.Q.value = 0.5;
+            
+            trebleFilter = audioContext.createBiquadFilter();
+            trebleFilter.type = 'highshelf';
+            trebleFilter.frequency.value = 3000;
+            
+            // Thiết lập giá trị mặc định
+            micGainNode.gain.value = 1.0;
+            delayNode.delayTime.value = 0.3;
+            feedbackGainNode.gain.value = 0.4;
+            wetGainNode.gain.value = 0.3;
+            dryGainNode.gain.value = 1.0;
+            reverbGainNode.gain.value = 0.2;
+            
+            // Tạo impulse response cho reverb
+            createReverbImpulse(2.0);
+        }
 
-            // Create echo effect using DelayNode & Feedback
-            delayNode = audioContext.createDelay(2.0);
-            delayNode.delayTime.value = parseFloat(document.getElementById('echo').value);
+        // Tạo reverb impulse
+        function createReverbImpulse(duration) {
+            const sampleRate = audioContext.sampleRate;
+            const length = sampleRate * duration;
+            const impulse = audioContext.createBuffer(2, length, sampleRate);
+            const impulseL = impulse.getChannelData(0);
+            const impulseR = impulse.getChannelData(1);
+            
+            for (let i = 0; i < length; i++) {
+                const decay = Math.exp(-i / (sampleRate * duration * 0.5));
+                impulseL[i] = (Math.random() * 2 - 1) * decay;
+                impulseR[i] = (Math.random() * 2 - 1) * decay;
+            }
+            
+            convolverNode.buffer = impulse;
+        }
 
-            // Feedback loop for echo effect
-            let feedback = audioContext.createGain();
-            feedback.gain.value = 0.35;
+        // Bật/Tắt Micro
+        document.getElementById('micToggle').addEventListener('click', async function() {
+            if (!isMicActive) {
+                try {
+                    if (!audioContext) {
+                        initAudioContext();
+                    }
+                    
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: false
+                        } 
+                    });
+                    
+                    microphone = audioContext.createMediaStreamSource(stream);
+                    
+                    // Kết nối: Micro -> Gain -> EQ -> Effects -> Output
+                    microphone.connect(micGainNode);
+                    
+                    // EQ chain
+                    micGainNode.connect(bassFilter);
+                    bassFilter.connect(midFilter);
+                    midFilter.connect(trebleFilter);
+                    
+                    // Dry signal
+                    trebleFilter.connect(dryGainNode);
+                    dryGainNode.connect(audioContext.destination);
+                    
+                    // Delay/Echo
+                    trebleFilter.connect(delayNode);
+                    delayNode.connect(feedbackGainNode);
+                    feedbackGainNode.connect(delayNode);
+                    delayNode.connect(wetGainNode);
+                    wetGainNode.connect(audioContext.destination);
+                    
+                    // Reverb
+                    trebleFilter.connect(convolverNode);
+                    convolverNode.connect(reverbGainNode);
+                    reverbGainNode.connect(audioContext.destination);
+                    
+                    isMicActive = true;
+                    this.textContent = 'Tắt Micro';
+                    document.getElementById('micStatus').textContent = 'Micro: BẬT';
+                    document.getElementById('micStatus').className = 'mic-status mic-on';
+                } catch (error) {
+                    console.error('Lỗi truy cập micro:', error);
+                    alert('Không thể truy cập micro. Vui lòng kiểm tra quyền truy cập!');
+                }
+            } else {
+                if (microphone) {
+                    microphone.disconnect();
+                    microphone = null;
+                }
+                isMicActive = false;
+                this.textContent = 'Bật Micro';
+                document.getElementById('micStatus').textContent = 'Micro: TẮT';
+                document.getElementById('micStatus').className = 'mic-status mic-off';
+            }
+        });
 
-            // Connect feedback loop
-            sourceNode.connect(delayNode);
-            delayNode.connect(feedback);
-            feedback.connect(delayNode);
-            delayNode.connect(audioContext.destination);
+        // Controls
+        document.getElementById('micVolume').addEventListener('input', function() {
+            if (micGainNode) {
+                micGainNode.gain.value = this.value / 100;
+            }
+            document.getElementById('micVolumeVal').textContent = this.value + '%';
+        });
 
-            isMicOn = true;
-            document.getElementById('mic-btn').textContent = 'Tắt Mic';
-          })
-          .catch(() => alert('Không thể truy cập mic, vui lòng cấp quyền'));
-      } else {
-        // Turn off mic
-        if (micStream) micStream.getTracks().forEach(track => track.stop());
-        if (audioContext) audioContext.close();
-        isMicOn = false;
-        document.getElementById('mic-btn').textContent = 'Bật Mic';
-      }
-    }
-    function setEcho(val) {
-      document.getElementById('echo-value').textContent = `${val}s`;
-      if (delayNode) delayNode.delayTime.value = parseFloat(val);
-    }
-  </script>
+        document.getElementById('delayTime').addEventListener('input', function() {
+            if (delayNode) {
+                delayNode.delayTime.value = parseFloat(this.value);
+            }
+            document.getElementById('delayTimeVal').textContent = this.value + 's';
+        });
+
+        document.getElementById('feedback').addEventListener('input', function() {
+            if (feedbackGainNode) {
+                feedbackGainNode.gain.value = this.value / 100;
+            }
+            document.getElementById('feedbackVal').textContent = this.value + '%';
+        });
+
+        document.getElementById('wet').addEventListener('input', function() {
+            if (wetGainNode) {
+                wetGainNode.gain.value = this.value / 100;
+            }
+            document.getElementById('wetVal').textContent = this.value + '%';
+        });
+
+        document.getElementById('reverbDecay').addEventListener('input', function() {
+            createReverbImpulse(parseFloat(this.value));
+            document.getElementById('reverbDecayVal').textContent = this.value + 's';
+        });
+
+        document.getElementById('reverbWet').addEventListener('input', function() {
+            if (reverbGainNode) {
+                reverbGainNode.gain.value = this.value / 100;
+            }
+            document.getElementById('reverbWetVal').textContent = this.value + '%';
+        });
+
+        document.getElementById('bass').addEventListener('input', function() {
+            if (bassFilter) {
+                bassFilter.gain.value = parseFloat(this.value);
+            }
+            document.getElementById('bassVal').textContent = this.value + ' dB';
+        });
+
+        document.getElementById('mid').addEventListener('input', function() {
+            if (midFilter) {
+                midFilter.gain.value = parseFloat(this.value);
+            }
+            document.getElementById('midVal').textContent = this.value + ' dB';
+        });
+
+        document.getElementById('treble').addEventListener('input', function() {
+            if (trebleFilter) {
+                trebleFilter.gain.value = parseFloat(this.value);
+            }
+            document.getElementById('trebleVal').textContent = this.value + ' dB';
+        });
+
+        document.getElementById('musicVolume').addEventListener('input', function() {
+            if (player && player.setVolume) {
+                player.setVolume(this.value);
+            }
+            document.getElementById('musicVolumeVal').textContent = this.value + '%';
+        });
+    </script>
 </body>
 </html>
