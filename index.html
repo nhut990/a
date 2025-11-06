@@ -1,19 +1,17 @@
 <!DOCTYPE html>
-
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIDI Analyzer & Player</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>MIDI Analyzer & Player (Fixed)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-```
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -278,49 +276,46 @@
         font-size: 0.9em;
         color: white;
     }
-</style>
-```
-
+    </style>
 </head>
 <body>
     <div class="container">
         <h1>🎵 MIDI Analyzer & Player</h1>
 
-```
-    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-        <p>📁 Click để tải lên file MIDI (.mid)</p>
-        <input type="file" id="fileInput" accept=".mid,.midi">
-    </div>
-
-    <div class="controls" id="controls">
-        <div class="control-row">
-            <div class="tempo-info">
-                <p>Tempo</p>
-                <div class="tempo-value" id="tempo">120 BPM</div>
-            </div>
-
-            <button class="play-btn" id="playBtn">▶️</button>
-
-            <div class="duration-info">
-                <p>Thời lượng</p>
-                <div class="duration-value" id="duration">0:00</div>
-            </div>
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <p>📁 Click để tải lên file MIDI (.mid)</p>
+            <input type="file" id="fileInput" accept=".mid,.midi">
         </div>
-        <div class="progress-bar">
-            <div class="progress-fill" id="progressFill"></div>
+
+        <div class="controls" id="controls">
+            <div class="control-row">
+                <div class="tempo-info">
+                    <p>Tempo</p>
+                    <div class="tempo-value" id="tempo">120 BPM</div>
+                </div>
+
+                <button class="play-btn" id="playBtn">▶️</button>
+
+                <div class="duration-info">
+                    <p>Thời lượng</p>
+                    <div class="duration-value" id="duration">0:00</div>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="status" id="status"></div>
         </div>
-        <div class="status" id="status"></div>
-    </div>
 
-    <div class="tracks-container" id="tracksContainer">
-        <h2 class="tracks-title">Tracks (<span id="trackCount">0</span>)</h2>
-        <div id="tracksList"></div>
-    </div>
+        <div class="tracks-container" id="tracksContainer">
+            <h2 class="tracks-title">Tracks (<span id="trackCount">0</span>)</h2>
+            <div id="tracksList"></div>
+        </div>
 
-    <div class="empty-state" id="emptyState">
-        <p>Tải lên file MIDI để bắt đầu</p>
+        <div class="empty-state" id="emptyState">
+            <p>Tải lên file MIDI để bắt đầu</p>
+        </div>
     </div>
-</div>
 
 <script>
     let midiData = null;
@@ -329,10 +324,17 @@
     let parts = [];
     let isPlaying = false;
     let timeInterval = null;
-    let duration = 0;
+    // durationSeconds: total duration in seconds
+    let durationSeconds = 0;
 
     document.getElementById('fileInput').addEventListener('change', handleFileUpload);
     document.getElementById('playBtn').addEventListener('click', togglePlay);
+
+    // Safe gain -> dB helper (avoid depending on library)
+    const gainToDb = (g) => {
+        if (g <= 0) return -Infinity;
+        return 20 * Math.log10(g);
+    };
 
     async function handleFileUpload(e) {
         const file = e.target.files[0];
@@ -343,22 +345,22 @@
             const data = new Uint8Array(arrayBuffer);
             midiData = parseMidi(data);
             tracks = midiData.tracks;
-            
+
             displayMidiInfo();
             renderTracks();
-            
+
             document.getElementById('controls').classList.add('show');
             document.getElementById('tracksContainer').classList.add('show');
             document.getElementById('emptyState').style.display = 'none';
         } catch (error) {
-            alert('Lỗi khi đọc file MIDI: ' + error.message);
+            alert('Lỗi khi đọc file MIDI: ' + (error.message || error));
             console.error(error);
         }
     }
 
     function parseMidi(data) {
         let pos = 0;
-        
+
         const readBytes = (n) => {
             const bytes = data.slice(pos, pos + n);
             pos += n;
@@ -377,26 +379,28 @@
 
         const header = String.fromCharCode(...readBytes(4));
         if (header !== 'MThd') throw new Error('File MIDI không hợp lệ');
-        
+
+        // header length (usually 6)
         readBytes(4);
-        const format = new DataView(data.buffer).getUint16(pos);
-        pos += 2;
-        const trackCount = new DataView(data.buffer).getUint16(pos);
-        pos += 2;
-        const timeDivision = new DataView(data.buffer).getUint16(pos);
-        pos += 2;
+
+        const dv = new DataView(data.buffer);
+        const format = dv.getUint16(pos); pos += 2;
+        const trackCount = dv.getUint16(pos); pos += 2;
+        const timeDivision = dv.getUint16(pos); pos += 2;
 
         const tracks = [];
-        let globalTempo = 120;
+        let globalTempo = 120; // bpm
 
         for (let i = 0; i < trackCount; i++) {
             const trackHeader = String.fromCharCode(...readBytes(4));
-            if (trackHeader !== 'MTrk') continue;
-            
-            const trackLength = new DataView(data.buffer).getUint32(pos);
-            pos += 4;
+            if (trackHeader !== 'MTrk') {
+                // skip if not a track chunk
+                continue;
+            }
+
+            const trackLength = dv.getUint32(pos); pos += 4;
             const trackEnd = pos + trackLength;
-            
+
             const events = [];
             let time = 0;
             let lastStatus = 0;
@@ -406,14 +410,34 @@
             while (pos < trackEnd) {
                 const delta = readVarLen();
                 time += delta;
-                
+
                 let status = data[pos];
-                
                 if (status < 0x80) {
+                    // running status: reuse lastStatus, don't advance pos
                     status = lastStatus;
                 } else {
                     pos++;
                     lastStatus = status;
+                }
+
+                // channel message?
+                if (status === 0xff) {
+                    // meta event
+                    const metaType = data[pos++];
+                    const length = readVarLen();
+                    const metaData = readBytes(length);
+                    if (metaType === 0x03) {
+                        trackName = String.fromCharCode(...metaData);
+                    } else if (metaType === 0x51 && length === 3) {
+                        const microsecondsPerBeat = (metaData[0] << 16) | (metaData[1] << 8) | metaData[2];
+                        globalTempo = Math.round(60000000 / microsecondsPerBeat);
+                    }
+                    continue;
+                } else if (status === 0xf0 || status === 0xf7) {
+                    // sysex
+                    const length = readVarLen();
+                    pos += length;
+                    continue;
                 }
 
                 const type = status >> 4;
@@ -429,7 +453,7 @@
                     }
                 } else if (type === 0x8) {
                     const note = data[pos++];
-                    pos++;
+                    pos++; // velocity
                     events.push({ type: 'noteOff', time, note, channel });
                 } else if (type === 0xc) {
                     const program = data[pos++];
@@ -438,20 +462,9 @@
                     pos += 2;
                 } else if (type === 0xd || type === 0xa) {
                     pos += 1;
-                } else if (status === 0xff) {
-                    const metaType = data[pos++];
-                    const length = readVarLen();
-                    const metaData = readBytes(length);
-                    
-                    if (metaType === 0x03) {
-                        trackName = String.fromCharCode(...metaData);
-                    } else if (metaType === 0x51 && length === 3) {
-                        const microsecondsPerBeat = (metaData[0] << 16) | (metaData[1] << 8) | metaData[2];
-                        globalTempo = Math.round(60000000 / microsecondsPerBeat);
-                    }
-                } else if (status === 0xf0 || status === 0xf7) {
-                    const length = readVarLen();
-                    pos += length;
+                } else {
+                    // unknown - try to avoid infinite loop
+                    break;
                 }
             }
 
@@ -492,23 +505,25 @@
     }
 
     function displayMidiInfo() {
+        if (!midiData) return;
         document.getElementById('tempo').textContent = midiData.tempo + ' BPM';
-        
-        let maxTime = 0;
+
+        let maxTicks = 0;
         midiData.tracks.forEach(track => {
             track.events.forEach(event => {
-                if (event.time > maxTime) maxTime = event.time;
+                if (event.time > maxTicks) maxTicks = event.time;
             });
         });
-        
-        duration = maxTime / midiData.timeDivision;
-        document.getElementById('duration').textContent = formatTime(duration);
+
+        // Convert ticks to seconds: seconds = (ticks / ticksPerBeat) * (60 / bpm)
+        durationSeconds = (maxTicks / midiData.timeDivision) * (60 / midiData.tempo);
+        document.getElementById('duration').textContent = formatTime(durationSeconds);
     }
 
     function renderTracks() {
         const tracksList = document.getElementById('tracksList');
         const trackCount = document.getElementById('trackCount');
-        
+
         trackCount.textContent = tracks.length;
         tracksList.innerHTML = '';
 
@@ -518,8 +533,8 @@
             trackDiv.innerHTML = `
                 <div class="track-header">
                     <div class="track-info">
-                        <h3>${track.name}</h3>
-                        <p>${track.instrument}</p>
+                        <h3>${escapeHtml(track.name)}</h3>
+                        <p>${escapeHtml(track.instrument)}</p>
                     </div>
                     <button class="mute-btn active" onclick="toggleMute(${index})" id="mute-${index}">
                         Active
@@ -527,19 +542,26 @@
                 </div>
                 <div class="volume-control">
                     <span class="volume-icon">🔊</span>
-                    <input type="range" class="volume-slider" min="0" max="100" value="70" 
+                    <input type="range" class="volume-slider" min="0" max="100" value="${Math.round(track.volume*100)}" 
                            oninput="changeVolume(${index}, this.value)">
-                    <span class="volume-value" id="volume-${index}">70%</span>
+                    <span class="volume-value" id="volume-${index}">${Math.round(track.volume*100)}%</span>
                 </div>
             `;
             tracksList.appendChild(trackDiv);
         });
     }
 
+    // basic HTML escape for safety in injected strings
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, (m) => ({
+            '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+        })[m]);
+    }
+
     function toggleMute(index) {
         tracks[index].muted = !tracks[index].muted;
         const btn = document.getElementById(`mute-${index}`);
-        
+
         if (tracks[index].muted) {
             btn.classList.remove('active');
             btn.classList.add('muted');
@@ -552,7 +574,7 @@
             btn.classList.add('active');
             btn.textContent = 'Active';
             if (synths[index]) {
-                synths[index].volume.value = Tone.gainToDb(tracks[index].volume);
+                synths[index].volume.value = gainToDb(tracks[index].volume);
             }
         }
     }
@@ -561,9 +583,9 @@
         const volume = value / 100;
         tracks[index].volume = volume;
         document.getElementById(`volume-${index}`).textContent = value + '%';
-        
+
         if (synths[index] && !tracks[index].muted) {
-            synths[index].volume.value = Tone.gainToDb(volume);
+            synths[index].volume.value = gainToDb(volume);
         }
     }
 
@@ -578,20 +600,24 @@
     async function startPlayback() {
         const playBtn = document.getElementById('playBtn');
         const status = document.getElementById('status');
-        
+
+        if (!midiData) {
+            alert('Chưa có file MIDI được tải lên');
+            return;
+        }
+
         try {
             playBtn.disabled = true;
             status.textContent = 'Đang khởi động âm thanh...';
-            
+
             await Tone.start();
             console.log('Tone.js started');
-            
+
             status.textContent = 'Đang tạo synthesizers...';
-            
-            // Create synths
-            synths = tracks.map((track, i) => {
-                const synth = new Tone.PolySynth(Tone.Synth, {
-                    volume: track.muted ? -Infinity : Tone.gainToDb(track.volume),
+
+            // Create synths (one per track)
+            synths = tracks.map((track) => {
+                const poly = new Tone.PolySynth(Tone.Synth, {
                     oscillator: { type: 'sine' },
                     envelope: {
                         attack: 0.005,
@@ -600,34 +626,42 @@
                         release: 0.8
                     }
                 }).toDestination();
-                console.log(`Synth ${i} created`);
-                return synth;
+                // set initial volume (dB)
+                poly.volume.value = track.muted ? -Infinity : gainToDb(track.volume);
+                return poly;
             });
 
             status.textContent = 'Đang chuẩn bị notes...';
             Tone.Transport.bpm.value = midiData.tempo;
-            Tone.Transport.position = 0;
+            // reset transport to 0 (seconds)
+            Tone.Transport.seconds = 0;
 
-            // Create parts
+            // Create parts: convert ticks -> seconds for times and durations
             parts = tracks.map((track, trackIndex) => {
                 const notes = [];
                 const noteOnMap = new Map();
 
                 track.events.forEach(event => {
-                    const time = event.time / midiData.timeDivision;
-                    
+                    // convert tick time to seconds
+                    const timeSec = (event.time / midiData.timeDivision) * (60 / midiData.tempo);
+
                     if (event.type === 'noteOn') {
-                        noteOnMap.set(event.note, { time, velocity: event.velocity });
-                    } else if (event.type === 'noteOff' && noteOnMap.has(event.note)) {
-                        const noteOn = noteOnMap.get(event.note);
-                        const dur = Math.max(0.1, time - noteOn.time);
-                        notes.push({
-                            time: noteOn.time,
-                            note: Tone.Frequency(event.note, 'midi').toNote(),
-                            duration: dur,
-                            velocity: noteOn.velocity / 127
-                        });
-                        noteOnMap.delete(event.note);
+                        // we key by note+channel to be more robust
+                        const key = `${event.note}:${event.channel}`;
+                        noteOnMap.set(key, { time: timeSec, velocity: event.velocity });
+                    } else if (event.type === 'noteOff') {
+                        const key = `${event.note}:${event.channel}`;
+                        if (noteOnMap.has(key)) {
+                            const noteOn = noteOnMap.get(key);
+                            const dur = Math.max(0.01, timeSec - noteOn.time);
+                            notes.push({
+                                time: noteOn.time,
+                                note: Tone.Frequency(event.note, 'midi').toNote(),
+                                duration: dur,
+                                velocity: noteOn.velocity / 127
+                            });
+                            noteOnMap.delete(key);
+                        }
                     }
                 });
 
@@ -635,11 +669,13 @@
 
                 if (notes.length === 0 || track.muted) return null;
 
-                const part = new Tone.Part((time, note) => {
+                // Part expects times in seconds (numbers) or TransportTime strings.
+                const part = new Tone.Part((t, note) => {
+                    // note: {time, note, duration, velocity}
                     synths[trackIndex].triggerAttackRelease(
-                        note.note, 
-                        note.duration, 
-                        time, 
+                        note.note,
+                        note.duration,
+                        t,
                         note.velocity
                     );
                 }, notes);
@@ -655,56 +691,61 @@
             playBtn.disabled = false;
 
             // Update progress
+            if (timeInterval) clearInterval(timeInterval);
             timeInterval = setInterval(() => {
                 const currentTime = Tone.Transport.seconds;
-                const progress = (currentTime / duration) * 100;
+                const progress = durationSeconds > 0 ? (currentTime / durationSeconds) * 100 : 0;
                 document.getElementById('progressFill').style.width = Math.min(100, progress) + '%';
-                
-                if (currentTime >= duration) {
+
+                if (currentTime >= durationSeconds) {
                     stopPlayback();
                 }
             }, 50);
 
             console.log('Playback started');
-            
+
         } catch (error) {
             console.error('Playback error:', error);
-            status.textContent = 'Lỗi: ' + error.message;
+            status.textContent = 'Lỗi: ' + (error.message || error);
             playBtn.disabled = false;
             stopPlayback();
         }
     }
 
     function stopPlayback() {
-        Tone.Transport.stop();
-        Tone.Transport.cancel(0);
-        Tone.Transport.position = 0;
-        
+        try {
+            Tone.Transport.stop();
+            Tone.Transport.cancel(0);
+            Tone.Transport.seconds = 0;
+        } catch (e) { /* ignore */ }
+
         synths.forEach(synth => {
             if (synth) {
-                synth.releaseAll();
-                synth.dispose();
+                try { synth.releaseAll(); } catch(_) {}
+                try { synth.dispose(); } catch(_) {}
             }
         });
-        
+
         parts.forEach(part => {
-            if (part) part.dispose();
+            if (part) {
+                try { part.dispose(); } catch(_) {}
+            }
         });
-        
+
         synths = [];
         parts = [];
-        
+
         if (timeInterval) {
             clearInterval(timeInterval);
             timeInterval = null;
         }
-        
+
         isPlaying = false;
         document.getElementById('playBtn').textContent = '▶️';
         document.getElementById('playBtn').disabled = false;
         document.getElementById('progressFill').style.width = '0%';
         document.getElementById('status').textContent = '';
-        
+
         console.log('Playback stopped');
     }
 
@@ -714,7 +755,5 @@
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
 </script>
-```
-
 </body>
 </html>
