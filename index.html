@@ -216,9 +216,10 @@
 
         async function preloadAllNotesBuffer() {
             const noteList = [];
+            // Load từ C3 đến C5
             for (let octave = 3; octave <= 5; octave++) {
-                for (let i = 0; i < 12; i++) {
-                    if (octave === 5 && i > 0) break;
+                const endIndex = (octave === 5) ? 0 : 11;
+                for (let i = 0; i <= endIndex; i++) {
                     noteList.push(notes[i] + octave);
                 }
             }
@@ -260,7 +261,10 @@
             const rootIndex = notes.indexOf(root);
             const formula = chordFormulas[chordType];
             const chordNotes = [];
-            let startOctave = ['C','C#','D','D#'].includes(root) ? 4 : 3;
+            
+            // Nếu root là C, C#, D, D# thì bắt đầu từ octave 3, còn lại từ octave 3
+            let startOctave = 3;
+            
             formula.forEach(interval => {
                 const noteIndex = (rootIndex + interval) % 12;
                 const octaveOffset = Math.floor((rootIndex + interval) / 12);
@@ -278,9 +282,12 @@
             const whiteKeyWidth = 28;
             let whiteKeyIndex = 0;
             
+            // Bắt đầu từ C3 và kết thúc ở C5
             for (let octave = 3; octave <= 5; octave++) {
-                for (let i = 0; i < 12; i++) {
-                    if (octave === 5 && i > 0) break;
+                const startIndex = (octave === 3) ? 0 : 0; // Bắt đầu từ C
+                const endIndex = (octave === 5) ? 0 : 11; // Kết thúc ở C5
+                
+                for (let i = startIndex; i <= endIndex; i++) {
                     const note = notes[i];
                     const noteName = note + octave;
                     const isBlack = note.includes('#');
