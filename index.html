@@ -67,7 +67,7 @@
         .white-key.playing { background: #ff5722; box-shadow: 0 0 15px rgba(255,87,34,0.9);}
         .black-key {
             width: 20px; height: 110px; background: #000; border: 1px solid #000;
-            border-radius: 0 0 3px 3px; position: absolute; z-index: 10; left: -10px;
+            border-radius: 0 0 3px 3px; position: absolute; z-index: 10;
         }
         .black-key:active { background: #ff5722; box-shadow: 0 0 15px rgba(255,87,34,0.9);}
         .black-key.highlight { background: #ffd700; box-shadow: 0 0 10px rgba(255,215,0,0.8);}
@@ -87,7 +87,7 @@
         @media (max-width: 480px) {
             h1 { font-size: 20px; }
             .white-key { width: 24px; height: 150px;}
-            .black-key { width: 16px; height: 90px; left: -8px;}
+            .black-key { width: 16px; height: 90px;}
             .key-label { font-size: 8px;}
         }
     </style>
@@ -164,18 +164,15 @@
         const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         let currentChordNotes = [];
         let isPlaying = false;
-        // Audio
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const audioBufferCache = {};
         let isAudioActivated = false;
 
-        // Nút "Bật tiếng" cho iOS
         const audioActivateBtn = document.getElementById('audioActivateBtn');
         audioActivateBtn.addEventListener('click', async function() {
             audioActivateBtn.disabled = true;
             audioActivateBtn.textContent = "Đang bật tiếng...";
             try {
-                // Play file test để mở AudioContext
                 await activateAudioOnIOS();
                 audioActivateBtn.textContent = "Âm thanh đã bật!";
                 isAudioActivated = true;
@@ -187,7 +184,6 @@
         });
 
         async function activateAudioOnIOS() {
-            // Play file đặc biệt để unlock audio
             if (audioCtx.state === 'suspended') await audioCtx.resume();
             let url = 'https://raw.githubusercontent.com/nhut990/files/refs/heads/main/tieng/E3_active_audio.mp3';
             let response = await fetch(url);
@@ -197,7 +193,6 @@
             source.buffer = audioBuffer;
             source.connect(audioCtx.destination);
             source.start(0);
-            // Ngắn thôi, sau khi play coi như đã activate
             await new Promise(resolve => setTimeout(resolve, 330));
         }
 
@@ -232,7 +227,6 @@
 
         async function playNote(noteName, duration = 300, fromSequential = false) {
             try {
-                // Nếu AudioContext đang suspended (do chưa "Bật tiếng"), báo và yêu cầu user bấm nút
                 if (audioCtx.state === 'suspended' || !isAudioActivated) {
                     audioActivateBtn.disabled = false;
                     audioActivateBtn.textContent = "🔊 Bật tiếng để nghe hợp âm!";
@@ -281,12 +275,16 @@
         function createPiano() {
             const pianoKeys = document.getElementById('pianoKeys');
             pianoKeys.innerHTML = '';
+            const whiteKeyWidth = 28;
+            let whiteKeyIndex = 0;
+            
             for (let octave = 3; octave <= 5; octave++) {
                 for (let i = 0; i < 12; i++) {
                     if (octave === 5 && i > 0) break;
                     const note = notes[i];
                     const noteName = note + octave;
                     const isBlack = note.includes('#');
+                    
                     if (!isBlack) {
                         const whiteKey = document.createElement('div');
                         whiteKey.className = 'key white-key';
@@ -327,11 +325,16 @@
                         });
                         pianoKeys.appendChild(whiteKey);
 
-                        if (i < 11 && notes[i+1].includes('#')) {
+                        // Tạo phím đen nếu có (không có phím đen sau E và B)
+                        if (i < 11 && notes[i+1].includes('#') && note !== 'E' && note !== 'B') {
                             const blackKey = document.createElement('div');
                             blackKey.className = 'key black-key';
                             const blackNoteName = notes[i+1] + octave;
                             blackKey.dataset.note = blackNoteName;
+                            
+                            // Định vị phím đen giữa hai phím trắng
+                            blackKey.style.left = `${whiteKeyIndex * whiteKeyWidth + whiteKeyWidth - 10}px`;
+                            
                             const blackLabel = document.createElement('div');
                             blackLabel.className = 'key-label';
                             blackLabel.textContent = notes[i+1].replace('#', '♯') + octave;
@@ -369,8 +372,9 @@
                                     blackKey.classList.add('highlight');
                                 }
                             });
-                            whiteKey.appendChild(blackKey);
+                            pianoKeys.appendChild(blackKey);
                         }
+                        whiteKeyIndex++;
                     }
                 }
             }
@@ -379,7 +383,6 @@
         function scrollChordIntoView() {
             if (!currentChordNotes.length) return;
             const pianoKeysDiv = document.getElementById('pianoKeys');
-            // Tìm nốt trái nhất và phải nhất của hợp âm
             const noteIndexes = currentChordNotes
                 .map(note => {
                     const el = document.querySelector(`[data-note="${note}"]`);
@@ -389,7 +392,6 @@
             if (noteIndexes.length) {
                 const leftEdge = Math.min(...noteIndexes);
                 const rightEdge = Math.max(...noteIndexes);
-                // Đặt view chính giữa các nốt
                 const center = (leftEdge + rightEdge) / 2;
                 const containerWidth = pianoKeysDiv.offsetWidth;
                 pianoKeysDiv.scroll({
