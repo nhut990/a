@@ -53,10 +53,11 @@
             cursor:not-allowed;
         }
         .piano {
-            position: relative; display: flex; justify-content: center;
+            position: relative; display: flex; justify-content: flex-start;
             margin: 20px auto; height: 180px; overflow-x: auto; overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
         }
-        .piano-keys { position: relative; display: flex; white-space: nowrap; }
+        .piano-keys { position: relative; display: inline-flex; white-space: nowrap; min-width: min-content; }
         .key { position: relative; cursor: pointer; user-select: none; }
         .white-key {
             width: 28px; height: 180px; background: white; border: 1px solid #000;
