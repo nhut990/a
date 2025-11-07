@@ -57,11 +57,11 @@
             margin: 20px auto; height: 180px; overflow-x: auto; overflow-y: hidden;
             -webkit-overflow-scrolling: touch;
         }
-        .piano-keys { position: relative; display: inline-flex; white-space: nowrap; min-width: min-content; }
-        .key { position: relative; cursor: pointer; user-select: none; }
+        .piano-keys { position: relative; display: inline-flex; white-space: nowrap; min-width: min-content; height: 180px; }
+        .key { position: relative; cursor: pointer; user-select: none; flex-shrink: 0; }
         .white-key {
             width: 28px; height: 180px; background: white; border: 1px solid #000;
-            border-radius: 0 0 4px 4px; transition: all 0.1s;
+            border-radius: 0 0 4px 4px; transition: all 0.1s; position: relative;
         }
         .white-key:active { background: #ff5722; box-shadow: 0 0 15px rgba(255,87,34,0.9);}
         .white-key.highlight { background: #ffeb3b; box-shadow: 0 0 10px rgba(255,235,59,0.8);}
@@ -98,6 +98,7 @@
             .white-key { width: 24px; height: 150px;}
             .black-key { width: 16px; height: 90px;}
             .key-label { font-size: 8px;}
+            .piano { justify-content: flex-start; }
         }
     </style>
 </head>
@@ -285,7 +286,10 @@
         function createPiano() {
             const pianoKeys = document.getElementById('pianoKeys');
             pianoKeys.innerHTML = '';
-            const whiteKeyWidth = 28;
+            
+            // Sử dụng width từ CSS thay vì hardcode
+            const isMobile = window.innerWidth <= 480;
+            const whiteKeyWidth = isMobile ? 24 : 28;
             let whiteKeyIndex = 0;
             
             // Bắt đầu từ C3 và kết thúc ở C5
@@ -395,23 +399,38 @@
 
         function scrollChordIntoView() {
             if (!currentChordNotes.length) return;
-            const pianoKeysDiv = document.getElementById('pianoKeys');
-            const noteIndexes = currentChordNotes
-                .map(note => {
-                    const el = document.querySelector(`[data-note="${note}"]`);
-                    return el ? el.offsetLeft + el.offsetWidth/2 : null;
-                })
-                .filter(el => el !== null);
-            if (noteIndexes.length) {
-                const leftEdge = Math.min(...noteIndexes);
-                const rightEdge = Math.max(...noteIndexes);
-                const center = (leftEdge + rightEdge) / 2;
-                const containerWidth = pianoKeysDiv.offsetWidth;
-                pianoKeysDiv.scroll({
-                    left: center - containerWidth / 2,
-                    behavior: 'smooth'
-                });
-            }
+            
+            // Đợi một chút để DOM render xong
+            setTimeout(() => {
+                const pianoContainer = document.querySelector('.piano');
+                const pianoKeysDiv = document.getElementById('pianoKeys');
+                
+                const noteIndexes = currentChordNotes
+                    .map(note => {
+                        const el = document.querySelector(`[data-note="${note}"]`);
+                        return el ? el.offsetLeft + el.offsetWidth/2 : null;
+                    })
+                    .filter(el => el !== null);
+                    
+                if (noteIndexes.length) {
+                    const leftEdge = Math.min(...noteIndexes);
+                    const rightEdge = Math.max(...noteIndexes);
+                    const center = (leftEdge + rightEdge) / 2;
+                    const containerWidth = pianoContainer.offsetWidth;
+                    
+                    const scrollLeft = center - containerWidth / 2;
+                    
+                    // Sử dụng cả scrollTo và scrollLeft để đảm bảo hoạt động trên mọi thiết bị
+                    if (pianoContainer.scrollTo) {
+                        pianoContainer.scrollTo({
+                            left: scrollLeft,
+                            behavior: 'smooth'
+                        });
+                    } else {
+                        pianoContainer.scrollLeft = scrollLeft;
+                    }
+                }
+            }, 100);
         }
 
         function updateChordDisplay() {
