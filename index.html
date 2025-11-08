@@ -10,84 +10,234 @@
   <link rel="apple-touch-icon" href="https://github.com/nhut990/files/releases/download/V1.0-icon/zalo.png" />
   <meta name="apple-mobile-web-app-title" content="Zalo 2" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="theme-color" content="#0a84ff" />
+  <meta name="theme-color" content="#ffffff" />
 
   <style>
-    html,body{height:100%;margin:0;font-family:Arial,Helvetica,sans-serif;background:#f6f8fb;color:#0b3b8a}
-    .wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}
-    .icon{width:120px;height:120px;border-radius:20px;box-shadow:0 6px 18px rgba(10,60,140,0.12);background-image:url('https://github.com/nhut990/files/releases/download/V1.0-icon/zalo.png');background-size:cover;background-position:center}
-    h1{margin:18px 0 6px;font-size:22px}
-    p{margin:0 0 14px;color:#234}
-    .hint{font-size:13px;color:#475569;background:#fff;padding:10px 12px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.06)}
-    .btn{margin-top:14px;padding:10px 16px;border-radius:8px;background:#0a84ff;color:#fff;border:0;font-weight:600}
+    :root{
+      --bg:#ffffff;
+      --primary:#0a84ff; /* màu xanh nút */
+      --muted:#f2f5f8;
+      --text:#0b3b8a;
+      --soft:#8b98a9;
+      --radius:28px;
+    }
+    html,body{height:100%;margin:0;font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:#111}
+    .container{min-height:100%;display:flex;flex-direction:column;align-items:center;padding:28px 20px;box-sizing:border-box}
+    .lang{position:fixed;right:18px;top:18px;background:#fff;border-radius:20px;padding:6px 10px;border:1px solid rgba(0,0,0,0.06);font-size:14px;color:#222}
+    .logo{margin-top:30px;font-weight:700;color:var(--primary);font-size:54px;letter-spacing:1px;font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial}
+    .hero{width:100%;max-width:460px;margin-top:18px;display:flex;flex-direction:column;align-items:center}
+    /* illustration circle */
+    .illu{width:280px;height:180px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+    .illu-inner{width:220px;height:120px;border-radius:12px;background:linear-gradient(180deg,#ffffff,#fbfdff);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(9,30,66,0.04);border:1px dashed rgba(10,20,50,0.06)}
+    .call-icon{width:96px;height:72px;background:#eaf4ff;border-radius:12px;display:flex;align-items:center;justify-content:center;border:2px solid rgba(10,132,255,0.06)}
+    .call-icon svg{width:56px;height:56px;fill:#88bfff;opacity:0.95}
+    h2{margin:18px 0 6px;font-size:20px;text-align:center;color:#0b294d}
+    .desc{color:var(--soft);text-align:center;max-width:320px;margin:0 auto 12px;line-height:1.4}
+    .dots{display:flex;gap:8px;margin:8px 0 20px}
+    .dot{width:8px;height:8px;border-radius:50%;background:#dfe7ef;box-shadow:none}
+    .dot.active{background:var(--primary)}
+    /* form area */
+    .card{width:100%;max-width:460px;margin-top:6px;display:flex;flex-direction:column;align-items:stretch}
+    .btn-primary{
+      background:var(--primary);
+      color:#fff;
+      border-radius:36px;
+      padding:14px 18px;
+      border:0;
+      font-size:18px;
+      font-weight:700;
+      box-shadow:0 6px 18px rgba(10,132,255,0.16);
+      cursor:pointer;
+      width:100%;
+      margin-top:22px;
+    }
+    .btn-secondary{
+      background:#eef2f4;
+      color:#0f1720;
+      border-radius:36px;
+      padding:14px 18px;
+      border:0;
+      font-size:18px;
+      font-weight:700;
+      cursor:pointer;
+      width:100%;
+      margin-top:12px;
+    }
+    .input{
+      margin-top:22px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:12px 14px;
+      border-radius:14px;
+      background:#fff;
+      border:1px solid rgba(10,20,50,0.06);
+      box-shadow:0 3px 10px rgba(9,30,66,0.03) inset;
+    }
+    .input input{
+      border:0;outline:0;font-size:16px;background:transparent;width:100%;
+    }
+    .small{font-size:13px;color:var(--soft);text-align:center;margin-top:10px}
+    /* modal */
+    .modal-back{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.32);z-index:999}
+    .modal{background:#fff;padding:18px;border-radius:12px;min-width:260px;box-shadow:0 10px 30px rgba(0,0,0,0.18);text-align:center}
+    .modal h3{margin:8px 0 6px}
+    .modal p{margin:0 0 12px;color:var(--soft)}
+    .modal button{background:var(--primary);color:#fff;padding:8px 12px;border-radius:10px;border:0;font-weight:700;cursor:pointer}
+    /* footer spacing for iPhone home indicator */
+    .spacer{height:24px}
+    /* responsive */
+    @media(min-width:700px){
+      .container{padding:40px}
+      .logo{font-size:72px}
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="icon" aria-hidden="true"></div>
-    <h1>Zalo 2</h1>
-    <p>Ứng dụng dạng web để thêm ra màn hình chính — perfect để troll bạn bè.</p>
+  <div class="lang">Tiếng Việt ▾</div>
 
-    <div class="hint">
-      Hướng dẫn nhanh:
-      <ul style="margin:8px 0 0;padding-left:18px">
-        <li>Trên iPhone (Safari): bấm nút chia sẻ → "Thêm vào màn hình chính".</li>
-        <li>Trên Android (Chrome): bấm menu → "Thêm vào màn hình chính" hoặc chọn "Cài đặt" để thêm PWA.</li>
-      </ul>
+  <div class="container" role="main">
+    <div class="logo" aria-hidden="true">Zalo</div>
+
+    <div class="hero" aria-hidden="false">
+      <div class="illu" role="img" aria-label="illustration">
+        <div class="illu-inner">
+          <div class="call-icon" aria-hidden="true">
+            <!-- simple phone/video icon svg -->
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M6.6 10.8c1.9 3.5 5 6.6 8.5 8.5l1.9-1.9c.3-.3.7-.4 1.1-.3 1.2.3 2.6.5 4 .5.6 0 1 .5 1 1v3.2c0 .6-.4 1-1 1C9.3 22 2 14.7 2 5.9 2 5.3 2.4 4.9 3 4.9H6.2c.6 0 1 .4 1 1 0 1.4.2 2.8.5 4 .1.4 0 .8-.3 1.1L6.6 10.8z" transform="translate(0 -2)" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <h2>Gọi video ổn định</h2>
+      <p class="desc">Trò chuyện thật đã với hình ảnh sắc nét, tiếng chất, âm chuẩn dưới mọi điều kiện.</p>
+
+      <div class="dots" aria-hidden="true">
+        <div class="dot active"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
     </div>
 
-    <button class="btn" id="open">Mở (Demo)</button>
+    <div class="card" aria-hidden="false">
+      <!-- Fake login form (local only) -->
+      <form id="loginForm" onsubmit="return false;" autocomplete="off">
+        <div class="input" style="margin-top:6px">
+          <input id="phone" name="phone" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Số điện thoại hoặc Email" aria-label="Số điện thoại hoặc Email">
+        </div>
+
+        <div class="input">
+          <input id="password" name="password" type="password" placeholder="Mật khẩu" aria-label="Mật khẩu">
+        </div>
+
+        <button id="loginBtn" class="btn-primary" type="submit">Đăng nhập</button>
+        <button id="createBtn" class="btn-secondary" type="button">Tạo tài khoản mới</button>
+
+        <div class="small">Bằng cách tiếp tục, bạn đồng ý với điều khoản và chính sách.</div>
+      </form>
+    </div>
+
+    <div class="spacer"></div>
+  </div>
+
+  <!-- modal -->
+  <div class="modal-back" id="modalBack" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal" role="document">
+      <h3>Troll vui thôi 😀</h3>
+      <p>Đăng nhập ở đây chỉ là giả, không có chức năng đăng nhập thật.</p>
+      <button id="modalOk">OK</button>
+    </div>
   </div>
 
   <script>
     (function(){
+      // manifest dynamic (so Chrome treats as installable)
       const icon = "https://github.com/nhut990/files/releases/download/V1.0-icon/zalo.png";
-
-      // Tạo manifest động để Android/Chrome nhận dạng PWA
       const manifest = {
         name: "Zalo 2",
         short_name: "Zalo2",
         start_url: ".",
         display: "standalone",
         background_color: "#ffffff",
-        theme_color: "#0a84ff",
+        theme_color: "#ffffff",
         icons: [
           { src: icon, sizes: "192x192", type: "image/png" },
           { src: icon, sizes: "512x512", type: "image/png" }
         ]
       };
-
       const manifestBlob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
       const manifestURL = URL.createObjectURL(manifestBlob);
-
-      // Gắn manifest vào head
       const link = document.createElement('link');
       link.rel = 'manifest';
       link.href = manifestURL;
       document.head.appendChild(link);
 
-      // Đăng ký service worker tối giản (để Chrome coi là installable PWA)
+      // minimal service worker to make PWA installable
       if ('serviceWorker' in navigator) {
         const swCode = `
-          self.addEventListener('install', event => self.skipWaiting());
-          self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
-          self.addEventListener('fetch', function(e) {
-            // cache-first simple strategy could be added here
-            return;
+          self.addEventListener('install', e => self.skipWaiting());
+          self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+          self.addEventListener('fetch', e => {
+            // noop; we don't cache intentionally
           });
         `;
         const swBlob = new Blob([swCode], { type: 'application/javascript' });
         const swURL = URL.createObjectURL(swBlob);
-
-        navigator.serviceWorker.register(swURL).catch(err => {
-          console.warn('Service worker đăng ký thất bại:', err);
+        navigator.serviceWorker.register(swURL).catch(e => {
+          console.warn('SW register failed', e);
         });
       }
 
-      // Nút demo mở trang (để người dùng thử)
-      document.getElementById('open').addEventListener('click', () => {
-        alert('Đã sẵn sàng — bây giờ hãy thêm trang này vào Màn hình chính để tạo icon "Zalo 2".');
+      // UI handlers
+      const modalBack = document.getElementById('modalBack');
+      const modalOk = document.getElementById('modalOk');
+      const loginBtn = document.getElementById('loginBtn');
+      const createBtn = document.getElementById('createBtn');
+
+      function showTrollModal(){
+        modalBack.style.display = 'flex';
+        modalBack.setAttribute('aria-hidden','false');
+      }
+      function hideTrollModal(){
+        modalBack.style.display = 'none';
+        modalBack.setAttribute('aria-hidden','true');
+      }
+
+      loginBtn.addEventListener('click', function(e){
+        // do not send data anywhere: local only
+        // you can still read values locally if you want but we won't use them
+        // show troll message
+        showTrollModal();
       });
+
+      createBtn.addEventListener('click', function(){
+        // behave like create screen — but just show the troll modal as well
+        showTrollModal();
+      });
+
+      modalOk.addEventListener('click', hideTrollModal);
+
+      // Accessibility: close modal on backdrop click
+      modalBack.addEventListener('click', function(ev){
+        if (ev.target === modalBack) hideTrollModal();
+      });
+
+      // prevent actual form submission via enter key
+      const loginForm = document.getElementById('loginForm');
+      loginForm.addEventListener('submit', function(ev){
+        ev.preventDefault();
+        showTrollModal();
+      });
+
+      // optional: show small toast instead of modal on quick press (for UX)
+      // but keeping modal to be obvious
+
+      // IMPORTANT: This page runs entirely in the browser. No data is transmitted to any server.
+      // If you later want to log inputs locally (for demo), add code here — but keep privacy in mind.
     })();
   </script>
 </body>
