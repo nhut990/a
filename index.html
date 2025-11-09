@@ -212,27 +212,24 @@
     </div>
   </div>
   <script>
-    // --- Các nốt hợp âm, đã SỬA lại đúng yêu cầu với A7 & Bb ---
+    // Chord and instrument config
     const chords = {
-        'Dm': ['D3', 'F3', 'A3', 'D4'],
-        'Gm': ['G3', 'A#3', 'D4', 'G4'],
-        'Bb': ['A#3', 'D4', 'F4', 'A#4'],           // SỬA đúng: A#3, D4, F4, A#4
-        'C': ['C3', 'E3', 'G3', 'C4'],
-        'F': ['F3', 'A3', 'C4', 'F4'],
-        'G': ['G3', 'B3', 'D4', 'G4'],
-        'D7': ['D3', 'F#3', 'A3', 'C4'],
-        'A7': ['A3', 'C#4', 'E4', 'G4'],            // SỬA đúng: A3, C#4, E4, G4
-        'Am': ['A3', 'C4', 'E4', 'A4'],
-        'Em': ['E3', 'G3', 'B3', 'E4'],
-        'E': ['E3', 'G#3', 'B3', 'E4']
+      'Dm': ['D3', 'F3', 'A3', 'D4'],
+      'Gm': ['G3', 'A#3', 'D4', 'G4'],
+      'Bb': ['A#3', 'D4', 'F4', 'A#4'],
+      'C': ['C3', 'E3', 'G3', 'C4'],
+      'F': ['F3', 'A3', 'C4', 'F4'],
+      'G': ['G3', 'B3', 'D4', 'G4'],
+      'D7': ['D3', 'F#3', 'A3', 'C4'],
+      'A7': ['A3', 'C#4', 'E4', 'G4'],
+      'Am': ['A3', 'C4', 'E4', 'A4'],
+      'Em': ['E3', 'G3', 'B3', 'E4'],
+      'E': ['E3', 'G#3', 'B3', 'E4']
     };
     const toneChords = {
         'Dm': ['Dm', 'Gm', 'Bb', 'C', 'F', 'G', 'A7', 'Am', 'E'],
         'Dm_2': ['Dm', 'Gm', 'Bb', 'C', 'F', 'D7', 'A7', 'Am', 'Em']
     };
-
-    // --- Các phần code còn lại giữ nguyên, bạn chỉ cần copy file này ---
-    // Cấu hình nhạc cụ
     const sampleInstruments = {
         piano: { name: '🎹 Acoustic Grand Piano', folder: 'acoustic_grand_piano-mp3' },
         guitar_nylon: { name: '🎸 Acoustic Guitar Nylon', folder: 'acoustic_guitar_nylon-mp3' },
@@ -250,7 +247,6 @@
         violin: { name: '🎻 Violin', folder: 'violin-mp3' }
     };
     const sampleBaseURL = "https://raw.githubusercontent.com/Nhut11790/nhut11790.github.io/main/tieng/";
-
     const notes = {
         'C3': 130.81, 'C#3': 138.59, 'D3': 146.83, 'D#3': 155.56,
         'E3': 164.81, 'F3': 174.61, 'F#3': 185.00, 'G3': 196.00,
@@ -273,7 +269,6 @@
     let sampleBuffers = {};
     for(const key in sampleInstruments) sampleBuffers[key] = {};
     let chordMode = "simultaneous";
-
     function initAudioContext() {
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -285,7 +280,6 @@
             audioContext.resume();
         }
     }
-
     function convertSharpToFlat(note) {
         const sharpToFlat = {
             'C#': 'Db',
@@ -301,7 +295,6 @@
         }
         return note;
     }
-
     async function preloadSamples(instrument) {
         let notesList = Object.keys(notes);
         let folder = sampleInstruments[instrument].folder;
@@ -338,10 +331,8 @@
             }, 2000);
         }
     }
-
     let hasPreload = {};
     for(const key in sampleInstruments) hasPreload[key] = false;
-
     async function ensureSamples(instrument) {
         initAudioContext();
         if (!hasPreload[instrument]) {
@@ -350,17 +341,14 @@
             hasPreload[instrument] = true;
         }
     }
-
     window.addEventListener('load', async () => {
         initAudioContext();
         document.getElementById('instrumentName').textContent = sampleInstruments[currentInstrument].name;
         await ensureSamples('piano');
     });
-
     const soundToggle = document.getElementById('soundToggle');
     const soundIcon = document.getElementById('soundIcon');
     const soundStatus = document.getElementById('soundStatus');
-
     soundToggle.addEventListener('click', async () => {
         if (isAudioActivated) return;
         soundToggle.disabled = true;
@@ -401,7 +389,6 @@
             alert('⚠️ Không thể kích hoạt âm thanh.\n\nLỗi: ' + error.message + '\n\nVui lòng:\n1. Kiểm tra kết nối internet\n2. Thử lại lần nữa\n3. Nếu vẫn lỗi, thử refresh trang');
         }
     });
-
     const piano = document.getElementById('piano');
     const whiteKeysData = [
         {note: 'C3', left: 0}, {note: 'D3', left: 35}, {note: 'E3', left: 70},
@@ -437,7 +424,6 @@
     }
     whiteKeysData.forEach(data => piano.appendChild(createKey(false, data)));
     blackKeysData.forEach(data => piano.appendChild(createKey(true, data)));
-
     async function playSample(instrument, note, volume = 1.0, duration = 1200) {
         if (!audioContext || !isAudioActivated) return;
         let sampleBuffer = sampleBuffers[instrument][note];
@@ -469,7 +455,6 @@
         src.start();
         src.stop(audioContext.currentTime + Math.min(duration/1000, src.buffer.duration / src.playbackRate.value));
     }
-
     async function playNote(note, keyElement, isChord = false) {
         if (!isAudioActivated) {
             alert('⚠️ Vui lòng ấn nút "🔇 Tắt âm" để kích hoạt âm thanh trước!');
@@ -485,95 +470,98 @@
         await ensureSamples(currentInstrument);
         playSample(currentInstrument, note, 1.0, 1200);
     }
-
-    // --- Hợp âm chạy cùng lúc hoặc lần lượt ---
-    async function playChord(chordName) {
-        const chordNotes = chords[chordName];
-        if (!chordNotes) {
-            alert(`Hợp âm ${chordName} chưa được hỗ trợ!`);
-            return;
-        }
-        for (let i = 0; i < 3 && i < chordNotes.length; i++) {
-            const note = chordNotes[i];
-            const keyElement = document.querySelector(`[data-note="${note}"]`);
-            playNote(note, keyElement, true);
-        }
-    }
-    async function playChordArpeggio(chordName) {
-        const chordNotes = chords[chordName];
-        if (!chordNotes) {
-            alert(`Hợp âm ${chordName} chưa được hỗ trợ!`);
-            return;
-        }
-        const NOTE_DELAY = 350; // tempo piano thực tế!
-        for(let i=0;i<chordNotes.length;i++){
-            const note = chordNotes[i];
-            const keyElement = document.querySelector(`[data-note="${note}"]`);
-            playNote(note, keyElement, true);
-            await new Promise(r=>setTimeout(r, NOTE_DELAY));
-        }
+    // --- VÙNG ĐẶC BIỆT: xử lý hiệu ứng vàng đúng nốt khi arpeggio ---
+    function clearChordActiveKeys() {
+      document.querySelectorAll('.white-key,.black-key').forEach(key => {
+        key.classList.remove('chord-active');
+      });
     }
     function showChordOnKeys(chordName) {
-        document.querySelectorAll('.white-key,.black-key').forEach(key => {
-            key.classList.remove('chord-active');
-        });
-        const chordNotes = chords[chordName];
-        if (!chordNotes) return;
-        for (let i = 0; i < 3 && i < chordNotes.length; i++) {
-            const note = chordNotes[i];
-            const keyElement = document.querySelector(`[data-note="${note}"]`);
-            if (keyElement) keyElement.classList.add('chord-active');
-        }
+      clearChordActiveKeys();
+      const chordNotes = chords[chordName];
+      if (!chordNotes) return;
+      for (let i = 0; i < 3 && i < chordNotes.length; i++) {
+          const note = chordNotes[i];
+          const keyElement = document.querySelector(`[data-note="${note}"]`);
+          if (keyElement) keyElement.classList.add('chord-active');
+      }
     }
-
+    async function playChordArpeggio(chordName) {
+      const chordNotes = chords[chordName];
+      if (!chordNotes) {
+        alert(`Hợp âm ${chordName} chưa được hỗ trợ!`);
+        return;
+      }
+      const NOTE_DELAY = 350;
+      for(let i=0;i<chordNotes.length;i++){
+        const note = chordNotes[i];
+        const keyElement = document.querySelector(`[data-note="${note}"]`);
+        clearChordActiveKeys();
+        if (keyElement) keyElement.classList.add('chord-active');
+        playNote(note, keyElement, true);
+        await new Promise(r=>setTimeout(r, NOTE_DELAY));
+      }
+      setTimeout(clearChordActiveKeys, 100);
+    }
+    async function playChord(chordName) {
+      showChordOnKeys(chordName);
+      const chordNotes = chords[chordName];
+      if (!chordNotes) {
+        alert(`Hợp âm ${chordName} chưa được hỗ trợ!`);
+        return;
+      }
+      for (let i = 0; i < 3 && i < chordNotes.length; i++) {
+        const note = chordNotes[i];
+        const keyElement = document.querySelector(`[data-note="${note}"]`);
+        playNote(note, keyElement, true);
+      }
+    }
+    // --- /KẾT THÚC vùng đặc biệt ---
     function renderToneSelector() {
-        const selector = document.getElementById('toneSelector');
-        selector.innerHTML = '';
-        Object.keys(toneChords).forEach(tone => {
-            const btn = document.createElement('button');
-            btn.className = 'tone-btn';
-            btn.dataset.tone = tone;
-            btn.textContent = tone;
-            if (tone === currentTone) btn.classList.add('active');
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentTone = tone;
-                renderChords(tone);
-            });
-            selector.appendChild(btn);
-        });
+      const selector = document.getElementById('toneSelector');
+      selector.innerHTML = '';
+      Object.keys(toneChords).forEach(tone => {
+          const btn = document.createElement('button');
+          btn.className = 'tone-btn';
+          btn.dataset.tone = tone;
+          btn.textContent = tone;
+          if (tone === currentTone) btn.classList.add('active');
+          btn.addEventListener('click', () => {
+              document.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active'));
+              btn.classList.add('active');
+              currentTone = tone;
+              renderChords(tone);
+          });
+          selector.appendChild(btn);
+      });
     }
     function renderChords(tone) {
-        const grid = document.getElementById('chordsGrid');
-        const titleEl = document.getElementById('currentTone');
-        grid.innerHTML = '';
-        titleEl.querySelector('span').textContent = `Hợp Âm - Tone ${tone}`;
-        const chordsToUse = toneChords[tone];
-        if (chordsToUse) {
-            chordsToUse.forEach((chordName) => {
-                const btn = document.createElement('button');
-                btn.className = 'chord-btn';
-                btn.dataset.chord = chordName;
-                btn.textContent = chordName;
-                btn.addEventListener('click', function(e) {
-                  if (chordMode === "arpeggio") {
-                    playChordArpeggio(chordName);
-                  } else {
-                    playChord(chordName);
-                  }
-                  showChordOnKeys(chordName);
-                });
-                btn.addEventListener('touchstart', function(e) {
-                  e.preventDefault();
-                  playChord(chordName); // touch chơi cùng lúc (mobile không có shift)
-                  showChordOnKeys(chordName);
-                });
-                grid.appendChild(btn);
-            });
-        }
+      const grid = document.getElementById('chordsGrid');
+      const titleEl = document.getElementById('currentTone');
+      grid.innerHTML = '';
+      titleEl.querySelector('span').textContent = `Hợp Âm - Tone ${tone}`;
+      const chordsToUse = toneChords[tone];
+      if (chordsToUse) {
+        chordsToUse.forEach((chordName) => {
+          const btn = document.createElement('button');
+          btn.className = 'chord-btn';
+          btn.dataset.chord = chordName;
+          btn.textContent = chordName;
+          const handlePlayChord = function(e) {
+            e.preventDefault();
+            if (chordMode === "arpeggio") {
+              playChordArpeggio(chordName);
+            } else {
+              playChord(chordName);
+            }
+          };
+          btn.addEventListener('click', handlePlayChord);
+          btn.addEventListener('touchstart', handlePlayChord);
+          grid.appendChild(btn);
+        });
+      }
     }
-    // CHUYỂN CHẾ ĐỘ ARPEGGIO - CÙNG LÚC
+    // Chuyển mode HỢP ÂM
     const toggleChordModeBtn = document.getElementById('toggleChordMode');
     function updateChordModeButton() {
         toggleChordModeBtn.textContent = chordMode === "simultaneous"
@@ -585,8 +573,7 @@
         updateChordModeButton();
     };
     updateChordModeButton();
-
-    // ---- NHẠC CỤ DROPDOWN ----
+    // Nhạc cụ dropdown
     const instrumentCurrent = document.getElementById('instrumentCurrent');
     const instrumentDropdown = document.getElementById('instrumentDropdown');
     const instrumentName = document.getElementById('instrumentName');
@@ -610,14 +597,12 @@
             dropdownArrow.textContent = '▼';
         }
     });
-
     renderToneSelector();
     renderChords(currentTone);
     if (toneChords[currentTone]) {
         showChordOnKeys(toneChords[currentTone][0]);
     }
-
-    // ---- GHI ÂM WAV ----
+    // ---- GHI ÂM WAV (như cũ) ----
     let mediaRecorder, audioChunks = [], wavUrl = null;
     let recordingStartTime = 0;
     let recordingTimer = null;
@@ -647,7 +632,6 @@
       document.getElementById("audioPlayback").style.display = "none";
       document.getElementById("downloadBtn").style.display = "none";
     };
-
     document.getElementById("stopBtn").onclick = function() {
       if (mediaRecorder && mediaRecorder.state !== "inactive") {
         mediaRecorder.stop();
@@ -661,7 +645,6 @@
         document.getElementById("recordBtn").disabled = false;
       }
     };
-
     document.getElementById("playBtn").onclick = function() {
       if (wavUrl) {
         let audio = document.getElementById("audioPlayback");
@@ -669,7 +652,6 @@
         audio.play();
       }
     };
-
     function exportWav() {
       let superBuffer = new Blob(audioChunks, { type: "audio/webm" });
       let fileReader = new FileReader();
@@ -688,7 +670,6 @@
       };
       fileReader.readAsArrayBuffer(superBuffer);
     }
-
     function encodeWAV(buffer) {
       let numOfChan = buffer.numberOfChannels,
           length = buffer.length * numOfChan * 2 + 44,
