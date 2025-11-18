@@ -3,335 +3,39 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="Minh Nhựt Audio - radio trực tuyến" />
-  <title>Minh Nhựt Audio - Radio</title>
-  <link rel="icon" href="https://raw.githubusercontent.com/nhut990/files/refs/heads/main/hinh/Logo_minhnhut.png">
+
+  <!-- Tên khi thêm ra màn hình chính -->
+  <meta name="apple-mobile-web-app-title" content="Đồng Đông" />
+
+  <!-- Chạy như web app -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+  <!-- Icon Home Screen -->
+  <link rel="apple-touch-icon" sizes="180x180" 
+        href="https://raw.githubusercontent.com/ioscode17/files/refs/heads/main/IMG_6450.jpeg">
+
+  <title>Đồng Đông</title>
 
   <style>
-    @keyframes blink { 0%{opacity:1}50%{opacity:0}100%{opacity:1} }
-    body{font-family:Arial, Helvetica, sans-serif; color:#222; margin:0; padding:18px 10px; background:#f7f9fc;}
-    .center { text-align:center; }
-    #clock{font-family:monospace; letter-spacing:2px; text-align:center; margin-bottom:6px; font-size:16px; color:#111;}
-
-    .radio-box {
-      width: 260px;
-      margin: 14px auto;
-      padding: 10px;
-      text-align: center;
-      background: linear-gradient(45deg,#fff,#f1f6ff);
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      position: relative;
-      border:1px solid #e6eefc;
+    body{
+      font-family:-apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial;
+      padding:24px;
+      line-height:1.6;
+      text-align:center;
     }
-    .radio-title { font-weight:700; color:#333; margin-bottom:8px; font-size:15px; }
-    .radio-btn {
-      background:#d32f2f;color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:14px;
-    }
-    .radio-btn[aria-pressed="true"]{ background:#b71c1c; }
-    .radio-btn:focus{ outline:3px solid rgba(0,123,255,0.15); }
-
-    .wave {
-      display:flex;justify-content:center;align-items:flex-end;gap:3px;height:18px;margin-top:8px;
-    }
-    .wave span { display:block;width:3px;background:#d32f2f;animation:waveAnim 1s infinite ease-in-out;border-radius:2px;opacity:0.6; }
-    .wave span:nth-child(1){animation-delay:0s} .wave span:nth-child(2){animation-delay:0.2s}
-    .wave span:nth-child(3){animation-delay:0.4s} .wave span:nth-child(4){animation-delay:0.6s}
-    .wave span:nth-child(5){animation-delay:0.8s}
-    @keyframes waveAnim { 0%,100%{height:4px}50%{height:14px} }
-    .radio-box:not(.playing) .wave { opacity:0; transition:opacity .16s; }
-
-    .hint { font-size:13px; color:#444; margin-top:8px; min-height:20px; }
-
-    footer {
-      background: linear-gradient(135deg, #00c6ff, #0072ff);
-      padding: 12px 0; text-align:center; color:white; font-size:13px; margin-top:18px;
-    }
-
-    @media (max-width:500px){
-      .radio-box{ width:94% }
-      .radio-btn{ font-size:13px; padding:7px 10px }
+    img{
+      max-width:200px;
+      border-radius:14px;
+      margin-top:20px;
     }
   </style>
-
-  <!-- keep Hls for non-iOS browsers that support MSE -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
+
 <body>
-  <div class="center" style="margin-bottom:6px;">
-    <div id="device-info" style="font-size:13px;color:#333;"></div>
-  </div>
-  <div id="clock" class="center" role="status" aria-live="polite"></div>
+  <h1>Ứng dụng Đồng Đông</h1>
+  <p>Nhấn Share → Add to Home Screen để thêm icon ra màn hình chính.</p>
 
-  <!-- ======= RADIO LIST (only radio kept) ======= -->
-  <div class="radio-box" id="radio-box-1">
-    <div class="radio-title">RADIO FM_99.9MHz</div>
-    <button type="button" class="radio-btn" data-radio="radio-1" aria-pressed="false" aria-label="Nghe Radio FM 99.9">▶ Nghe Radio</button>
-    <!-- audio element used for playback on most browsers -->
-    <audio id="radio-1" preload="none" playsinline webkit-playsinline></audio>
-    <!-- hidden fallback video for old iOS if needed (created dynamically) -->
-    <div class="wave" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-    <div class="hint" data-hint-for="radio-1"></div>
-  </div>
-
-  <div class="radio-box" id="radio-box-4">
-    <div class="radio-title">RADIO FM_87.7MHz</div>
-    <button type="button" class="radio-btn" data-radio="radio-4" aria-pressed="false" aria-label="Nghe Radio FM 87.7">▶ Nghe Radio</button>
-    <audio id="radio-4" preload="none" playsinline webkit-playsinline></audio>
-    <div class="wave" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-    <div class="hint" data-hint-for="radio-4"></div>
-  </div>
-
-  <div class="radio-box" id="radio-box-2">
-    <div class="radio-title">RADIO FM_95.6MHz</div>
-    <button type="button" class="radio-btn" data-radio="radio-2" aria-pressed="false" aria-label="Nghe Radio FM 95.6">▶ Nghe Radio</button>
-    <audio id="radio-2" preload="none" playsinline webkit-playsinline></audio>
-    <div class="wave" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-    <div class="hint" data-hint-for="radio-2"></div>
-  </div>
-
-  <div class="radio-box" id="radio-box-3">
-    <div class="radio-title">RADIO AM_610KHz</div>
-    <button type="button" class="radio-btn" data-radio="radio-3" aria-pressed="false" aria-label="Nghe Radio AM 610">▶ Nghe Radio</button>
-    <audio id="radio-3" preload="none" playsinline webkit-playsinline></audio>
-    <div class="wave" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-    <div class="hint" data-hint-for="radio-3"></div>
-  </div>
-
-  <div class="center" style="margin-top:12px;">
-    <a href="https://nhut990.github.io/" style="font-weight:bold; color:#0072ff; text-decoration:none; font-size:15px;">
-      Quay về trang chủ
-    </a>
-  </div>
-
-  <footer>© 2025 Nhựt | Powered by GitHub Pages</footer>
-
-  <script>
-    // RADIO STREAMS
-    const radioStreams = {
-      "radio-1": "https://strm.voh.com.vn/radio/channel3/playlist.m3u8",
-      "radio-4": "https://strm.voh.com.vn/radio/channel5/playlist.m3u8",
-      "radio-2": "https://strm.voh.com.vn/radio/channel1/playlist.m3u8",
-      "radio-3": "https://strm.voh.com.vn/radio/channel2/playlist.m3u8"
-    };
-
-    const hlsInstances = {};
-    const videoFallbacks = {}; // for old iOS video elements
-
-    const PLAY_SYM = '\u25B6'; // ▶
-    const STOP_SYM = '\u23F9'; // ⏹
-
-    // device & iOS detection
-    function detectDevice(){
-      const ua = navigator.userAgent || '';
-      let os = "Không xác định", device = "Không rõ", ver = null;
-      const isiOS = /iP(hone|ad|od)/i.test(ua);
-      if(isiOS){
-        os = "iOS"; device = /iPad/i.test(ua) ? "iPad" : "iPhone";
-        const m = ua.match(/OS (\d+)_?(\d+)?/);
-        if(m) ver = parseInt(m[1],10);
-      } else if(/Android/i.test(ua)){
-        os = "Android"; device = "Thiết bị Android";
-        const m = ua.match(/Android\s([\d\.]+)/);
-        if(m) ver = parseInt(m[1],10);
-      } else if(/Windows NT/i.test(ua)){
-        os = "Windows"; device = "Máy tính";
-      } else if(/Mac OS X/i.test(ua)){
-        os = "macOS"; device = "Mac";
-      }
-      document.getElementById('device-info').textContent = `${device} - ${os}${ver? ' ' + ver : ''}`;
-      return { isiOS: isiOS, iOSMajor: ver || 0 };
-    }
-
-    const deviceInfo = detectDevice();
-
-    // initialize buttons
-    document.querySelectorAll('.radio-btn').forEach(btn => {
-      btn.textContent = PLAY_SYM + ' Nghe Radio';
-      btn.setAttribute('aria-pressed','false');
-    });
-
-    function setHintFor(radioId, message){
-      const el = document.querySelector(`[data-hint-for="${radioId}"]`);
-      if(el) el.textContent = message || '';
-    }
-
-    // create small hidden video fallback for old iOS when audio HLS won't play
-    function ensureVideoFallback(radioId){
-      if(videoFallbacks[radioId]) return videoFallbacks[radioId];
-      const vid = document.createElement('video');
-      vid.id = 'video-fallback-' + radioId;
-      vid.preload = 'none';
-      vid.playsInline = true;
-      vid.setAttribute('playsinline','');
-      vid.setAttribute('webkit-playsinline','');
-      // make it very small but visible (hidden display can prevent playback on some iOS)
-      vid.style.width = '1px';
-      vid.style.height = '1px';
-      vid.style.opacity = '0.01';
-      vid.style.position = 'fixed';
-      vid.style.left = '-100px';
-      vid.style.top = '-100px';
-      document.body.appendChild(vid);
-      videoFallbacks[radioId] = vid;
-      return vid;
-    }
-
-    async function stopAllRadios(exceptId = null){
-      // pause audio players
-      document.querySelectorAll("audio[id^='radio']").forEach(a => {
-        if(a.id !== exceptId && !a.paused){
-          try{ a.pause(); }catch(e){}
-          const p = a.parentElement; if(p) p.classList.remove('playing');
-          const b = p?.querySelector('.radio-btn'); if(b){ b.textContent = PLAY_SYM + ' Nghe Radio'; b.setAttribute('aria-pressed','false'); }
-        }
-        if(hlsInstances[a.id]){ try{ hlsInstances[a.id].destroy(); }catch(e){} delete hlsInstances[a.id]; }
-      });
-      // pause video fallbacks
-      Object.keys(videoFallbacks).forEach(k => {
-        const v = videoFallbacks[k];
-        if(v && !v.paused){ try{ v.pause(); }catch(e){} }
-      });
-    }
-
-    async function playRadio(radioId, boxEl, btn){
-      const radio = document.getElementById(radioId);
-      const src = radioStreams[radioId];
-      if(!src){ setHintFor(radioId, 'Luồng chưa cấu hình'); return; }
-
-      // if currently paused -> start; else stop
-      if(radio.paused){
-        // stop others
-        await stopAllRadios(radioId);
-        setHintFor(radioId, 'Đang kết nối...');
-
-        // If device is old iOS (<=10) we use video fallback because some old iOS treat HLS only in <video>
-        const useVideoFallback = deviceInfo.isiOS && deviceInfo.iOSMajor > 0 && deviceInfo.iOSMajor <= 10;
-
-        try{
-          if(useVideoFallback){
-            // create or reuse tiny video element
-            const vid = ensureVideoFallback(radioId);
-            // clear any existing hls on audio
-            if(hlsInstances[radioId]){ try{ hlsInstances[radioId].destroy(); }catch(e){} delete hlsInstances[radioId]; }
-
-            vid.src = src;
-            vid.crossOrigin = "anonymous";
-            // iOS may require user interaction (we are in click handler)
-            await vid.play();
-            boxEl.classList.add('playing');
-            btn.textContent = STOP_SYM + ' Dừng Radio';
-            btn.setAttribute('aria-pressed','true');
-            setHintFor(radioId, '');
-            // keep audio element src empty to avoid conflicts
-            radio.removeAttribute('src');
-            try{ radio.load(); }catch(e){}
-          } else {
-            // prefer Hls.js on browsers with MSE support
-            if(window.Hls && Hls.isSupported()){
-              // destroy any previous instance
-              if(hlsInstances[radioId]){ try{ hlsInstances[radioId].destroy(); }catch(e){} delete hlsInstances[radioId]; }
-              const hls = new Hls({enableWorker: true});
-              hlsInstances[radioId] = hls;
-              radio.crossOrigin = "anonymous";
-              hls.loadSource(src);
-              hls.attachMedia(radio);
-              // wait for manifest parsed then play
-              hls.on(Hls.Events.MANIFEST_PARSED, async () => {
-                try{ await radio.play(); }catch(err){ console.warn('Play failed after manifest', err); }
-              });
-              // handle errors
-              hls.on(Hls.Events.ERROR, (event, data) => {
-                console.warn('HLS error', data);
-                if(data && data.fatal){
-                  setHintFor(radioId, 'Lỗi luồng. Thử lại sau.');
-                }
-              });
-              // best-effort play (user click)
-              await radio.play().catch(()=>{ /* some browsers won't allow autoplay until ready; Hls will start when manifest parsed */});
-              boxEl.classList.add('playing');
-              btn.textContent = STOP_SYM + ' Dừng Radio';
-              btn.setAttribute('aria-pressed','true');
-              setHintFor(radioId, '');
-            } else if (radio.canPlayType && radio.canPlayType('application/vnd.apple.mpegurl')){
-              // native HLS support (Safari, iOS)
-              radio.src = src;
-              radio.crossOrigin = "anonymous";
-              try{
-                await radio.play();
-                boxEl.classList.add('playing');
-                btn.textContent = STOP_SYM + ' Dừng Radio';
-                btn.setAttribute('aria-pressed','true');
-                setHintFor(radioId, '');
-              }catch(err){
-                console.error('Native play error', err);
-                setHintFor(radioId, 'Không thể phát trên trình duyệt này. Vui lòng chạm nút play lần nữa hoặc thử Safari.');
-                btn.textContent = PLAY_SYM + ' Nghe Radio';
-                btn.setAttribute('aria-pressed','false');
-              }
-            } else {
-              setHintFor(radioId, 'Trình duyệt không hỗ trợ HLS. Thử Safari hoặc trình duyệt mới hơn.');
-              btn.textContent = PLAY_SYM + ' Nghe Radio';
-              btn.setAttribute('aria-pressed','false');
-            }
-          }
-        }catch(err){
-          console.error('Radio play error', err);
-          setHintFor(radioId, 'Không thể kết nối đến luồng. Kiểm tra kết nối hoặc CORS.');
-          btn.textContent = PLAY_SYM + ' Nghe Radio';
-          btn.setAttribute('aria-pressed','false');
-          // cleanup
-          if(hlsInstances[radioId]){ try{ hlsInstances[radioId].destroy(); }catch(e){} delete hlsInstances[radioId]; }
-        }
-      } else {
-        // stop this radio
-        try{ radio.pause(); }catch(e){}
-        boxEl.classList.remove('playing');
-        btn.textContent = PLAY_SYM + ' Nghe Radio';
-        btn.setAttribute('aria-pressed','false');
-        setHintFor(radioId, '');
-        if(hlsInstances[radioId]){ try{ hlsInstances[radioId].destroy(); }catch(e){} delete hlsInstances[radioId]; }
-        // stop video fallback if any
-        const vf = videoFallbacks[radioId];
-        if(vf){ try{ vf.pause(); vf.removeAttribute('src'); vf.load(); }catch(e){} }
-      }
-    }
-
-    document.querySelectorAll('.radio-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const radioId = btn.getAttribute('data-radio');
-        if(!radioId) return;
-        const boxId = 'radio-box-' + radioId.split('-')[1];
-        const box = document.getElementById(boxId);
-        if(!box) return;
-        playRadio(radioId, box, btn);
-      });
-    });
-
-    // Pause all radios on page unload and destroy Hls instances
-    window.addEventListener('beforeunload', () => {
-      Object.values(hlsInstances).forEach(h => { try{ h.destroy(); }catch(e){} });
-      Object.values(videoFallbacks).forEach(v => { try{ v.pause(); }catch(e){} });
-    });
-
-    // Improve accessibility: allow space/enter on focused buttons
-    document.querySelectorAll('.radio-btn').forEach(btn=>{
-      btn.addEventListener('keydown', (e)=>{
-        if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); btn.click(); }
-      });
-    });
-
-    // simple clock
-    function updateClock(){
-      const now=new Date();
-      const h=String(now.getHours()).padStart(2,'0');
-      const m=String(now.getMinutes()).padStart(2,'0');
-      const s=String(now.getSeconds()).padStart(2,'0');
-      document.getElementById('clock').textContent = `${h}:${m}:${s}`;
-    }
-    updateClock();
-    setInterval(updateClock,1000);
-
-  </script>
+  <img src="https://raw.githubusercontent.com/ioscode17/files/refs/heads/main/IMG_6450.jpeg" alt="icon">
 </body>
 </html>
