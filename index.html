@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Đàn Piano 72 phím (bắt đầu từ C0)</title>
+  <title>Đàn Piano 72 phím (bắt đầu từ C0, tải MIDI)</title>
   <style>
     body { font-family: Arial, sans-serif; background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); margin:0; padding:0; min-height:100vh; }
     .container { width:100%; max-width:1600px; margin:auto; position:relative; padding:28px 0 14px;}
@@ -98,6 +98,7 @@
       <button class="rec-btn" id="recordBtn"><span id="recIcon">⏺️</span> Ghi âm</button>
       <button class="play-btn" id="playBtn" disabled><span id="playIcon">▶️</span> Phát lại</button>
       <button class="download-btn" id="downloadBtn" disabled><span id="downIcon">💾</span> Tải về</button>
+      <button class="download-btn" id="downloadMidiBtn" disabled><span id="midiIcon">🎹</span> Tải MIDI</button>
       <button class="clear-btn" id="clearBtn" disabled><span id="clearIcon">🗑️</span> Xóa</button>
       <span class="record-status" id="recordStatus">Chưa ghi âm</span>
       <span class="play-remaining" id="playRemaining"></span>
@@ -120,8 +121,8 @@
       "C5","D5","E5","F5","G5","A5","B5",
       "C6","D6","E6","F6","G6","A6","B6",
       "C7","D7","E7","F7","G7","A7","B7"
-    ];
-    // Phím đen, đúng vị trí giữa các phím trắng
+    ]; // 49 trắng
+    // Phím đen - đúng vị trí, bắt đầu từ C#0
     const BLACK_NOTES_LAYOUT = [
       {note:"C#0",pos:"C0"}, {note:"D#0",pos:"D0"},
       {note:"F#0",pos:"F0"}, {note:"G#0",pos:"G0"}, {note:"A#0",pos:"A0"},
@@ -139,14 +140,10 @@
       {note:"F#6",pos:"F6"}, {note:"G#6",pos:"G6"}, {note:"A#6",pos:"A6"},
       {note:"C#7",pos:"C7"}, {note:"D#7",pos:"D7"},
       {note:"F#7",pos:"F7"}, {note:"G#7",pos:"G7"}, {note:"A#7",pos:"A7"},
-    ];
-    // Map vị trí các phím trắng cho layout (left px)
-    const whiteKeyWidth = 33;
-    const blackKeyWidth = 22;
+    ]; // 40 đen (tổng số phím = 89, tuy nhiên trên piano 72 phím sẽ hiển thị 72 phím đúng layout, những phím đen cuối cùng ở B7 có thể bỏ qua)
+    const whiteKeyWidth = 33, blackKeyWidth = 22;
     let whiteKeyPosX = {};
     WHITE_NOTES.forEach((note,i)=>{whiteKeyPosX[note]=i*whiteKeyWidth;});
-
-    // Đầy đủ danh sách nốt có trên piano (white + black)
     const pianoNotesAll = WHITE_NOTES.concat(BLACK_NOTES_LAYOUT.map(n=>n.note)).sort((a,b) => {
       function noteMidi(note) {
         const ORDER = {"C":0,"C#":1,"D":2,"D#":3,"E":4,"F":5,"F#":6,"G":7,"G#":8,"A":9,"A#":10,"B":11};
@@ -155,7 +152,6 @@
       }
       return noteMidi(a)-noteMidi(b);
     });
-
     // Tính tần số
     const notesFreq = {};
     pianoNotesAll.forEach(function(note){
@@ -164,7 +160,6 @@
       let midi = 12*(parseInt(m[2])+1)+ORDER[m[1]];
       notesFreq[note]=440 * Math.pow(2, (midi-69)/12);
     });
-
     // Chỉ tiếng piano thật
     const sampleInstrument = {
       name: '🎹 Acoustic Grand Piano',
@@ -175,7 +170,6 @@
     let isMuted = true, isAudioActivated = false;
     let sampleBuffers = {};
     let hasPreload = false;
-
     // Ghi âm
     let isRecording = false;
     let recordStart = 0;
@@ -185,7 +179,6 @@
     let playbackStartTime = 0;
     let playbackEndTime = 0;
     let playbackTimer = null;
-
     function initAudioContext() {
       if (!audioContext) { audioContext = new (window.AudioContext || window.webkitAudioContext)(); }
       if (audioContext.state === 'suspended') audioContext.resume();
@@ -239,11 +232,9 @@
       alertBox.style.display = "block";
       setTimeout(() => { alertBox.style.display = "none"; }, 2100);
     }
-    // ==== Piano layout chuẩn thực tế
     function renderPiano() {
       const pianoDiv = document.getElementById('piano');
       pianoDiv.innerHTML = '';
-      // Phím trắng trước, phím đen sau (đè lên layer trên)
       WHITE_NOTES.forEach((note, i) => {
         const key = document.createElement('div');
         key.className = 'white-key';
@@ -259,7 +250,6 @@
         key.addEventListener('touchend', () => { key.classList.remove('active'); });
         pianoDiv.appendChild(key);
       });
-      // Phím đen đúng vị trí thực tế
       BLACK_NOTES_LAYOUT.forEach(bl=>{
         const key = document.createElement('div');
         key.className = 'black-key';
@@ -380,6 +370,7 @@
       playBtn.disabled = noteRecords.length===0 || active;
       downloadBtn.disabled = noteRecords.length===0 || active;
       clearBtn.disabled = noteRecords.length===0 || active;
+      downloadMidiBtn.disabled = noteRecords.length===0 || active;
     }
     function setPlaybackUI(active) {
       playBtn.classList.toggle('active', active);
@@ -387,6 +378,7 @@
       recordBtn.disabled = active;
       downloadBtn.disabled = noteRecords.length===0 || active;
       clearBtn.disabled = noteRecords.length===0 || active;
+      downloadMidiBtn.disabled = noteRecords.length===0 || active;
       recordStatus.textContent = active ? "Đang phát lại..." : noteRecords.length>0 ? `Đã ghi ${noteRecords.length} nốt` : "Chưa ghi âm";
       playBtn.disabled = noteRecords.length===0;
     }
@@ -398,6 +390,7 @@
       playBtn.disabled = noteRecords.length===0 || isRecording;
       downloadBtn.disabled = noteRecords.length===0 || isRecording;
       clearBtn.disabled = noteRecords.length===0 || isRecording;
+      downloadMidiBtn.disabled = noteRecords.length===0 || isRecording;
     }
     function downloadRecord() {
       if (noteRecords.length===0) return;
@@ -420,13 +413,13 @@
       updateRecordStatus();
       hidePlaybackRemaining();
     }
-    // Nút chức năng
     const recordBtn = document.getElementById('recordBtn');
     const playBtn = document.getElementById('playBtn');
     const downloadBtn = document.getElementById('downloadBtn');
+    const downloadMidiBtn = document.getElementById('downloadMidiBtn');
     const recordStatus = document.getElementById('recordStatus');
     const clearBtn = document.getElementById('clearBtn');
-    playBtn.disabled = true; downloadBtn.disabled = true; clearBtn.disabled = true;
+    playBtn.disabled = true; downloadBtn.disabled = true; clearBtn.disabled = true; downloadMidiBtn.disabled = true;
     recordBtn.addEventListener('click', ()=>{
       if (isPlayingBack) return;
       if (!isRecording) {
@@ -442,6 +435,75 @@
     });
     downloadBtn.addEventListener('click', downloadRecord);
     clearBtn.addEventListener('click', ()=>{clearRecord();});
+
+    // MIDI EXPORT
+    function noteToMidiNumber(note) {
+      const table = {'C':0,'C#':1,'D':2,'D#':3,'E':4,'F':5,'F#':6,'G':7,'G#':8,'A':9,'A#':10,'B':11};
+      let m = note.match(/^([A-G]#?)(\d)$/);
+      if(!m) return 60;
+      return table[m[1]] + (parseInt(m[2]) + 1) * 12;
+    }
+    function makeMidiFile(notes) {
+      function writeInt(v, n) {
+        let out = [];
+        for(let i=n-1;i>=0;i--) out.push((v>>(i*8))&0xFF);
+        return out;
+      }
+      function writeVarLen(v) {
+        let bytes = [];
+        let buffer = v & 0x7F;
+        while ((v >>= 7)) {
+          buffer <<= 8;
+          buffer |= ((v & 0x7F) | 0x80);
+        }
+        while (true) {
+          bytes.push(buffer & 0xFF);
+          if (buffer & 0x80) buffer >>= 8;
+          else break;
+        }
+        return bytes;
+      }
+      let midi = [];
+      midi.push(...[77,84,104,100]);
+      midi.push(...writeInt(6,4));
+      midi.push(...writeInt(1,2));
+      midi.push(...writeInt(1,2));
+      midi.push(...writeInt(480,2));
+      let events = [];
+      let ticksPerBeat = 480;
+      let tempo = 500000;
+      events.push(...[0x00, 0xFF, 0x51, 0x03,(tempo>>16)&0xFF,(tempo>>8)&0xFF,tempo&0xFF]);
+      let lastTick = 0;
+      for(let i=0;i<notes.length;i++) {
+        let {note, ts} = notes[i];
+        let midiNum = noteToMidiNumber(note);
+        let currTick = Math.round(ts * ticksPerBeat / 500);
+        let dt = currTick-lastTick;
+        lastTick = currTick;
+        events.push(...writeVarLen(dt));
+        events.push(0x90, midiNum, 90);
+        events.push(...writeVarLen(Math.round(0.4 * ticksPerBeat)));
+        events.push(0x80, midiNum, 64);
+        lastTick += Math.round(0.4 * ticksPerBeat);
+      }
+      events.push(0x00, 0xFF, 0x2F, 0x00);
+      midi.push(...[77,84,114,107]);
+      midi.push(...writeInt(events.length,4));
+      midi.push(...events);
+      return new Uint8Array(midi);
+    }
+    downloadMidiBtn.addEventListener('click', function() {
+      if (noteRecords.length === 0) return;
+      let midiData = makeMidiFile(noteRecords);
+      let blob = new Blob([midiData],{type:"audio/midi"});
+      let url = URL.createObjectURL(blob);
+      let a = document.createElement('a');
+      a.href = url;
+      a.download = "piano-record-"+Date.now()+".mid";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=>{URL.revokeObjectURL(url)},1300);
+    });
+
     // Âm thanh: bật/tắt
     const soundToggle = document.getElementById('soundToggle');
     const soundIcon = document.getElementById('soundIcon');
