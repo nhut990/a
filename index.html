@@ -14,18 +14,16 @@
 }
 
 :root{
-  --bg:#0a0f1d;
-  --panel:#161f36;
-  --border:#3b4c73;
   --text:#eef3ff;
   --muted:#9ba9ca;
+  --border:#425577;
 }
 
 body{
   margin:0;
   min-height:100vh;
   min-height:100dvh;
-  background:radial-gradient(circle at top,#293965 0%,#11192f 44%,#070b15 100%);
+  background:radial-gradient(circle at top,#2b3d6d 0%,#111a31 45%,#070b15 100%);
   color:var(--text);
   font-family:Arial,Helvetica,sans-serif;
 }
@@ -35,7 +33,7 @@ body{
   min-height:100vh;
   min-height:100dvh;
   margin:auto;
-  padding:16px 14px 26px;
+  padding:16px 14px 28px;
   display:flex;
   flex-direction:column;
   gap:14px;
@@ -124,11 +122,12 @@ canvas{
 
 .top-actions{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:1fr 1fr 1fr;
   gap:10px;
 }
 
-button{
+button,
+.file-button{
   min-height:46px;
   border:1px solid var(--border);
   border-radius:12px;
@@ -138,13 +137,27 @@ button{
   font:inherit;
   font-weight:700;
   cursor:pointer;
-  touch-action:manipulation;
 }
 
-button:active,.control.pressed{
+button:active,
+.file-button:active,
+.control.pressed{
   transform:translateY(3px) scale(.98);
   box-shadow:0 1px 0 #080c16,inset 0 2px 8px rgba(0,0,0,.42);
   filter:brightness(.88);
+}
+
+.file-button{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  background:linear-gradient(145deg,#5a87ff,#3158cc);
+  border-color:#9bb4ff;
+}
+
+#romFile{
+  display:none;
 }
 
 .controls{
@@ -172,7 +185,6 @@ button:active,.control.pressed{
   background:linear-gradient(145deg,#465875,#202b42);
   box-shadow:0 5px 0 #0a0f1d,0 8px 14px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.16);
   font-weight:900;
-  cursor:pointer;
   touch-action:none;
 }
 
@@ -183,18 +195,39 @@ button:active,.control.pressed{
   font-size:21px;
 }
 
-.up{top:0;left:51px}
-.down{bottom:0;left:51px}
-.left{left:0;top:51px}
-.right{right:0;top:51px}
+.up{
+  top:0;
+  left:51px;
+}
+
+.down{
+  bottom:0;
+  left:51px;
+}
+
+.left{
+  left:0;
+  top:51px;
+}
+
+.right{
+  right:0;
+  top:51px;
+}
 
 .dpad-center{
   position:absolute;
-  top:51px;
-  left:51px;
-  width:52px;
-  height:52px;
+  z-index:0;
+  top:52px;
+  left:52px;
+  width:50px;
+  height:50px;
   background:#202b42;
+  pointer-events:none;
+}
+
+.dpad .control{
+  z-index:1;
 }
 
 .right-controls{
@@ -244,6 +277,7 @@ button:active,.control.pressed{
   border-radius:20px;
   color:#d5def5;
   font-size:11px;
+  touch-action:none;
 }
 
 .hint{
@@ -254,13 +288,29 @@ button:active,.control.pressed{
 }
 
 @media(max-width:390px){
-  .app{padding:12px 10px 20px}
-  .controls{gap:7px}
+  .app{
+    padding:12px 10px 20px;
+  }
+
+  .top-actions{
+    gap:7px;
+  }
+
+  .top-actions button,
+  .file-button{
+    font-size:12px;
+  }
+
+  .controls{
+    gap:7px;
+  }
+
   .dpad{
     transform:scale(.9);
     transform-origin:left center;
     margin-right:-15px;
   }
+
   .right-controls{
     transform:scale(.9);
     transform-origin:right center;
@@ -269,7 +319,9 @@ button:active,.control.pressed{
 }
 
 @media(min-width:600px){
-  .controls{padding:12px 60px 0}
+  .controls{
+    padding:12px 60px 0;
+  }
 }
 </style>
 </head>
@@ -285,6 +337,7 @@ button:active,.control.pressed{
 
   <div class="screen-box">
     <canvas id="screen" width="256" height="240"></canvas>
+
     <div class="screen-message" id="screenMessage">
       <strong>Đang tải Super Mario Bros</strong>
       <span>Vui lòng chờ trong giây lát...</span>
@@ -292,6 +345,8 @@ button:active,.control.pressed{
   </div>
 
   <div class="top-actions">
+    <label class="file-button" for="romFile">Mở game khác</label>
+    <input id="romFile" type="file" accept=".nes,application/octet-stream">
     <button id="pauseButton">Tạm dừng</button>
     <button id="soundButton">Âm thanh: Bật</button>
   </div>
@@ -312,11 +367,11 @@ button:active,.control.pressed{
   </div>
 
   <div class="middle-controls">
-    <button class="middle" data-key="SELECT">SELECT</button>
-    <button class="middle" data-key="START">START</button>
+    <button class="middle control" data-key="SELECT">SELECT</button>
+    <button class="middle control" data-key="START">START</button>
   </div>
 
-  <div class="hint">Chạm một nút bất kỳ để bật âm thanh trên iPhone</div>
+  <div class="hint">Có thể giữ nút di chuyển và bấm A hoặc B cùng lúc.</div>
 </div>
 
 <script>
@@ -331,6 +386,7 @@ const status=document.getElementById("status");
 const screenMessage=document.getElementById("screenMessage");
 const pauseButton=document.getElementById("pauseButton");
 const soundButton=document.getElementById("soundButton");
+const romFile=document.getElementById("romFile");
 
 let nes=null;
 let gameLoaded=false;
@@ -339,6 +395,9 @@ let soundEnabled=true;
 let audioContext=null;
 let audioNode=null;
 let audioQueue=[];
+let lastTouchTime=0;
+
+const activeInputs=new Map();
 
 const buttons={
   UP:jsnes.Controller.BUTTON_UP,
@@ -360,7 +419,10 @@ function initAudio(){
   }
 
   const AudioContextClass=window.AudioContext||window.webkitAudioContext;
-  if(!AudioContextClass) return;
+
+  if(!AudioContextClass){
+    return;
+  }
 
   audioContext=new AudioContextClass();
   audioNode=audioContext.createScriptProcessor(1024,0,2);
@@ -390,6 +452,7 @@ function createNES(){
     onFrame(framebuffer){
       for(let i=0,p=0;i<framebuffer.length;i++,p+=4){
         const color=framebuffer[i];
+
         pixels[p]=color&0xFF;
         pixels[p+1]=(color>>8)&0xFF;
         pixels[p+2]=(color>>16)&0xFF;
@@ -419,13 +482,96 @@ function binaryStringFromArrayBuffer(buffer){
   return result;
 }
 
+function updateButtonVisual(key){
+  const isPressed=[...activeInputs.values()].includes(key);
+
+  document.querySelectorAll('[data-key="'+key+'"]').forEach(button=>{
+    button.classList.toggle("pressed",isPressed);
+  });
+}
+
+function pressKey(key,inputId){
+  if(!gameLoaded||!nes||!Object.prototype.hasOwnProperty.call(buttons,key)){
+    return;
+  }
+
+  if(activeInputs.has(inputId)){
+    return;
+  }
+
+  const wasAlreadyPressed=[...activeInputs.values()].includes(key);
+
+  activeInputs.set(inputId,key);
+
+  if(!wasAlreadyPressed){
+    nes.buttonDown(1,buttons[key]);
+  }
+
+  updateButtonVisual(key);
+  initAudio();
+}
+
+function releaseInput(inputId){
+  if(!activeInputs.has(inputId)||!nes){
+    return;
+  }
+
+  const key=activeInputs.get(inputId);
+
+  activeInputs.delete(inputId);
+
+  const keyStillPressed=[...activeInputs.values()].includes(key);
+
+  if(!keyStillPressed){
+    nes.buttonUp(1,buttons[key]);
+  }
+
+  updateButtonVisual(key);
+}
+
+function releaseAllButtons(){
+  if(nes){
+    Object.keys(buttons).forEach(key=>{
+      nes.buttonUp(1,buttons[key]);
+    });
+  }
+
+  activeInputs.clear();
+
+  document.querySelectorAll("[data-key]").forEach(button=>{
+    button.classList.remove("pressed");
+  });
+}
+
+async function loadGameFromBuffer(buffer,name){
+  try{
+    releaseAllButtons();
+
+    status.textContent="Đang tải "+name+"...";
+    screenMessage.style.display="flex";
+    screenMessage.innerHTML="<strong>Đang tải game</strong><span>Vui lòng chờ trong giây lát...</span>";
+
+    createNES();
+    nes.loadROM(binaryStringFromArrayBuffer(buffer));
+
+    gameLoaded=true;
+    paused=false;
+    pauseButton.textContent="Tạm dừng";
+    status.textContent=name+" đã sẵn sàng";
+    screenMessage.style.display="none";
+  }catch(error){
+    console.error(error);
+
+    gameLoaded=false;
+    status.textContent="Không thể tải game";
+    screenMessage.style.display="flex";
+    screenMessage.innerHTML="<strong>Không thể tải game</strong><span>"+(error.message||"ROM này không tương thích.")+"</span>";
+  }
+}
+
 async function loadDefaultGame(){
   try{
     status.textContent="Đang tải Super Mario Bros...";
-    screenMessage.style.display="flex";
-    screenMessage.innerHTML="<strong>Đang tải Super Mario Bros</strong><span>Vui lòng chờ trong giây lát...</span>";
-
-    createNES();
 
     const response=await fetch(DEFAULT_ROM_URL);
 
@@ -439,19 +585,14 @@ async function loadDefaultGame(){
       throw new Error("File game không hợp lệ.");
     }
 
-    nes.loadROM(binaryStringFromArrayBuffer(buffer));
-
-    gameLoaded=true;
-    paused=false;
-    pauseButton.textContent="Tạm dừng";
-    status.textContent="Super Mario Bros đã sẵn sàng";
-    screenMessage.style.display="none";
+    await loadGameFromBuffer(buffer,"Super Mario Bros");
   }catch(error){
     console.error(error);
+
     gameLoaded=false;
     status.textContent="Không thể tải game";
     screenMessage.style.display="flex";
-    screenMessage.innerHTML="<strong>Không thể tải game</strong><span>"+(error.message||"Vui lòng kiểm tra lại đường link ROM và kết nối mạng.")+"</span>";
+    screenMessage.innerHTML="<strong>Không thể tải game mặc định</strong><span>Hãy kiểm tra kết nối mạng hoặc dùng nút Mở game khác.</span>";
   }
 }
 
@@ -463,32 +604,29 @@ function gameLoop(){
   requestAnimationFrame(gameLoop);
 }
 
-function setButton(key,isDown){
-  if(!gameLoaded||!nes||!Object.prototype.hasOwnProperty.call(buttons,key)) return;
+romFile.addEventListener("change",async function(){
+  const file=this.files[0];
 
-  initAudio();
-
-  if(isDown){
-    nes.buttonDown(1,buttons[key]);
-  }else{
-    nes.buttonUp(1,buttons[key]);
+  if(!file){
+    return;
   }
-}
 
-function releaseAllButtons(){
-  if(!nes) return;
+  if(!file.name.toLowerCase().endsWith(".nes")){
+    status.textContent="Vui lòng chọn file .nes";
+    this.value="";
+    return;
+  }
 
-  Object.keys(buttons).forEach(key=>{
-    nes.buttonUp(1,buttons[key]);
-  });
+  const buffer=await file.arrayBuffer();
+  await loadGameFromBuffer(buffer,file.name);
 
-  document.querySelectorAll("[data-key]").forEach(button=>{
-    button.classList.remove("pressed");
-  });
-}
+  this.value="";
+});
 
 pauseButton.addEventListener("click",function(){
-  if(!gameLoaded) return;
+  if(!gameLoaded){
+    return;
+  }
 
   paused=!paused;
   pauseButton.textContent=paused?"Tiếp tục":"Tạm dừng";
@@ -508,28 +646,52 @@ soundButton.addEventListener("click",function(){
 document.querySelectorAll("[data-key]").forEach(button=>{
   const key=button.dataset.key;
 
-  function press(event){
+  button.addEventListener("touchstart",function(event){
     event.preventDefault();
-    button.classList.add("pressed");
-    setButton(key,true);
+    lastTouchTime=Date.now();
 
-    if(event.pointerId!==undefined){
-      try{
-        button.setPointerCapture(event.pointerId);
-      }catch(error){}
+    for(const touch of event.changedTouches){
+      pressKey(key,"touch-"+touch.identifier);
+    }
+  },{passive:false});
+
+  button.addEventListener("mousedown",function(event){
+    if(Date.now()-lastTouchTime<700){
+      return;
+    }
+
+    event.preventDefault();
+    pressKey(key,"mouse-"+event.button);
+  });
+
+  button.addEventListener("contextmenu",function(event){
+    event.preventDefault();
+  });
+});
+
+document.addEventListener("touchmove",function(event){
+  for(const touch of event.changedTouches){
+    if(activeInputs.has("touch-"+touch.identifier)){
+      event.preventDefault();
+      return;
     }
   }
+},{passive:false});
 
-  function release(event){
-    event.preventDefault();
-    button.classList.remove("pressed");
-    setButton(key,false);
+document.addEventListener("touchend",function(event){
+  for(const touch of event.changedTouches){
+    releaseInput("touch-"+touch.identifier);
   }
+},{passive:false});
 
-  button.addEventListener("pointerdown",press);
-  button.addEventListener("pointerup",release);
-  button.addEventListener("pointercancel",release);
-  button.addEventListener("lostpointercapture",release);
+document.addEventListener("touchcancel",function(event){
+  for(const touch of event.changedTouches){
+    releaseInput("touch-"+touch.identifier);
+  }
+},{passive:false});
+
+document.addEventListener("mouseup",function(event){
+  releaseInput("mouse-"+event.button);
 });
 
 const keyboardMap={
@@ -545,34 +707,34 @@ const keyboardMap={
   Shift:"SELECT"
 };
 
-window.addEventListener("keydown",event=>{
+window.addEventListener("keydown",function(event){
   const key=keyboardMap[event.key];
 
-  if(!key||event.repeat) return;
+  if(!key||event.repeat){
+    return;
+  }
 
   event.preventDefault();
-  setButton(key,true);
-
-  const element=document.querySelector('[data-key="'+key+'"]');
-  if(element) element.classList.add("pressed");
+  pressKey(key,"keyboard-"+event.key);
 });
 
-window.addEventListener("keyup",event=>{
+window.addEventListener("keyup",function(event){
   const key=keyboardMap[event.key];
 
-  if(!key) return;
+  if(!key){
+    return;
+  }
 
   event.preventDefault();
-  setButton(key,false);
-
-  const element=document.querySelector('[data-key="'+key+'"]');
-  if(element) element.classList.remove("pressed");
+  releaseInput("keyboard-"+event.key);
 });
 
 window.addEventListener("blur",releaseAllButtons);
 
 document.addEventListener("visibilitychange",function(){
-  if(document.hidden) releaseAllButtons();
+  if(document.hidden){
+    releaseAllButtons();
+  }
 });
 
 gameLoop();
