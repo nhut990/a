@@ -1,352 +1,593 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
-  />
-  <title>Máy tính</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>NES Mobile Player</title>
+<script src="https://cdn.jsdelivr.net/npm/jsnes@1.2.1/dist/jsnes.min.js"></script>
+<style>
+  *{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
+    -webkit-user-select:none;
+  }
 
-  <style>
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
+  :root{
+    --bg:#0b1020;
+    --panel:#171f35;
+    --border:#38466c;
+    --text:#eef3ff;
+    --muted:#9ba9ca;
+    --red:#e6495d;
+    --blue:#4f83ff;
+    --dark:#111827;
+  }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    justify-content:center;
+    background:
+      radial-gradient(circle at top, #26335b 0%, #11182c 42%, #080c17 100%);
+    color:var(--text);
+    font-family:Arial,Helvetica,sans-serif;
+    overflow-x:hidden;
+  }
+
+  .app{
+    width:min(100%, 760px);
+    min-height:100vh;
+    min-height:100dvh;
+    padding:16px 14px 24px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+
+  .header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:18px;
+    font-weight:800;
+    letter-spacing:.5px;
+  }
+
+  .brand-icon{
+    width:38px;
+    height:26px;
+    display:grid;
+    place-items:center;
+    border:2px solid #f3f6ff;
+    border-radius:8px;
+    background:linear-gradient(145deg,#ff6074,#bd2444);
+    box-shadow:0 4px 10px rgba(0,0,0,.28);
+    font-size:13px;
+  }
+
+  .status{
+    max-width:55%;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    color:var(--muted);
+    font-size:12px;
+    text-align:right;
+  }
+
+  .screen-box{
+    position:relative;
+    width:100%;
+    aspect-ratio:4/3;
+    overflow:hidden;
+    border:5px solid #33405f;
+    border-radius:16px;
+    background:#000;
+    box-shadow:
+      0 15px 35px rgba(0,0,0,.4),
+      inset 0 0 0 2px rgba(255,255,255,.05);
+  }
+
+  canvas{
+    display:block;
+    width:100%;
+    height:100%;
+    image-rendering:pixelated;
+    image-rendering:crisp-edges;
+    background:#000;
+  }
+
+  .screen-message{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    padding:24px;
+    text-align:center;
+    background:radial-gradient(circle, rgba(35,48,81,.92), rgba(6,9,18,.96));
+    color:#eef3ff;
+  }
+
+  .screen-message strong{
+    font-size:20px;
+  }
+
+  .screen-message span{
+    color:#afbddf;
+    line-height:1.5;
+    font-size:13px;
+  }
+
+  .top-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:10px;
+  }
+
+  button,
+  .file-button{
+    min-height:46px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    color:var(--text);
+    background:linear-gradient(145deg,#263252,#151d32);
+    box-shadow:
+      0 4px 0 #080c16,
+      0 7px 14px rgba(0,0,0,.2),
+      inset 0 1px rgba(255,255,255,.12);
+    font:inherit;
+    font-weight:700;
+    cursor:pointer;
+    touch-action:manipulation;
+    transition:transform .08s, filter .08s, box-shadow .08s;
+  }
+
+  button:active,
+  .file-button:active,
+  .control.pressed{
+    transform:translateY(3px) scale(.98);
+    box-shadow:
+      0 1px 0 #080c16,
+      inset 0 2px 8px rgba(0,0,0,.42);
+    filter:brightness(.88);
+  }
+
+  .file-button{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    background:linear-gradient(145deg,#527fff,#2f57cb);
+    border-color:#91adff;
+  }
+
+  #romFile{
+    display:none;
+  }
+
+  .controls{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+    margin-top:auto;
+    padding:8px 4px 0;
+  }
+
+  .dpad{
+    position:relative;
+    width:154px;
+    height:154px;
+    flex:none;
+  }
+
+  .control{
+    position:absolute;
+    display:grid;
+    place-items:center;
+    border:2px solid #53617e;
+    color:#fff;
+    background:
+      linear-gradient(145deg,#42516f,#202a40);
+    box-shadow:
+      0 5px 0 #0b1020,
+      0 8px 14px rgba(0,0,0,.28),
+      inset 0 1px rgba(255,255,255,.16);
+    font-weight:900;
+    cursor:pointer;
+    touch-action:none;
+  }
+
+  .dpad .control{
+    width:52px;
+    height:52px;
+    border-radius:10px;
+    font-size:21px;
+  }
+
+  .up{top:0;left:51px}
+  .down{bottom:0;left:51px}
+  .left{left:0;top:51px}
+  .right{right:0;top:51px}
+
+  .dpad-center{
+    position:absolute;
+    left:51px;
+    top:51px;
+    width:52px;
+    height:52px;
+    background:#202a40;
+  }
+
+  .right-controls{
+    display:flex;
+    align-items:center;
+    gap:13px;
+    flex:none;
+    padding-right:4px;
+  }
+
+  .round{
+    position:relative;
+    width:67px;
+    height:67px;
+    border-radius:50%;
+    font-size:20px;
+    background:
+      linear-gradient(145deg,#ff6f7e,#bb2545);
+    border-color:#ff9ca7;
+  }
+
+  .round.b{
+    margin-top:30px;
+    background:
+      linear-gradient(145deg,#6b98ff,#365fd5);
+    border-color:#a3bcff;
+  }
+
+  .round::after{
+    content:attr(data-label);
+    position:absolute;
+    top:75px;
+    color:#c5d0ed;
+    font-size:11px;
+    font-weight:800;
+  }
+
+  .middle-controls{
+    display:flex;
+    justify-content:center;
+    gap:16px;
+    margin-top:7px;
+  }
+
+  .middle{
+    min-width:84px;
+    min-height:34px;
+    padding:0 13px;
+    border-radius:20px;
+    font-size:11px;
+    color:#d5def5;
+  }
+
+  .hint{
+    text-align:center;
+    color:#8f9dbc;
+    font-size:11px;
+    line-height:1.45;
+  }
+
+  @media (max-width:390px){
+    .app{padding:12px 10px 20px}
+    .controls{gap:7px}
+    .dpad{transform:scale(.9);transform-origin:left center;margin-right:-15px}
+    .right-controls{transform:scale(.9);transform-origin:right center;margin-left:-15px}
+  }
+
+  @media (min-width:600px){
+    .controls{
+      padding:12px 60px 0;
     }
-
-    html {
-      background: #162235;
-      touch-action: manipulation;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100dvh;
-      padding:
-        max(8px, env(safe-area-inset-top))
-        max(8px, env(safe-area-inset-right))
-        max(20px, env(safe-area-inset-bottom))
-        max(8px, env(safe-area-inset-left));
-      background: #162235;
-      font-family: Arial, sans-serif;
-      touch-action: manipulation;
-      -webkit-user-select: none;
-      user-select: none;
-    }
-
-    .app {
-      width: 100%;
-      max-width: 620px;
-      margin: 0 auto;
-    }
-
-    .calculator,
-    .history-box {
-      width: 100%;
-      background: #ffffff;
-      border-radius: clamp(16px, 5vw, 26px);
-      padding: clamp(12px, 4vw, 20px);
-    }
-
-    .calculator {
-      margin-bottom: 10px;
-    }
-
-    .display {
-      width: 100%;
-      height: clamp(72px, 17vw, 115px);
-      margin-bottom: clamp(10px, 3vw, 16px);
-      padding: 12px 16px;
-      border: none;
-      border-radius: clamp(14px, 4vw, 20px);
-      background: #e7e9ee;
-      color: #111827;
-      text-align: right;
-      font-size: clamp(34px, 11vw, 52px);
-      outline: none;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .buttons {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: clamp(8px, 2.8vw, 14px);
-    }
-
-    button {
-      width: 100%;
-      height: clamp(52px, 16vw, 82px);
-      border: none;
-      border-radius: clamp(12px, 4vw, 18px);
-      background: #e7e9ee;
-      color: #111827;
-      font-size: clamp(24px, 8vw, 35px);
-      cursor: pointer;
-      touch-action: manipulation;
-      -webkit-user-select: none;
-      user-select: none;
-    }
-
-    button:active {
-      transform: scale(0.96);
-    }
-
-    .operator {
-      background: #f99d00;
-      color: white;
-    }
-
-    .clear {
-      background: #ff4248;
-      color: white;
-    }
-
-    .equal {
-      background: #10b981;
-      color: white;
-    }
-
-    .zero {
-      grid-column: span 2;
-    }
-
-    .history-box {
-      margin-bottom: 10px;
-    }
-
-    .history-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .history-header h2 {
-      margin: 0;
-      color: #111827;
-      font-size: clamp(18px, 5vw, 23px);
-    }
-
-    .clear-history {
-      width: auto;
-      height: auto;
-      padding: 9px 11px;
-      border-radius: 10px;
-      background: #6b7280;
-      color: white;
-      font-size: clamp(12px, 3.5vw, 14px);
-      white-space: nowrap;
-    }
-
-    .history-item {
-      padding: 11px 2px;
-      border-bottom: 1px solid #e5e7eb;
-      color: #4b5563;
-      font-size: clamp(15px, 4.5vw, 18px);
-      word-break: break-word;
-      cursor: pointer;
-    }
-
-    .history-item:last-child {
-      border-bottom: none;
-    }
-
-    .history-item strong {
-      display: block;
-      margin-top: 4px;
-      color: #111827;
-      font-size: clamp(17px, 5vw, 21px);
-    }
-
-    .empty-history {
-      margin: 0;
-      color: #9ca3af;
-      font-size: 15px;
-    }
-
-    @media (max-width: 350px) {
-      body {
-        padding: 6px 6px 18px;
-      }
-
-      .calculator,
-      .history-box {
-        padding: 11px;
-      }
-
-      .display {
-        height: 68px;
-        font-size: 32px;
-      }
-
-      button {
-        height: 50px;
-        font-size: 24px;
-      }
-    }
-  </style>
+  }
+</style>
 </head>
-
 <body>
-  <main class="app">
-    <section class="calculator">
-      <input id="display" class="display" type="text" value="0" readonly />
+<div class="app">
+  <div class="header">
+    <div class="brand">
+      <div class="brand-icon">NES</div>
+      NES MOBILE PLAYER
+    </div>
+    <div class="status" id="status">Chưa chọn game</div>
+  </div>
 
-      <div class="buttons">
-        <button class="clear" onclick="clearDisplay()">C</button>
-        <button onclick="deleteLast()">⌫</button>
-        <button class="operator" onclick="appendValue('%')">%</button>
-        <button class="operator" onclick="appendValue(':')">:</button>
+  <div class="screen-box">
+    <canvas id="screen" width="256" height="240"></canvas>
+    <div class="screen-message" id="screenMessage">
+      <strong>NES MOBILE PLAYER</strong>
+      <span>Chọn một file game có đuôi .nes từ điện thoại của bạn để bắt đầu chơi.</span>
+    </div>
+  </div>
 
-        <button onclick="appendValue('7')">7</button>
-        <button onclick="appendValue('8')">8</button>
-        <button onclick="appendValue('9')">9</button>
-        <button class="operator" onclick="appendValue('x')">x</button>
+  <div class="top-actions">
+    <label class="file-button" for="romFile">Mở file .NES</label>
+    <input type="file" id="romFile" accept=".nes,application/octet-stream">
+    <button id="pauseButton">Tạm dừng</button>
+    <button id="soundButton">Âm thanh: Bật</button>
+  </div>
 
-        <button onclick="appendValue('4')">4</button>
-        <button onclick="appendValue('5')">5</button>
-        <button onclick="appendValue('6')">6</button>
-        <button class="operator" onclick="appendValue('-')">−</button>
+  <div class="controls">
+    <div class="dpad">
+      <button class="control up" data-key="UP">▲</button>
+      <button class="control down" data-key="DOWN">▼</button>
+      <button class="control left" data-key="LEFT">◀</button>
+      <button class="control right" data-key="RIGHT">▶</button>
+      <div class="dpad-center"></div>
+    </div>
 
-        <button onclick="appendValue('1')">1</button>
-        <button onclick="appendValue('2')">2</button>
-        <button onclick="appendValue('3')">3</button>
-        <button class="operator" onclick="appendValue('+')">+</button>
+    <div class="right-controls">
+      <button class="control round b" data-key="B" data-label="B">B</button>
+      <button class="control round a" data-key="A" data-label="A">A</button>
+    </div>
+  </div>
 
-        <button class="zero" onclick="appendValue('0')">0</button>
-        <button onclick="appendValue('.')">.</button>
-        <button class="equal" onclick="calculate()">=</button>
-      </div>
-    </section>
+  <div class="middle-controls">
+    <button class="middle" data-key="SELECT">SELECT</button>
+    <button class="middle" data-key="START">START</button>
+  </div>
 
-    <section class="history-box">
-      <div class="history-header">
-        <h2>Lịch sử</h2>
-        <button class="clear-history" onclick="clearHistory()">Xóa lịch sử</button>
-      </div>
+  <div class="hint">
+    Bàn phím: Mũi tên · Z = A · X = B · Enter = Start · Shift = Select
+  </div>
+</div>
 
-      <div id="history">
-        <p class="empty-history">Chưa có phép tính nào.</p>
-      </div>
-    </section>
-  </main>
+<script>
+  const canvas = document.getElementById("screen");
+  const ctx = canvas.getContext("2d", { alpha: false });
+  const imageData = ctx.createImageData(256, 240);
+  const pixels = imageData.data;
 
-  <script>
-    const display = document.getElementById("display");
-    const historyBox = document.getElementById("history");
-    let history = [];
+  const status = document.getElementById("status");
+  const screenMessage = document.getElementById("screenMessage");
+  const romFile = document.getElementById("romFile");
+  const pauseButton = document.getElementById("pauseButton");
+  const soundButton = document.getElementById("soundButton");
 
-    function appendValue(value) {
-      if (display.value === "0" || display.value === "Lỗi") {
-        display.value = "";
-      }
+  let nes;
+  let gameLoaded = false;
+  let paused = false;
+  let soundEnabled = true;
+  let animationId;
+  let audioContext;
+  let audioNode;
+  let audioQueue = [];
 
-      display.value += value;
+  const buttons = {
+    UP: jsnes.Controller.BUTTON_UP,
+    DOWN: jsnes.Controller.BUTTON_DOWN,
+    LEFT: jsnes.Controller.BUTTON_LEFT,
+    RIGHT: jsnes.Controller.BUTTON_RIGHT,
+    A: jsnes.Controller.BUTTON_A,
+    B: jsnes.Controller.BUTTON_B,
+    SELECT: jsnes.Controller.BUTTON_SELECT,
+    START: jsnes.Controller.BUTTON_START
+  };
+
+  function initAudio() {
+    if (audioContext) {
+      audioContext.resume();
+      return;
     }
 
-    function clearDisplay() {
-      display.value = "0";
-    }
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    audioNode = audioContext.createScriptProcessor(1024, 0, 2);
 
-    function deleteLast() {
-      if (display.value === "Lỗi") {
-        display.value = "0";
-        return;
-      }
+    audioNode.onaudioprocess = function(event) {
+      const left = event.outputBuffer.getChannelData(0);
+      const right = event.outputBuffer.getChannelData(1);
 
-      display.value = display.value.slice(0, -1) || "0";
-    }
-
-    function calculate() {
-      try {
-        const expression = display.value;
-
-        if (!/^[0-9+\-x:%(). ]+$/.test(expression)) {
-          throw new Error();
+      for (let i = 0; i < left.length; i++) {
+        if (soundEnabled && audioQueue.length >= 2) {
+          left[i] = audioQueue.shift();
+          right[i] = audioQueue.shift();
+        } else {
+          left[i] = 0;
+          right[i] = 0;
         }
+      }
+    };
 
-        const calculation = expression
-          .replaceAll("x", "*")
-          .replaceAll(":", "/");
+    audioNode.connect(audioContext.destination);
+    audioContext.resume();
+  }
 
-        const result = eval(calculation);
+  function createNES() {
+    audioQueue = [];
 
-        if (!Number.isFinite(result)) {
-          throw new Error();
+    nes = new jsnes.NES({
+      onFrame(framebuffer) {
+        for (let i = 0, p = 0; i < framebuffer.length; i++, p += 4) {
+          const color = framebuffer[i];
+          pixels[p] = (color >> 16) & 0xFF;
+          pixels[p + 1] = (color >> 8) & 0xFF;
+          pixels[p + 2] = color & 0xFF;
+          pixels[p + 3] = 255;
         }
+        ctx.putImageData(imageData, 0, 0);
+      },
 
-        history.unshift({
-          expression: expression,
-          result: result
-        });
-
-        display.value = result;
-        renderHistory();
-      } catch {
-        display.value = "Lỗi";
-      }
-    }
-
-    function renderHistory() {
-      if (history.length === 0) {
-        historyBox.innerHTML =
-          '<p class="empty-history">Chưa có phép tính nào.</p>';
-        return;
-      }
-
-      historyBox.innerHTML = "";
-
-      history.forEach((item, index) => {
-        const row = document.createElement("div");
-        row.className = "history-item";
-
-        const expression = document.createElement("div");
-        expression.textContent = item.expression;
-
-        const result = document.createElement("strong");
-        result.textContent = "= " + item.result;
-
-        row.appendChild(expression);
-        row.appendChild(result);
-
-        row.addEventListener("click", () => {
-          display.value = history[index].expression;
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        });
-
-        historyBox.appendChild(row);
-      });
-    }
-
-    function clearHistory() {
-      history = [];
-      renderHistory();
-    }
-
-    document.addEventListener("keydown", function (event) {
-      const key = event.key;
-
-      if ("0123456789+-%.()".includes(key)) {
-        appendValue(key);
-      } else if (key === "*" || key === "x" || key === "X") {
-        appendValue("x");
-      } else if (key === "/" || key === ":") {
-        appendValue(":");
-      } else if (key === "Enter" || key === "=") {
-        event.preventDefault();
-        calculate();
-      } else if (key === "Backspace") {
-        deleteLast();
-      } else if (key === "Escape") {
-        clearDisplay();
+      onAudioSample(left, right) {
+        if (audioQueue.length < 18000) {
+          audioQueue.push(left, right);
+        }
       }
     });
+  }
 
-    document.addEventListener("dblclick", function (event) {
+  function gameLoop() {
+    if (gameLoaded && !paused && nes) {
+      nes.frame();
+    }
+    animationId = requestAnimationFrame(gameLoop);
+  }
+
+  function setButton(key, isDown) {
+    if (!gameLoaded || !nes || !buttons[key]) return;
+
+    initAudio();
+
+    if (isDown) {
+      nes.buttonDown(1, buttons[key]);
+    } else {
+      nes.buttonUp(1, buttons[key]);
+    }
+  }
+
+  function releaseAllButtons() {
+    Object.keys(buttons).forEach(key => setButton(key, false));
+    document.querySelectorAll(".control, .middle").forEach(button => {
+      button.classList.remove("pressed");
+    });
+  }
+
+  function binaryStringFromArrayBuffer(buffer) {
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 8192;
+    let result = "";
+
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      result += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+
+    return result;
+  }
+
+  romFile.addEventListener("change", async function() {
+    const file = this.files[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".nes")) {
+      status.textContent = "Vui lòng chọn file .nes";
+      return;
+    }
+
+    try {
+      status.textContent = "Đang tải game...";
+      screenMessage.style.display = "none";
+
+      initAudio();
+      createNES();
+
+      const buffer = await file.arrayBuffer();
+      const romData = binaryStringFromArrayBuffer(buffer);
+
+      nes.loadROM(romData);
+      gameLoaded = true;
+      paused = false;
+      pauseButton.textContent = "Tạm dừng";
+      status.textContent = file.name;
+    } catch (error) {
+      console.error(error);
+      gameLoaded = false;
+      screenMessage.style.display = "flex";
+      status.textContent = "Không thể mở file game";
+    }
+
+    this.value = "";
+  });
+
+  pauseButton.addEventListener("click", function() {
+    if (!gameLoaded) return;
+
+    paused = !paused;
+    pauseButton.textContent = paused ? "Tiếp tục" : "Tạm dừng";
+    status.textContent = paused ? "Game đang tạm dừng" : "Đang chơi";
+    releaseAllButtons();
+  });
+
+  soundButton.addEventListener("click", function() {
+    soundEnabled = !soundEnabled;
+    soundButton.textContent = "Âm thanh: " + (soundEnabled ? "Bật" : "Tắt");
+
+    if (soundEnabled) initAudio();
+  });
+
+  document.querySelectorAll("[data-key]").forEach(button => {
+    const key = button.dataset.key;
+
+    const press = event => {
       event.preventDefault();
-    }, { passive: false });
-  </script>
+      button.classList.add("pressed");
+      setButton(key, true);
+    };
+
+    const release = event => {
+      event.preventDefault();
+      button.classList.remove("pressed");
+      setButton(key, false);
+    };
+
+    button.addEventListener("pointerdown", press);
+    button.addEventListener("pointerup", release);
+    button.addEventListener("pointercancel", release);
+    button.addEventListener("pointerleave", release);
+  });
+
+  const keyboardMap = {
+    ArrowUp: "UP",
+    ArrowDown: "DOWN",
+    ArrowLeft: "LEFT",
+    ArrowRight: "RIGHT",
+    z: "A",
+    Z: "A",
+    x: "B",
+    X: "B",
+    Enter: "START",
+    Shift: "SELECT"
+  };
+
+  window.addEventListener("keydown", event => {
+    const key = keyboardMap[event.key];
+    if (!key || event.repeat) return;
+
+    event.preventDefault();
+    setButton(key, true);
+
+    const element = document.querySelector(`[data-key="${key}"]`);
+    if (element) element.classList.add("pressed");
+  });
+
+  window.addEventListener("keyup", event => {
+    const key = keyboardMap[event.key];
+    if (!key) return;
+
+    event.preventDefault();
+    setButton(key, false);
+
+    const element = document.querySelector(`[data-key="${key}"]`);
+    if (element) element.classList.remove("pressed");
+  });
+
+  window.addEventListener("blur", releaseAllButtons);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) releaseAllButtons();
+  });
+
+  createNES();
+  gameLoop();
+</script>
 </body>
 </html>
