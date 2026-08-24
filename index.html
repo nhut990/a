@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>NES Mobile Player</title>
+<title>Super Mario Bros - NES</title>
 <script src="https://cdn.jsdelivr.net/npm/jsnes@1.2.1/dist/jsnes.js"></script>
 <style>
 *{
@@ -70,7 +70,7 @@ body{
 }
 
 .status{
-  max-width:55%;
+  max-width:56%;
   overflow:hidden;
   white-space:nowrap;
   text-overflow:ellipsis;
@@ -124,11 +124,11 @@ canvas{
 
 .top-actions{
   display:grid;
-  grid-template-columns:1fr 1fr 1fr;
+  grid-template-columns:1fr 1fr;
   gap:10px;
 }
 
-button,.file-button{
+button{
   min-height:46px;
   border:1px solid var(--border);
   border-radius:12px;
@@ -141,23 +141,10 @@ button,.file-button{
   touch-action:manipulation;
 }
 
-button:active,.file-button:active,.control.pressed{
+button:active,.control.pressed{
   transform:translateY(3px) scale(.98);
   box-shadow:0 1px 0 #080c16,inset 0 2px 8px rgba(0,0,0,.42);
   filter:brightness(.88);
-}
-
-.file-button{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  background:linear-gradient(145deg,#5a87ff,#3158cc);
-  border-color:#9bb4ff;
-}
-
-#romFile{
-  display:none;
 }
 
 .controls{
@@ -291,22 +278,20 @@ button:active,.file-button:active,.control.pressed{
   <div class="header">
     <div class="brand">
       <div class="brand-icon">NES</div>
-      NES MOBILE PLAYER
+      SUPER MARIO BROS
     </div>
-    <div class="status" id="status">Chưa chọn game</div>
+    <div class="status" id="status">Đang tải game...</div>
   </div>
 
   <div class="screen-box">
     <canvas id="screen" width="256" height="240"></canvas>
     <div class="screen-message" id="screenMessage">
-      <strong>NES MOBILE PLAYER</strong>
-      <span>Chọn file game có đuôi .nes từ điện thoại để bắt đầu chơi.</span>
+      <strong>Đang tải Super Mario Bros</strong>
+      <span>Vui lòng chờ trong giây lát...</span>
     </div>
   </div>
 
   <div class="top-actions">
-    <label class="file-button" for="romFile">Mở file .NES</label>
-    <input type="file" id="romFile" accept=".nes,application/octet-stream">
     <button id="pauseButton">Tạm dừng</button>
     <button id="soundButton">Âm thanh: Bật</button>
   </div>
@@ -331,10 +316,12 @@ button:active,.file-button:active,.control.pressed{
     <button class="middle" data-key="START">START</button>
   </div>
 
-  <div class="hint">Bàn phím: Mũi tên · Z = A · X = B · Enter = Start · Shift = Select</div>
+  <div class="hint">Chạm một nút bất kỳ để bật âm thanh trên iPhone</div>
 </div>
 
 <script>
+const DEFAULT_ROM_URL="https://raw.githubusercontent.com/nhut990/files/refs/heads/main/music/SuperMarioBros.nes";
+
 const canvas=document.getElementById("screen");
 const ctx=canvas.getContext("2d",{alpha:false});
 const imageData=ctx.createImageData(256,240);
@@ -342,7 +329,6 @@ const pixels=imageData.data;
 
 const status=document.getElementById("status");
 const screenMessage=document.getElementById("screenMessage");
-const romFile=document.getElementById("romFile");
 const pauseButton=document.getElementById("pauseButton");
 const soundButton=document.getElementById("soundButton");
 
@@ -367,7 +353,9 @@ const buttons={
 
 function initAudio(){
   if(audioContext){
-    if(audioContext.state==="suspended") audioContext.resume();
+    if(audioContext.state==="suspended"){
+      audioContext.resume();
+    }
     return;
   }
 
@@ -393,7 +381,6 @@ function initAudio(){
   };
 
   audioNode.connect(audioContext.destination);
-  audioContext.resume();
 }
 
 function createNES(){
@@ -408,6 +395,7 @@ function createNES(){
         pixels[p+2]=(color>>16)&0xFF;
         pixels[p+3]=255;
       }
+
       ctx.putImageData(imageData,0,0);
     },
 
@@ -419,10 +407,59 @@ function createNES(){
   });
 }
 
+function binaryStringFromArrayBuffer(buffer){
+  const bytes=new Uint8Array(buffer);
+  const chunkSize=8192;
+  let result="";
+
+  for(let i=0;i<bytes.length;i+=chunkSize){
+    result+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunkSize));
+  }
+
+  return result;
+}
+
+async function loadDefaultGame(){
+  try{
+    status.textContent="Đang tải Super Mario Bros...";
+    screenMessage.style.display="flex";
+    screenMessage.innerHTML="<strong>Đang tải Super Mario Bros</strong><span>Vui lòng chờ trong giây lát...</span>";
+
+    createNES();
+
+    const response=await fetch(DEFAULT_ROM_URL);
+
+    if(!response.ok){
+      throw new Error("Không tải được file game. Mã lỗi: "+response.status);
+    }
+
+    const buffer=await response.arrayBuffer();
+
+    if(buffer.byteLength<16){
+      throw new Error("File game không hợp lệ.");
+    }
+
+    nes.loadROM(binaryStringFromArrayBuffer(buffer));
+
+    gameLoaded=true;
+    paused=false;
+    pauseButton.textContent="Tạm dừng";
+    status.textContent="Super Mario Bros đã sẵn sàng";
+    screenMessage.style.display="none";
+  }catch(error){
+    console.error(error);
+    gameLoaded=false;
+    status.textContent="Không thể tải game";
+    screenMessage.style.display="flex";
+    screenMessage.innerHTML="<strong>Không thể tải game</strong><span>"+(error.message||"Vui lòng kiểm tra lại đường link ROM và kết nối mạng.")+"</span>";
+  }
+}
+
 function gameLoop(){
   if(gameLoaded&&!paused&&nes){
     nes.frame();
   }
+
   requestAnimationFrame(gameLoop);
 }
 
@@ -450,52 +487,6 @@ function releaseAllButtons(){
   });
 }
 
-function binaryStringFromArrayBuffer(buffer){
-  const bytes=new Uint8Array(buffer);
-  const chunkSize=8192;
-  let result="";
-
-  for(let i=0;i<bytes.length;i+=chunkSize){
-    result+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunkSize));
-  }
-
-  return result;
-}
-
-romFile.addEventListener("change",async function(){
-  const file=this.files[0];
-  if(!file) return;
-
-  if(!file.name.toLowerCase().endsWith(".nes")){
-    status.textContent="Vui lòng chọn file .nes";
-    return;
-  }
-
-  try{
-    status.textContent="Đang tải game...";
-    screenMessage.style.display="none";
-
-    initAudio();
-    createNES();
-
-    const buffer=await file.arrayBuffer();
-    nes.loadROM(binaryStringFromArrayBuffer(buffer));
-
-    gameLoaded=true;
-    paused=false;
-    pauseButton.textContent="Tạm dừng";
-    status.textContent=file.name;
-  }catch(error){
-    console.error(error);
-    gameLoaded=false;
-    screenMessage.style.display="flex";
-    screenMessage.innerHTML="<strong>Không thể mở game</strong><span>"+(error&&error.message?error.message:"ROM này có thể không tương thích với trình giả lập.")+"</span>";
-    status.textContent="Lỗi khi tải ROM";
-  }
-
-  this.value="";
-});
-
 pauseButton.addEventListener("click",function(){
   if(!gameLoaded) return;
 
@@ -509,7 +500,9 @@ soundButton.addEventListener("click",function(){
   soundEnabled=!soundEnabled;
   soundButton.textContent="Âm thanh: "+(soundEnabled?"Bật":"Tắt");
 
-  if(soundEnabled) initAudio();
+  if(soundEnabled){
+    initAudio();
+  }
 });
 
 document.querySelectorAll("[data-key]").forEach(button=>{
@@ -554,6 +547,7 @@ const keyboardMap={
 
 window.addEventListener("keydown",event=>{
   const key=keyboardMap[event.key];
+
   if(!key||event.repeat) return;
 
   event.preventDefault();
@@ -565,6 +559,7 @@ window.addEventListener("keydown",event=>{
 
 window.addEventListener("keyup",event=>{
   const key=keyboardMap[event.key];
+
   if(!key) return;
 
   event.preventDefault();
@@ -580,8 +575,8 @@ document.addEventListener("visibilitychange",function(){
   if(document.hidden) releaseAllButtons();
 });
 
-createNES();
 gameLoop();
+loadDefaultGame();
 </script>
 </body>
 </html>
