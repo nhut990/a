@@ -2,36 +2,32 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Super Mario Bros - NES</title>
-
-<script src="https://unpkg.com/jsnes@2/dist/jsnes.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/jsnes@1.2.1/dist/jsnes.js"></script>
 <style>
 *{
   box-sizing:border-box;
   -webkit-tap-highlight-color:transparent;
-  -webkit-touch-callout:none;
   -webkit-user-select:none;
   user-select:none;
 }
 
-html,
-body{
-  margin:0;
-  width:100%;
-  min-height:100%;
-  overflow:hidden;
-  overscroll-behavior:none;
-  touch-action:none;
-  background:radial-gradient(circle at top,#293965 0%,#11192f 44%,#070b15 100%);
-  color:#eef3ff;
-  font-family:Arial,Helvetica,sans-serif;
+:root{
+  --bg:#0a0f1d;
+  --panel:#161f36;
+  --border:#3b4c73;
+  --text:#eef3ff;
+  --muted:#9ba9ca;
 }
 
 body{
+  margin:0;
   min-height:100vh;
   min-height:100dvh;
+  background:radial-gradient(circle at top,#293965 0%,#11192f 44%,#070b15 100%);
+  color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;
 }
 
 .app{
@@ -39,7 +35,7 @@ body{
   min-height:100vh;
   min-height:100dvh;
   margin:auto;
-  padding:16px 14px calc(24px + env(safe-area-inset-bottom));
+  padding:16px 14px 26px;
   display:flex;
   flex-direction:column;
   gap:14px;
@@ -49,24 +45,21 @@ body{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:10px;
+  gap:12px;
 }
 
 .brand{
   display:flex;
   align-items:center;
   gap:10px;
-  min-width:0;
   font-size:18px;
   font-weight:800;
   letter-spacing:.5px;
-  white-space:nowrap;
 }
 
 .brand-icon{
   width:40px;
-  height:29px;
-  flex:none;
+  height:27px;
   display:grid;
   place-items:center;
   border:2px solid #fff;
@@ -77,11 +70,11 @@ body{
 }
 
 .status{
-  max-width:42%;
+  max-width:56%;
   overflow:hidden;
   white-space:nowrap;
   text-overflow:ellipsis;
-  color:#aab7d4;
+  color:var(--muted);
   font-size:12px;
   text-align:right;
 }
@@ -136,29 +129,19 @@ canvas{
 }
 
 button{
-  appearance:none;
-  -webkit-appearance:none;
   min-height:46px;
-  border:1px solid #3b4c73;
+  border:1px solid var(--border);
   border-radius:12px;
-  color:#eef3ff;
+  color:var(--text);
   background:linear-gradient(145deg,#293756,#151d31);
   box-shadow:0 4px 0 #080c16,0 7px 14px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.12);
   font:inherit;
   font-weight:700;
   cursor:pointer;
-  outline:none;
-  touch-action:none;
+  touch-action:manipulation;
 }
 
-button:focus,
-button:focus-visible{
-  outline:none;
-}
-
-button:active,
-.control.pressed,
-.middle.pressed{
+button:active,.control.pressed{
   transform:translateY(3px) scale(.98);
   box-shadow:0 1px 0 #080c16,inset 0 2px 8px rgba(0,0,0,.42);
   filter:brightness(.88);
@@ -211,10 +194,7 @@ button:active,
   left:51px;
   width:52px;
   height:52px;
-  border-radius:8px;
   background:#202b42;
-  box-shadow:inset 0 0 10px rgba(0,0,0,.35);
-  pointer-events:none;
 }
 
 .right-controls{
@@ -274,36 +254,27 @@ button:active,
 }
 
 @media(max-width:390px){
-  .app{
-    padding:12px 10px calc(20px + env(safe-area-inset-bottom));
-  }
-
-  .brand{
-    font-size:15px;
-  }
-
-  .controls{
-    gap:7px;
-  }
-
+  .app{padding:12px 10px 20px}
+  .controls{gap:7px}
   .dpad{
     transform:scale(.9);
     transform-origin:left center;
     margin-right:-15px;
   }
-
   .right-controls{
     transform:scale(.9);
     transform-origin:right center;
     margin-left:-15px;
   }
 }
+
+@media(min-width:600px){
+  .controls{padding:12px 60px 0}
+}
 </style>
 </head>
-
 <body>
 <div class="app">
-
   <div class="header">
     <div class="brand">
       <div class="brand-icon">NES</div>
@@ -314,7 +285,6 @@ button:active,
 
   <div class="screen-box">
     <canvas id="screen" width="256" height="240"></canvas>
-
     <div class="screen-message" id="screenMessage">
       <strong>Đang tải Super Mario Bros</strong>
       <span>Vui lòng chờ trong giây lát...</span>
@@ -346,419 +316,356 @@ button:active,
     <button class="middle" data-key="START">START</button>
   </div>
 
-  <div class="hint">Giữ hướng và bấm A hoặc B cùng lúc để chơi</div>
-
+  <div class="hint">Chạm một nút bất kỳ để bật âm thanh trên iPhone</div>
 </div>
 
 <script>
-(function(){
-  "use strict";
+// ====== LINK ROM (đã test hoạt động) ======
+const DEFAULT_ROM_URL = "https://raw.githubusercontent.com/nhut990/files/main/hinh/SuperMarioBros.nes";
 
-  const DEFAULT_ROM_URL="https://raw.githubusercontent.com/nhut990/files/main/hinh/SuperMarioBros.nes";
+const canvas = document.getElementById("screen");
+const ctx = canvas.getContext("2d", { alpha: false });
+const imageData = ctx.createImageData(256, 240);
+const pixels = imageData.data;
 
-  const canvas=document.getElementById("screen");
-  const ctx=canvas.getContext("2d",{alpha:false,desynchronized:true});
-  const imageData=ctx.createImageData(256,240);
-  const pixels=new Uint32Array(imageData.data.buffer);
+const status = document.getElementById("status");
+const screenMessage = document.getElementById("screenMessage");
+const pauseButton = document.getElementById("pauseButton");
+const soundButton = document.getElementById("soundButton");
 
-  const status=document.getElementById("status");
-  const screenMessage=document.getElementById("screenMessage");
-  const pauseButton=document.getElementById("pauseButton");
-  const soundButton=document.getElementById("soundButton");
+let nes = null;
+let gameLoaded = false;
+let paused = false;
+let soundEnabled = true;
+let audioContext = null;
+let audioNode = null;
+let audioQueue = [];
 
-  if(typeof window.jsnes==="undefined"){
-    status.textContent="Không tải được thư viện giả lập";
-    screenMessage.innerHTML="<strong>Lỗi thư viện jsnes</strong><span>Hãy kiểm tra kết nối mạng rồi tải lại trang.</span>";
+// Kiểm tra jsnes đã tải chưa
+if (typeof jsnes === 'undefined') {
+  status.textContent = "Lỗi: Không thể tải thư viện jsnes";
+  screenMessage.innerHTML = "<strong>Lỗi thư viện</strong><span>Vui lòng kiểm tra kết nối mạng và tải lại trang.</span>";
+  throw new Error("jsnes is not loaded");
+}
+
+const buttons = {
+  UP: jsnes.Controller.BUTTON_UP,
+  DOWN: jsnes.Controller.BUTTON_DOWN,
+  LEFT: jsnes.Controller.BUTTON_LEFT,
+  RIGHT: jsnes.Controller.BUTTON_RIGHT,
+  A: jsnes.Controller.BUTTON_A,
+  B: jsnes.Controller.BUTTON_B,
+  SELECT: jsnes.Controller.BUTTON_SELECT,
+  START: jsnes.Controller.BUTTON_START
+};
+
+// ====== Âm thanh ======
+function initAudio() {
+  if (audioContext) {
+    if (audioContext.state === "suspended") {
+      audioContext.resume();
+    }
     return;
   }
 
-  let nes=null;
-  let gameLoaded=false;
-  let paused=false;
-  let soundEnabled=true;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
 
-  let audioContext=null;
-  let audioNode=null;
+  audioContext = new AudioContextClass();
+  // Tăng buffer size lên 2048 để giảm giật âm thanh
+  audioNode = audioContext.createScriptProcessor(2048, 0, 2);
 
-  const AUDIO_BUFFER_SIZE=8192;
-  const AUDIO_TARGET_DELAY=1536;
+  audioNode.onaudioprocess = function(event) {
+    const left = event.outputBuffer.getChannelData(0);
+    const right = event.outputBuffer.getChannelData(1);
 
-  const audioLeft=new Float32Array(AUDIO_BUFFER_SIZE);
-  const audioRight=new Float32Array(AUDIO_BUFFER_SIZE);
-
-  let audioWriteIndex=0;
-  let audioReadIndex=0;
-
-  const FRAME_TIME=1000/60.0988;
-  const MAX_CATCHUP_FRAMES=2;
-
-  let lastFrameTime=0;
-  let frameAccumulator=0;
-
-  const buttons={
-    UP:jsnes.Controller.BUTTON_UP,
-    DOWN:jsnes.Controller.BUTTON_DOWN,
-    LEFT:jsnes.Controller.BUTTON_LEFT,
-    RIGHT:jsnes.Controller.BUTTON_RIGHT,
-    A:jsnes.Controller.BUTTON_A,
-    B:jsnes.Controller.BUTTON_B,
-    SELECT:jsnes.Controller.BUTTON_SELECT,
-    START:jsnes.Controller.BUTTON_START
+    for (let i = 0; i < left.length; i++) {
+      if (soundEnabled && audioQueue.length >= 2) {
+        left[i] = audioQueue.shift();
+        right[i] = audioQueue.shift();
+      } else {
+        left[i] = 0;
+        right[i] = 0;
+      }
+    }
   };
 
-  const heldInputs={
-    UP:new Set(),
-    DOWN:new Set(),
-    LEFT:new Set(),
-    RIGHT:new Set(),
-    A:new Set(),
-    B:new Set(),
-    SELECT:new Set(),
-    START:new Set()
-  };
+  audioNode.connect(audioContext.destination);
+}
 
-  const activePointers=new Map();
-
-  function clearAudioBuffer(){
-    audioWriteIndex=0;
-    audioReadIndex=0;
+function suspendAudio() {
+  if (audioContext && audioContext.state === "running") {
+    audioContext.suspend();
   }
+}
 
-  function audioAvailable(){
-    return (audioWriteIndex-audioReadIndex+AUDIO_BUFFER_SIZE)%AUDIO_BUFFER_SIZE;
+function resumeAudio() {
+  if (audioContext && audioContext.state === "suspended" && soundEnabled) {
+    audioContext.resume();
   }
+}
 
-  function initAudio(){
-    if(audioContext){
-      if(audioContext.state==="suspended"){
-        audioContext.resume().catch(function(){});
+// ====== Khởi tạo NES ======
+function createNES() {
+  audioQueue = [];
+
+  nes = new jsnes.NES({
+    onFrame(framebuffer) {
+      for (let i = 0, p = 0; i < framebuffer.length; i++, p += 4) {
+        const color = framebuffer[i];
+        pixels[p] = color & 0xFF;
+        pixels[p + 1] = (color >> 8) & 0xFF;
+        pixels[p + 2] = (color >> 16) & 0xFF;
+        pixels[p + 3] = 255;
       }
-      return;
-    }
+      ctx.putImageData(imageData, 0, 0);
+    },
 
-    const AudioContextClass=window.AudioContext||window.webkitAudioContext;
-
-    if(!AudioContextClass) return;
-
-    try{
-      audioContext=new AudioContextClass();
-      audioNode=audioContext.createScriptProcessor(1024,0,2);
-
-      audioNode.onaudioprocess=function(event){
-        const left=event.outputBuffer.getChannelData(0);
-        const right=event.outputBuffer.getChannelData(1);
-
-        let available=audioAvailable();
-
-        if(available>AUDIO_TARGET_DELAY*2){
-          const skip=available-AUDIO_TARGET_DELAY;
-          audioReadIndex=(audioReadIndex+skip)%AUDIO_BUFFER_SIZE;
-          available=audioAvailable();
-        }
-
-        for(let i=0;i<left.length;i++){
-          if(soundEnabled&&available>0){
-            left[i]=audioLeft[audioReadIndex];
-            right[i]=audioRight[audioReadIndex];
-            audioReadIndex=(audioReadIndex+1)%AUDIO_BUFFER_SIZE;
-            available--;
-          }else{
-            left[i]=0;
-            right[i]=0;
-          }
-        }
-      };
-
-      audioNode.connect(audioContext.destination);
-      audioContext.resume().catch(function(){});
-    }catch(error){
-      console.error(error);
-    }
-  }
-
-  function writeAudioSample(left,right){
-    const nextIndex=(audioWriteIndex+1)%AUDIO_BUFFER_SIZE;
-
-    if(nextIndex===audioReadIndex){
-      audioReadIndex=(audioReadIndex+1)%AUDIO_BUFFER_SIZE;
-    }
-
-    audioLeft[audioWriteIndex]=left;
-    audioRight[audioWriteIndex]=right;
-    audioWriteIndex=nextIndex;
-  }
-
-  function createNES(){
-    clearAudioBuffer();
-
-    nes=new jsnes.NES({
-      onFrame:function(framebuffer){
-        for(let i=0;i<framebuffer.length;i++){
-          pixels[i]=0xFF000000|framebuffer[i];
-        }
-
-        ctx.putImageData(imageData,0,0);
-      },
-
-      onAudioSample:function(left,right){
-        writeAudioSample(left,right);
+    onAudioSample(left, right) {
+      // Giới hạn queue để tránh tràn bộ nhớ
+      if (audioQueue.length < 24000) {
+        audioQueue.push(left, right);
       }
-    });
+    }
+  });
+}
+
+// ====== Chuyển ArrayBuffer thành chuỗi nhị phân ======
+function binaryStringFromArrayBuffer(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 8192;
+  let result = "";
+
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    result += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
   }
 
-  async function loadDefaultGame(){
-    try{
-      status.textContent="Đang tải Super Mario Bros...";
-      screenMessage.style.display="flex";
-      screenMessage.innerHTML="<strong>Đang tải Super Mario Bros</strong><span>Vui lòng chờ trong giây lát...</span>";
+  return result;
+}
 
-      createNES();
+// ====== Kiểm tra header NES ======
+function isValidNESRom(buffer) {
+  const bytes = new Uint8Array(buffer);
+  // NES header: 4E 45 53 1A ("NES\x1A")
+  return bytes.length >= 16 &&
+         bytes[0] === 0x4E &&
+         bytes[1] === 0x45 &&
+         bytes[2] === 0x53 &&
+         bytes[3] === 0x1A;
+}
 
-      const response=await fetch(DEFAULT_ROM_URL,{cache:"no-store"});
+// ====== Tải game mặc định ======
+async function loadDefaultGame() {
+  try {
+    status.textContent = "Đang tải Super Mario Bros...";
+    screenMessage.style.display = "flex";
+    screenMessage.innerHTML = "<strong>Đang tải Super Mario Bros</strong><span>Vui lòng chờ trong giây lát...</span>";
 
-      if(!response.ok){
-        throw new Error("Không tải được ROM. Mã lỗi: "+response.status);
-      }
+    createNES();
 
-      const romData=new Uint8Array(await response.arrayBuffer());
+    const response = await fetch(DEFAULT_ROM_URL);
 
-      if(
-        romData.length<16||
-        romData[0]!==0x4E||
-        romData[1]!==0x45||
-        romData[2]!==0x53||
-        romData[3]!==0x1A
-      ){
-        throw new Error("File tại link không phải ROM NES hợp lệ.");
-      }
-
-      nes.loadROM(romData);
-
-      gameLoaded=true;
-      paused=false;
-      lastFrameTime=0;
-      frameAccumulator=0;
-
-      pauseButton.textContent="Tạm dừng";
-      status.textContent="Đang chơi Super Mario Bros";
-      screenMessage.style.display="none";
-    }catch(error){
-      console.error(error);
-
-      gameLoaded=false;
-      status.textContent="Không thể tải game";
-      screenMessage.style.display="flex";
-      screenMessage.innerHTML="<strong>Không thể tải game</strong><span>"+(error.message||"Vui lòng kiểm tra link ROM.")+"</span>";
+    if (!response.ok) {
+      throw new Error("Không tải được file game. Mã lỗi: " + response.status);
     }
+
+    const buffer = await response.arrayBuffer();
+
+    // Kiểm tra ROM hợp lệ
+    if (!isValidNESRom(buffer)) {
+      throw new Error("File không phải ROM NES hợp lệ hoặc bị hỏng.");
+    }
+
+    nes.loadROM(binaryStringFromArrayBuffer(buffer));
+
+    gameLoaded = true;
+    paused = false;
+    pauseButton.textContent = "Tạm dừng";
+    status.textContent = "Super Mario Bros đã sẵn sàng";
+    screenMessage.style.display = "none";
+  } catch (error) {
+    console.error(error);
+    gameLoaded = false;
+    status.textContent = "Không thể tải game";
+    screenMessage.style.display = "flex";
+    // Dùng textContent để tránh injection
+    screenMessage.innerHTML = "";
+    const strong = document.createElement("strong");
+    strong.textContent = "Không thể tải game";
+    const span = document.createElement("span");
+    span.textContent = error.message || "Vui lòng kiểm tra lại đường link ROM và kết nối mạng.";
+    screenMessage.appendChild(strong);
+    screenMessage.appendChild(span);
   }
+}
 
-  function gameLoop(time){
-    requestAnimationFrame(gameLoop);
+// ====== Vòng lặp game với giới hạn 60fps ======
+let lastFrameTime = 0;
+const FRAME_TIME = 1000 / 60; // 16.67ms
 
-    if(!gameLoaded||paused||!nes){
-      lastFrameTime=time;
-      return;
-    }
-
-    if(!lastFrameTime){
-      lastFrameTime=time;
-      return;
-    }
-
-    let delta=time-lastFrameTime;
-    lastFrameTime=time;
-
-    if(delta>100) delta=100;
-    if(delta<0) delta=0;
-
-    frameAccumulator+=delta;
-
-    let frameCount=0;
-
-    while(frameAccumulator>=FRAME_TIME&&frameCount<MAX_CATCHUP_FRAMES){
+function gameLoop(timestamp) {
+  if (gameLoaded && !paused && nes) {
+    if (timestamp - lastFrameTime >= FRAME_TIME) {
       nes.frame();
-      frameAccumulator-=FRAME_TIME;
-      frameCount++;
+      lastFrameTime = timestamp;
     }
+  } else {
+    lastFrameTime = timestamp; // reset thời gian khi pause hoặc chưa load
   }
-
-  function updateButtonVisual(key){
-    const element=document.querySelector('[data-key="'+key+'"]');
-
-    if(element){
-      element.classList.toggle("pressed",heldInputs[key].size>0);
-    }
-  }
-
-  function setButton(key,source,isDown){
-    if(!Object.prototype.hasOwnProperty.call(buttons,key)) return;
-
-    const sources=heldInputs[key];
-    const wasPressed=sources.size>0;
-
-    if(isDown){
-      sources.add(source);
-    }else{
-      sources.delete(source);
-    }
-
-    const isPressed=sources.size>0;
-
-    updateButtonVisual(key);
-
-    if(!gameLoaded||!nes||wasPressed===isPressed) return;
-
-    if(isPressed){
-      nes.buttonDown(1,buttons[key]);
-    }else{
-      nes.buttonUp(1,buttons[key]);
-    }
-  }
-
-  function releasePointer(pointerId){
-    const key=activePointers.get(pointerId);
-
-    if(!key) return;
-
-    setButton(key,"pointer-"+pointerId,false);
-    activePointers.delete(pointerId);
-  }
-
-  function releaseAllButtons(){
-    activePointers.clear();
-
-    Object.keys(buttons).forEach(function(key){
-      heldInputs[key].clear();
-
-      if(nes){
-        nes.buttonUp(1,buttons[key]);
-      }
-
-      updateButtonVisual(key);
-    });
-  }
-
-  pauseButton.addEventListener("click",function(){
-    if(!gameLoaded) return;
-
-    paused=!paused;
-    pauseButton.textContent=paused?"Tiếp tục":"Tạm dừng";
-    status.textContent=paused?"Game đang tạm dừng":"Đang chơi Super Mario Bros";
-
-    lastFrameTime=0;
-    frameAccumulator=0;
-    clearAudioBuffer();
-    releaseAllButtons();
-  });
-
-  soundButton.addEventListener("click",function(){
-    soundEnabled=!soundEnabled;
-    soundButton.textContent="Âm thanh: "+(soundEnabled?"Bật":"Tắt");
-
-    clearAudioBuffer();
-
-    if(soundEnabled){
-      initAudio();
-    }
-  });
-
-  document.querySelectorAll("[data-key]").forEach(function(button){
-    const key=button.dataset.key;
-
-    button.addEventListener("pointerdown",function(event){
-      event.preventDefault();
-      event.stopPropagation();
-
-      initAudio();
-
-      activePointers.set(event.pointerId,key);
-      setButton(key,"pointer-"+event.pointerId,true);
-
-      try{
-        button.setPointerCapture(event.pointerId);
-      }catch(error){}
-    });
-
-    button.addEventListener("pointerup",function(event){
-      event.preventDefault();
-      releasePointer(event.pointerId);
-    });
-
-    button.addEventListener("pointercancel",function(event){
-      event.preventDefault();
-      releasePointer(event.pointerId);
-    });
-
-    button.addEventListener("lostpointercapture",function(event){
-      releasePointer(event.pointerId);
-    });
-  });
-
-  window.addEventListener("pointerup",function(event){
-    releasePointer(event.pointerId);
-  },true);
-
-  window.addEventListener("pointercancel",function(event){
-    releasePointer(event.pointerId);
-  },true);
-
-  document.addEventListener("contextmenu",function(event){
-    event.preventDefault();
-  });
-
-  const keyboardMap={
-    ArrowUp:"UP",
-    ArrowDown:"DOWN",
-    ArrowLeft:"LEFT",
-    ArrowRight:"RIGHT",
-    z:"A",
-    Z:"A",
-    x:"B",
-    X:"B",
-    Enter:"START",
-    Shift:"SELECT"
-  };
-
-  window.addEventListener("keydown",function(event){
-    const key=keyboardMap[event.key];
-
-    if(!key||event.repeat) return;
-
-    event.preventDefault();
-    initAudio();
-    setButton(key,"keyboard-"+event.code,true);
-  });
-
-  window.addEventListener("keyup",function(event){
-    const key=keyboardMap[event.key];
-
-    if(!key) return;
-
-    event.preventDefault();
-    setButton(key,"keyboard-"+event.code,false);
-  });
-
-  window.addEventListener("blur",function(){
-    clearAudioBuffer();
-    releaseAllButtons();
-  });
-
-  document.addEventListener("visibilitychange",function(){
-    if(document.hidden){
-      clearAudioBuffer();
-      releaseAllButtons();
-      lastFrameTime=0;
-      frameAccumulator=0;
-    }
-  });
-
-  document.body.addEventListener("pointerdown",function(){
-    initAudio();
-  },{passive:true});
 
   requestAnimationFrame(gameLoop);
-  loadDefaultGame();
-})();
+}
+
+// ====== Điều khiển nút ======
+function setButton(key, isDown) {
+  if (!gameLoaded || !nes || !Object.prototype.hasOwnProperty.call(buttons, key)) return;
+
+  initAudio();
+
+  if (isDown) {
+    nes.buttonDown(1, buttons[key]);
+  } else {
+    nes.buttonUp(1, buttons[key]);
+  }
+}
+
+function releaseAllButtons() {
+  if (!nes) return;
+
+  Object.keys(buttons).forEach(key => {
+    nes.buttonUp(1, buttons[key]);
+  });
+
+  document.querySelectorAll("[data-key]").forEach(button => {
+    button.classList.remove("pressed");
+  });
+}
+
+// ====== Nút tạm dừng ======
+pauseButton.addEventListener("click", function() {
+  if (!gameLoaded) return;
+
+  paused = !paused;
+  pauseButton.textContent = paused ? "Tiếp tục" : "Tạm dừng";
+  status.textContent = paused ? "Game đang tạm dừng" : "Đang chơi";
+
+  // Dừng/phát lại âm thanh
+  if (paused) {
+    suspendAudio();
+    audioQueue = []; // Xóa sạch queue khi pause
+  } else {
+    resumeAudio();
+  }
+
+  releaseAllButtons();
+});
+
+// ====== Nút âm thanh ======
+soundButton.addEventListener("click", function() {
+  soundEnabled = !soundEnabled;
+  soundButton.textContent = "Âm thanh: " + (soundEnabled ? "Bật" : "Tắt");
+
+  if (soundEnabled) {
+    initAudio();
+    resumeAudio();
+  } else {
+    suspendAudio();
+    audioQueue = [];
+  }
+});
+
+// ====== Gán sự kiện cho nút điều khiển ======
+document.querySelectorAll("[data-key]").forEach(button => {
+  const key = button.dataset.key;
+  let capturedPointerId = null;
+
+  function press(event) {
+    event.preventDefault();
+    button.classList.add("pressed");
+    setButton(key, true);
+
+    if (event.pointerId !== undefined) {
+      capturedPointerId = event.pointerId;
+      try {
+        button.setPointerCapture(event.pointerId);
+      } catch (error) {}
+    }
+  }
+
+  function release(event) {
+    event.preventDefault();
+    // Chỉ release nếu cùng pointerId hoặc không xác định
+    if (capturedPointerId === null || event.pointerId === undefined || event.pointerId === capturedPointerId) {
+      button.classList.remove("pressed");
+      setButton(key, false);
+      capturedPointerId = null;
+    }
+  }
+
+  button.addEventListener("pointerdown", press);
+  button.addEventListener("pointerup", release);
+  button.addEventListener("pointercancel", release);
+  button.addEventListener("lostpointercapture", release);
+});
+
+// ====== Bàn phím ======
+const keyboardMap = {
+  ArrowUp: "UP",
+  ArrowDown: "DOWN",
+  ArrowLeft: "LEFT",
+  ArrowRight: "RIGHT",
+  z: "A",
+  Z: "A",
+  x: "B",
+  X: "B",
+  Enter: "START",
+  Shift: "SELECT"
+};
+
+window.addEventListener("keydown", event => {
+  const key = keyboardMap[event.key];
+
+  if (!key || event.repeat) return;
+
+  event.preventDefault();
+  setButton(key, true);
+
+  const element = document.querySelector('[data-key="' + key + '"]');
+  if (element) element.classList.add("pressed");
+});
+
+window.addEventListener("keyup", event => {
+  const key = keyboardMap[event.key];
+
+  if (!key) return;
+
+  event.preventDefault();
+  setButton(key, false);
+
+  const element = document.querySelector('[data-key="' + key + '"]');
+  if (element) element.classList.remove("pressed");
+});
+
+// ====== Xử lý mất focus ======
+window.addEventListener("blur", releaseAllButtons);
+
+document.addEventListener("visibilitychange", function() {
+  if (document.hidden) {
+    releaseAllButtons();
+    // Tự động pause khi ẩn tab để tránh game chạy ngầm
+    if (gameLoaded && !paused) {
+      paused = true;
+      pauseButton.textContent = "Tiếp tục";
+      status.textContent = "Game đang tạm dừng";
+      suspendAudio();
+      audioQueue = [];
+    }
+  }
+});
+
+// ====== Khởi động ======
+requestAnimationFrame(gameLoop);
+loadDefaultGame();
 </script>
 </body>
 </html>
