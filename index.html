@@ -9,7 +9,7 @@
 *{
   box-sizing:border-box;
   -webkit-tap-highlight-color:transparent;
-  -webkit-touch-callout:none;                /* Vô hiệu kính lúp / callout trên iOS */
+  -webkit-touch-callout:none;
   -webkit-user-select:none;
   user-select:none;
 }
@@ -29,8 +29,8 @@ body{
   background:radial-gradient(circle at top,#293965 0%,#11192f 44%,#070b15 100%);
   color:var(--text);
   font-family:Arial,Helvetica,sans-serif;
-  overflow:hidden; /* không cuộn trang */
-  touch-action:none; /* chặn cử chỉ zoom/pan */
+  overflow:hidden;
+  touch-action:none;
 }
 
 .app{
@@ -86,10 +86,10 @@ body{
 .screen-box{
   position:relative;
   width:100%;
-  flex:1 1 auto;            /* co giãn chiều cao */
-  min-height:0;             /* tránh tràn */
+  flex:1 1 auto;
+  min-height:0;
   aspect-ratio:4/3;
-  max-height:42vh;          /* giới hạn chiều cao màn hình game */
+  max-height:42vh;
   overflow:hidden;
   border:5px solid #394866;
   border-radius:16px;
@@ -131,7 +131,7 @@ canvas{
 
 .top-actions{
   display:grid;
-  grid-template-columns:repeat(3,1fr);   /* 3 nút: Tạm dừng, Âm thanh, Mở file */
+  grid-template-columns:repeat(3,1fr);
   gap:8px;
   flex:0 0 auto;
 }
@@ -168,7 +168,6 @@ button:active,.control.pressed{
   padding:4px 2px 0;
 }
 
-/* Điều chỉnh kích thước dpad - tối thiểu 140px để không bị nhỏ quá */
 .dpad{
   position:relative;
   width:clamp(140px, 28vw, 160px);
@@ -218,7 +217,6 @@ button:active,.control.pressed{
   padding-right:2px;
 }
 
-/* Nút tròn to hơn, tối thiểu 65px */
 .round{
   position:relative;
   width:clamp(65px, 15vw, 75px);
@@ -271,7 +269,6 @@ button:active,.control.pressed{
   flex:0 0 auto;
 }
 
-/* Điều chỉnh cho màn hình thấp */
 @media(max-height:640px){
   .app{gap:6px; padding:8px 10px 12px;}
   .screen-box{max-height:38vh;}
@@ -355,13 +352,7 @@ let audioContext = null;
 let audioNode = null;
 let audioQueue = [];
 
-// ====== CHẶN KÍNH LÚP & GESTURE MẶC ĐỊNH ======
-document.addEventListener('touchstart', function(e) {
-  if (e.target.closest('button, .control')) {
-    e.preventDefault();               // ngăn hành vi mặc định (bao gồm magnifier)
-  }
-}, { passive: false });
-
+// ====== CHẶN GESTURE ZOOM ======
 document.addEventListener('gesturestart', function(e) {
   e.preventDefault();                 // chặn cử chỉ zoom/pan trên iOS
 });
@@ -547,7 +538,7 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-// ====== Điều khiển nút ======
+// ====== Điều khiển nút (dùng touch events) ======
 function setButton(key, isDown) {
   if (!gameLoaded || !nes || !Object.prototype.hasOwnProperty.call(buttons, key)) return;
 
@@ -620,35 +611,44 @@ fileInput.addEventListener("change", function(event) {
   fileInput.value = ""; // reset để có thể chọn lại cùng file
 });
 
-// ====== Gán sự kiện cho nút điều khiển ======
+// ====== Gán sự kiện TOUCH cho các nút điều khiển ======
 document.querySelectorAll("[data-key]").forEach(button => {
   const key = button.dataset.key;
+  let activeTouchId = null;   // lưu identifier của touch đang giữ nút này
 
   function press(event) {
-    event.preventDefault();
+    event.preventDefault();   // chặn hành vi mặc định (zoom, scroll)
+    if (activeTouchId !== null) return; // nếu đã có ngón giữ nút này thì bỏ qua
+
+    const touch = event.changedTouches[0];
+    activeTouchId = touch.identifier;
+
     button.classList.add("pressed");
     setButton(key, true);
-
-    if (event.pointerId !== undefined) {
-      try {
-        button.setPointerCapture(event.pointerId);
-      } catch (error) {}
-    }
   }
 
   function release(event) {
     event.preventDefault();
-    button.classList.remove("pressed");
-    setButton(key, false);
+    if (activeTouchId === null) return;
+
+    // Kiểm tra xem touch kết thúc có phải touch đang giữ không
+    for (let i = 0; i < event.changedTouches.length; i++) {
+      if (event.changedTouches[i].identifier === activeTouchId) {
+        activeTouchId = null;
+        button.classList.remove("pressed");
+        setButton(key, false);
+        break;
+      }
+    }
   }
 
-  button.addEventListener("pointerdown", press);
-  button.addEventListener("pointerup", release);
-  button.addEventListener("pointercancel", release);
-  button.addEventListener("lostpointercapture", release);
+  // Touch events
+  button.addEventListener('touchstart', press, { passive: false });
+  button.addEventListener('touchend', release);
+  button.addEventListener('touchcancel', release);
 });
 
-// ====== Bàn phím ======
+// ====== Bàn phím (hỗ trợ desktop) ======
 const keyboardMap = {
   ArrowUp: "UP",
   ArrowDown: "DOWN",
