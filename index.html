@@ -2,200 +2,94 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>NES // Cartridge Player</title>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Super Mario Bros - NES</title>
+<script src="https://cdn.jsdelivr.net/npm/jsnes@1.2.1/dist/jsnes.js"></script>
 <style>
-:root{
-  --bg:#100e14;
-  --shell:#cfc9ba;
-  --shell-dark:#a8a196;
-  --shell-shadow:#6d685f;
-  --bezel:#232025;
-  --red:#c8433a;
-  --red-dark:#922e28;
-  --ink:#201d22;
-  --paper:#ece6d6;
-  --ok:#6f9e6a;
-  --pixel:"Press Start 2P",monospace;
-  --body:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
-}
 *{
   box-sizing:border-box;
   -webkit-tap-highlight-color:transparent;
   -webkit-user-select:none;
   user-select:none;
-  -webkit-touch-callout:none;
 }
-html,body{
+
+:root{
+  --bg:#0a0f1d;
+  --panel:#161f36;
+  --border:#3b4c73;
+  --text:#eef3ff;
+  --muted:#9ba9ca;
+}
+
+body{
   margin:0;
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  overscroll-behavior:none;
-  touch-action:none;
-  background:radial-gradient(circle at 20% 10%,#1b1720 0%,var(--bg) 55%) fixed;
-  color:var(--paper);
-  font-family:var(--body);
+  min-height:100vh;
+  min-height:100dvh;
+  background:radial-gradient(circle at top,#293965 0%,#11192f 44%,#070b15 100%);
+  color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;
 }
-#app{
-  height:100%;
+
+.app{
+  width:min(100%,760px);
+  min-height:100vh;
+  min-height:100dvh;
+  margin:auto;
+  padding:16px 14px 26px;
   display:flex;
   flex-direction:column;
+  gap:14px;
 }
-header{
+
+.header{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:8px;
-  padding:10px 14px;
-  flex:0 0 auto;
+  gap:12px;
 }
-.logo{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  font-family:var(--pixel);
-  font-size:11px;
-  letter-spacing:1px;
-  white-space:nowrap;
-}
-.logo .dot{
-  width:8px;
-  height:8px;
-  background:var(--red);
-  box-shadow:0 0 6px var(--red);
-}
-.info-text{
-  margin-left:auto;
-  color:#8a8492;
-  font-size:10px;
-  white-space:nowrap;
-}
-.hdr-btns{
-  display:flex;
-  gap:6px;
-}
-.icon-btn{
-  width:34px;
-  height:34px;
-  border:1px solid #3a3540;
-  border-radius:6px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:var(--ink);
-  color:var(--paper);
-  font-size:15px;
-  cursor:pointer;
-  touch-action:manipulation;
-}
-.icon-btn:active{
-  transform:translateY(1px);
-  background:#2a2630;
-}
-.icon-btn.on{
-  border-color:var(--red);
-  color:var(--red);
-}
-#loader{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  margin:0 14px 8px;
-  padding:10px;
-  border:1px dashed #47414d;
-  border-radius:10px;
-  color:#aaa2b1;
-  font-size:11px;
-  flex:0 0 auto;
-}
-#loader.drag{
-  border-color:var(--red);
-  background:rgba(200,67,58,.08);
-}
-#loader input{
-  display:none;
-}
-.load-btn{
-  border:1px solid #3a3540;
-  border-radius:20px;
-  padding:7px 13px;
-  background:var(--ink);
-  color:var(--paper);
-  font-family:var(--body);
-  font-size:12px;
-  cursor:pointer;
-  touch-action:manipulation;
-}
-.load-btn:active{
-  background:#2a2630;
-}
-#main{
-  flex:1 1 auto;
-  min-height:0;
-  display:flex;
-  flex-direction:column;
-}
-#stage{
-  flex:1 1 auto;
-  min-height:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:4px 10px;
-}
-#shell{
-  max-width:100%;
-  max-height:100%;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  padding:14px;
-  border-radius:14px;
-  background:linear-gradient(180deg,var(--shell),var(--shell-dark));
-  box-shadow:0 10px 24px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.4);
-}
-.shell-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 4px;
-}
+
 .brand{
-  font-family:var(--pixel);
-  color:var(--shell-shadow);
-  font-size:8px;
-  letter-spacing:1px;
-}
-.led{
-  width:7px;
-  height:7px;
-  border-radius:50%;
-  background:#3a2f2f;
-  box-shadow:inset 0 0 1px #000;
-}
-.led.live{
-  background:var(--ok);
-  box-shadow:0 0 5px var(--ok);
-}
-#screen-frame{
   display:flex;
-  padding:8px;
-  border-radius:6px;
-  background:var(--bezel);
-  box-shadow:inset 0 0 0 2px #0b0a0c,inset 0 2px 10px rgba(0,0,0,.6);
+  align-items:center;
+  gap:10px;
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:.5px;
 }
-#canvas-wrap{
+
+.brand-icon{
+  width:40px;
+  height:27px;
+  display:grid;
+  place-items:center;
+  border:2px solid #fff;
+  border-radius:8px;
+  background:linear-gradient(145deg,#ff6578,#bc2447);
+  box-shadow:0 4px 10px rgba(0,0,0,.3);
+  font-size:12px;
+}
+
+.status{
+  max-width:56%;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  color:var(--muted);
+  font-size:12px;
+  text-align:right;
+}
+
+.screen-box{
   position:relative;
-  line-height:0;
-  max-width:100%;
-  max-height:calc(100dvh - 240px);
+  width:100%;
+  aspect-ratio:4/3;
+  overflow:hidden;
+  border:5px solid #394866;
+  border-radius:16px;
+  background:#000;
+  box-shadow:0 15px 35px rgba(0,0,0,.4),inset 0 0 0 2px rgba(255,255,255,.05);
 }
+
 canvas{
   display:block;
   width:100%;
@@ -204,813 +98,485 @@ canvas{
   image-rendering:pixelated;
   image-rendering:crisp-edges;
 }
-#placeholder{
+
+.screen-message{
   position:absolute;
   inset:0;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  padding:10px;
-  color:#5b5764;
-  text-align:center;
-  font-size:12px;
-  line-height:1.6;
-}
-#controls{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
   gap:10px;
-  padding:10px 18px calc(14px + env(safe-area-inset-bottom));
-  flex:0 0 auto;
+  padding:24px;
+  text-align:center;
+  background:radial-gradient(circle,rgba(35,49,84,.92),rgba(5,8,16,.97));
 }
-#dpad{
-  position:relative;
-  width:132px;
-  height:132px;
-  flex:0 0 auto;
-  touch-action:none;
+
+.screen-message strong{
+  font-size:20px;
 }
-#dpad svg{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  pointer-events:none;
+
+.screen-message span{
+  color:#b0bddc;
+  font-size:13px;
+  line-height:1.5;
 }
-.zone-fill{
-  fill:var(--ink);
-  stroke:#3a3540;
-  stroke-width:1;
-}
-.arrow{
-  fill:#5b5764;
-}
-.arrow.active{
-  fill:var(--red);
-}
-#dpad-touch{
-  position:absolute;
-  inset:0;
-  border-radius:50%;
-  touch-action:none;
-}
-#dpad-center-dot{
-  position:absolute;
-  top:50%;
-  left:50%;
-  width:14px;
-  height:14px;
-  transform:translate(-50%,-50%);
-  border-radius:50%;
-  background:#0c0b0e;
-  box-shadow:inset 0 0 3px #000;
-  pointer-events:none;
-}
-#center-btns{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
+
+.top-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
   gap:10px;
 }
-.pill-btn{
-  width:62px;
-  padding:8px 10px;
-  border-radius:20px;
-  background:linear-gradient(180deg,#8c8798,#68626f);
-  color:#2a2630;
-  box-shadow:0 3px 0 #423e48,0 4px 6px rgba(0,0,0,.4);
-  font-family:var(--pixel);
-  font-size:7px;
-  text-align:center;
+
+button{
+  min-height:46px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  color:var(--text);
+  background:linear-gradient(145deg,#293756,#151d31);
+  box-shadow:0 4px 0 #080c16,0 7px 14px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.12);
+  font:inherit;
+  font-weight:700;
   cursor:pointer;
   touch-action:manipulation;
 }
-.pill-btn.pressed,
-.pill-btn:active{
-  transform:translateY(2px);
-  box-shadow:0 1px 0 #423e48;
+
+button:active,.control.pressed{
+  transform:translateY(3px) scale(.98);
+  box-shadow:0 1px 0 #080c16,inset 0 2px 8px rgba(0,0,0,.42);
+  filter:brightness(.88);
 }
-#ab-btns{
-  position:relative;
-  width:150px;
-  height:110px;
-  flex:0 0 auto;
-  touch-action:none;
-}
-.ab-btn{
-  position:absolute;
-  width:64px;
-  height:64px;
+
+.controls{
   display:flex;
   align-items:center;
-  justify-content:center;
-  border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,var(--red),var(--red-dark));
-  color:#f2e3d8;
-  box-shadow:0 4px 0 #661f1a,0 6px 10px rgba(0,0,0,.45);
-  font-family:var(--pixel);
-  font-size:18px;
+  justify-content:space-between;
+  gap:18px;
+  margin-top:auto;
+  padding:8px 4px 0;
+}
+
+.dpad{
+  position:relative;
+  width:154px;
+  height:154px;
+  flex:none;
+}
+
+.control{
+  position:absolute;
+  display:grid;
+  place-items:center;
+  border:2px solid #566783;
+  color:#fff;
+  background:linear-gradient(145deg,#465875,#202b42);
+  box-shadow:0 5px 0 #0a0f1d,0 8px 14px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.16);
+  font-weight:900;
+  cursor:pointer;
   touch-action:none;
 }
-#ab-btns .pressed,
-#ab-btns .ab-btn:active{
-  transform:translateY(3px);
-  box-shadow:0 1px 0 #661f1a;
-  filter:brightness(1.15);
+
+.dpad .control{
+  width:52px;
+  height:52px;
+  border-radius:10px;
+  font-size:21px;
 }
-#btn-b{left:0;bottom:0}
-#btn-a{right:0;top:0}
-footer{
-  flex:0 0 auto;
-  padding:0 10px 8px;
-  color:#5b5764;
-  font-size:10px;
+
+.up{top:0;left:51px}
+.down{bottom:0;left:51px}
+.left{left:0;top:51px}
+.right{right:0;top:51px}
+
+.dpad-center{
+  position:absolute;
+  top:51px;
+  left:51px;
+  width:52px;
+  height:52px;
+  background:#202b42;
+}
+
+.right-controls{
+  display:flex;
+  align-items:center;
+  gap:13px;
+  flex:none;
+  padding-right:4px;
+}
+
+.round{
+  position:relative;
+  width:67px;
+  height:67px;
+  border-radius:50%;
+  font-size:20px;
+  background:linear-gradient(145deg,#ff7180,#bd2548);
+  border-color:#ff9eaa;
+}
+
+.round.b{
+  margin-top:30px;
+  background:linear-gradient(145deg,#6e9bff,#375fd7);
+  border-color:#a6bfff;
+}
+
+.round::after{
+  content:attr(data-label);
+  position:absolute;
+  top:75px;
+  color:#c7d2ed;
+  font-size:11px;
+  font-weight:800;
+}
+
+.middle-controls{
+  display:flex;
+  justify-content:center;
+  gap:16px;
+  margin-top:7px;
+}
+
+.middle{
+  min-width:84px;
+  min-height:34px;
+  padding:0 13px;
+  border-radius:20px;
+  color:#d5def5;
+  font-size:11px;
+}
+
+.hint{
   text-align:center;
+  color:#8f9dbc;
+  font-size:11px;
+  line-height:1.45;
 }
-footer kbd{
-  padding:1px 5px;
-  border:1px solid #3a3540;
-  border-radius:4px;
-  background:#221f27;
-  font-size:10px;
+
+@media(max-width:390px){
+  .app{padding:12px 10px 20px}
+  .controls{gap:7px}
+  .dpad{
+    transform:scale(.9);
+    transform-origin:left center;
+    margin-right:-15px;
+  }
+  .right-controls{
+    transform:scale(.9);
+    transform-origin:right center;
+    margin-left:-15px;
+  }
 }
-@media (orientation:landscape) and (max-height:560px) and (hover:none) and (pointer:coarse){
-  header{padding:4px 10px}
-  .info-text,footer{display:none}
-  #loader{display:none}
-  #main{
-    flex-direction:row;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    padding:6px 14px;
-  }
-  #stage{
-    order:2;
-    padding:0;
-  }
-  #canvas-wrap{
-    max-height:88dvh;
-  }
-  #controls{
-    display:contents;
-  }
-  #dpad{order:1}
-  #ab-btns{order:3}
-  #center-btns{display:none}
-}
-@media (max-width:500px) and (orientation:portrait){
-  .logo{font-size:8px}
-  .info-text{display:none}
-  #controls{padding-left:12px;padding-right:12px}
-  #dpad{width:118px;height:118px}
-  #ab-btns{width:135px;height:100px}
-  .ab-btn{width:58px;height:58px}
+
+@media(min-width:600px){
+  .controls{padding:12px 60px 0}
 }
 </style>
 </head>
-
 <body>
-<div id="app">
-
-  <header>
-    <div class="logo"><span class="dot"></span>NES // CARTRIDGE PLAYER</div>
-    <div class="info-text" id="fps">FPS: 0 | Audio: OK</div>
-    <div class="hdr-btns">
-      <div class="icon-btn" id="btn-mute" title="Tắt/bật âm thanh">🔊</div>
-      <div class="icon-btn" id="btn-pause" title="Tạm dừng">⏸</div>
-      <div class="icon-btn" id="btn-reset" title="Chơi lại từ đầu">⟲</div>
-      <div class="icon-btn" id="btn-fullscreen" title="Toàn màn hình">⛶</div>
+<div class="app">
+  <div class="header">
+    <div class="brand">
+      <div class="brand-icon">NES</div>
+      SUPER MARIO BROS
     </div>
-  </header>
-
-  <div id="loader">
-    <span id="rom-status">Đang nạp Super Mario Bros...</span>
-    <button class="load-btn" id="choose-rom">▸ CHỌN GAME .NES</button>
-    <input type="file" id="rom-input" accept=".nes">
+    <div class="status" id="status">Đang tải game...</div>
   </div>
 
-  <div id="main">
-    <div id="stage">
-      <div id="shell">
-        <div class="shell-row">
-          <span class="brand">◆ NES-Dang Minh Nhut</span>
-          <span class="led" id="power-led"></span>
-        </div>
-
-        <div id="screen-frame">
-          <div id="canvas-wrap">
-            <canvas id="screen" width="256" height="240"></canvas>
-            <div id="placeholder">ĐANG NẠP SUPER MARIO BROS...</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="controls">
-      <div id="dpad">
-        <svg viewBox="0 0 132 132">
-          <path class="zone-fill" d="M44 4 H88 V44 H128 V88 H88 V128 H44 V88 H4 V44 H44 Z"/>
-          <polygon class="arrow" id="arrow-up" points="66,14 58,30 74,30"/>
-          <polygon class="arrow" id="arrow-down" points="66,118 58,102 74,102"/>
-          <polygon class="arrow" id="arrow-left" points="14,66 30,58 30,74"/>
-          <polygon class="arrow" id="arrow-right" points="118,66 102,58 102,74"/>
-        </svg>
-        <div id="dpad-touch"></div>
-        <div id="dpad-center-dot"></div>
-      </div>
-
-      <div id="center-btns">
-        <div class="pill-btn" id="btn-select">SELECT</div>
-        <div class="pill-btn" id="btn-start">START</div>
-      </div>
-
-      <div id="ab-btns">
-        <div class="ab-btn" id="btn-b">B</div>
-        <div class="ab-btn" id="btn-a">A</div>
-      </div>
+  <div class="screen-box">
+    <canvas id="screen" width="256" height="240"></canvas>
+    <div class="screen-message" id="screenMessage">
+      <strong>Đang tải Super Mario Bros</strong>
+      <span>Vui lòng chờ trong giây lát...</span>
     </div>
   </div>
 
-  <footer>Bàn phím: <kbd>↑↓←→</kbd> di chuyển · <kbd>X</kbd>=A · <kbd>Z</kbd>=B · <kbd>Enter</kbd>=Start · <kbd>Shift</kbd>=Select</footer>
+  <div class="top-actions">
+    <button id="pauseButton">Tạm dừng</button>
+    <button id="soundButton">Âm thanh: Bật</button>
+  </div>
+
+  <div class="controls">
+    <div class="dpad">
+      <button class="control up" data-key="UP">▲</button>
+      <button class="control down" data-key="DOWN">▼</button>
+      <button class="control left" data-key="LEFT">◀</button>
+      <button class="control right" data-key="RIGHT">▶</button>
+      <div class="dpad-center"></div>
+    </div>
+
+    <div class="right-controls">
+      <button class="control round b" data-key="B" data-label="B">B</button>
+      <button class="control round a" data-key="A" data-label="A">A</button>
+    </div>
+  </div>
+
+  <div class="middle-controls">
+    <button class="middle" data-key="SELECT">SELECT</button>
+    <button class="middle" data-key="START">START</button>
+  </div>
+
+  <div class="hint">Chạm một nút bất kỳ để bật âm thanh trên iPhone</div>
 </div>
 
-<script src="https://unpkg.com/jsnes@2/dist/jsnes.min.js"></script>
-
 <script>
-(function(){
-  "use strict";
+const DEFAULT_ROM_URL="https://raw.githubusercontent.com/nhut990/files/refs/heads/main/music/SuperMarioBros.nes";
 
-  var MARIO_ROM_URL = "https://github.com/nhut990/files/raw/refs/heads/main/music/SuperMarioBros.nes";
+const canvas=document.getElementById("screen");
+const ctx=canvas.getContext("2d",{alpha:false});
+const imageData=ctx.createImageData(256,240);
+const pixels=imageData.data;
 
-  document.addEventListener("gesturestart", function(e){ e.preventDefault(); }, {passive:false});
-  document.addEventListener("gesturechange", function(e){ e.preventDefault(); }, {passive:false});
+const status=document.getElementById("status");
+const screenMessage=document.getElementById("screenMessage");
+const pauseButton=document.getElementById("pauseButton");
+const soundButton=document.getElementById("soundButton");
 
-  var canvas = document.getElementById("screen");
-  var ctx = canvas.getContext("2d", {
-    alpha:false,
-    desynchronized:true
-  });
+let nes=null;
+let gameLoaded=false;
+let paused=false;
+let soundEnabled=true;
+let audioContext=null;
+let audioNode=null;
+let audioQueue=[];
 
-  ctx.imageSmoothingEnabled = false;
+const buttons={
+  UP:jsnes.Controller.BUTTON_UP,
+  DOWN:jsnes.Controller.BUTTON_DOWN,
+  LEFT:jsnes.Controller.BUTTON_LEFT,
+  RIGHT:jsnes.Controller.BUTTON_RIGHT,
+  A:jsnes.Controller.BUTTON_A,
+  B:jsnes.Controller.BUTTON_B,
+  SELECT:jsnes.Controller.BUTTON_SELECT,
+  START:jsnes.Controller.BUTTON_START
+};
 
-  var imageData = ctx.createImageData(256, 240);
-  var buf32 = new Uint32Array(imageData.data.buffer);
+function initAudio(){
+  if(audioContext){
+    if(audioContext.state==="suspended"){
+      audioContext.resume();
+    }
+    return;
+  }
 
-  var placeholder = document.getElementById("placeholder");
-  var powerLed = document.getElementById("power-led");
-  var fpsDisplay = document.getElementById("fps");
-  var statusText = document.getElementById("rom-status");
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass) return;
 
-  var audioCtx = null;
-  var scriptNode = null;
-  var gainNode = null;
-  var muted = false;
+  audioContext=new AudioContextClass();
+  audioNode=audioContext.createScriptProcessor(1024,0,2);
 
-  var AUDIO_BUFFER_SIZE = 8192;
-  var audioBuffer = {
-    left:new Float32Array(AUDIO_BUFFER_SIZE),
-    right:new Float32Array(AUDIO_BUFFER_SIZE),
-    writeIdx:0,
-    readIdx:0
-  };
+  audioNode.onaudioprocess=function(event){
+    const left=event.outputBuffer.getChannelData(0);
+    const right=event.outputBuffer.getChannelData(1);
 
-  function ensureAudio(){
-    if(audioCtx) return;
-
-    var AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if(!AudioContextClass) return;
-
-    audioCtx = new AudioContextClass({sampleRate:44100});
-    gainNode = audioCtx.createGain();
-    gainNode.gain.value = muted ? 0 : 0.3;
-
-    scriptNode = audioCtx.createScriptProcessor(2048, 0, 2);
-
-    scriptNode.onaudioprocess = function(e){
-      var outL = e.outputBuffer.getChannelData(0);
-      var outR = e.outputBuffer.getChannelData(1);
-      var available = (audioBuffer.writeIdx - audioBuffer.readIdx + AUDIO_BUFFER_SIZE) % AUDIO_BUFFER_SIZE;
-
-      if(available >= outL.length){
-        for(var i = 0; i < outL.length; i++){
-          outL[i] = audioBuffer.left[audioBuffer.readIdx];
-          outR[i] = audioBuffer.right[audioBuffer.readIdx];
-          audioBuffer.readIdx = (audioBuffer.readIdx + 1) % AUDIO_BUFFER_SIZE;
-        }
+    for(let i=0;i<left.length;i++){
+      if(soundEnabled&&audioQueue.length>=2){
+        left[i]=audioQueue.shift();
+        right[i]=audioQueue.shift();
       }else{
-        for(var j = 0; j < outL.length; j++){
-          outL[j] = 0;
-          outR[j] = 0;
-        }
+        left[i]=0;
+        right[i]=0;
       }
-    };
-
-    scriptNode.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-  }
-
-  function resumeAudio(){
-    ensureAudio();
-    if(audioCtx && audioCtx.state === "suspended"){
-      audioCtx.resume();
     }
-  }
+  };
 
-  var skipRender = false;
-  var frameCount = 0;
-  var perfData = {audioStatus:"OK"};
+  audioNode.connect(audioContext.destination);
+}
 
-  var nes = new jsnes.NES({
-    onFrame:function(frameBuffer){
-      if(skipRender) return;
+function createNES(){
+  audioQueue=[];
 
-      for(var i = 0; i < 256 * 240; i++){
-        buf32[i] = 0xff000000 | frameBuffer[i];
+  nes=new jsnes.NES({
+    onFrame(framebuffer){
+      for(let i=0,p=0;i<framebuffer.length;i++,p+=4){
+        const color=framebuffer[i];
+        pixels[p]=color&0xFF;
+        pixels[p+1]=(color>>8)&0xFF;
+        pixels[p+2]=(color>>16)&0xFF;
+        pixels[p+3]=255;
       }
 
-      ctx.putImageData(imageData, 0, 0);
-      frameCount++;
+      ctx.putImageData(imageData,0,0);
     },
 
-    onAudioSample:function(left, right){
-      var next = (audioBuffer.writeIdx + 1) % AUDIO_BUFFER_SIZE;
-
-      if(next !== audioBuffer.readIdx){
-        audioBuffer.left[audioBuffer.writeIdx] = left;
-        audioBuffer.right[audioBuffer.writeIdx] = right;
-        audioBuffer.writeIdx = next;
-      }
-    },
-
-    sampleRate:44100
-  });
-
-  var romLoaded = false;
-  var running = false;
-  var rafId = null;
-  var lastRomData = null;
-  var lastTime = 0;
-  var accumulator = 0;
-
-  var FRAME_MS = 1000 / 60.0988;
-  var MAX_CATCHUP_FRAMES = 3;
-
-  setInterval(function(){
-    fpsDisplay.textContent = "FPS: " + frameCount + " | Audio: " + perfData.audioStatus;
-    frameCount = 0;
-  }, 1000);
-
-  function tick(now){
-    rafId = requestAnimationFrame(tick);
-
-    if(!running || !romLoaded) return;
-
-    if(!lastTime) lastTime = now;
-
-    var delta = now - lastTime;
-    lastTime = now;
-
-    if(delta > 250) delta = 250;
-    if(delta < 0) delta = 0;
-
-    accumulator += delta;
-
-    var framesToRun = 0;
-
-    while(accumulator >= FRAME_MS && framesToRun < MAX_CATCHUP_FRAMES){
-      accumulator -= FRAME_MS;
-      framesToRun++;
-    }
-
-    if(framesToRun === 0) return;
-
-    for(var i = 0; i < framesToRun; i++){
-      skipRender = i < framesToRun - 1;
-      nes.frame();
-    }
-
-    if(audioCtx){
-      var available = (audioBuffer.writeIdx - audioBuffer.readIdx + AUDIO_BUFFER_SIZE) % AUDIO_BUFFER_SIZE;
-
-      if(available < 512) perfData.audioStatus = "LOW";
-      else if(available > 7000) perfData.audioStatus = "HIGH";
-      else perfData.audioStatus = "OK";
-    }
-  }
-
-  function startLoop(){
-    if(running) return;
-
-    running = true;
-    lastTime = 0;
-    accumulator = 0;
-    powerLed.classList.add("live");
-
-    if(rafId === null){
-      rafId = requestAnimationFrame(tick);
-    }
-  }
-
-  function stopLoop(){
-    running = false;
-    powerLed.classList.remove("live");
-  }
-
-  function loadRom(data, name){
-    try{
-      stopLoop();
-
-      audioBuffer.writeIdx = 0;
-      audioBuffer.readIdx = 0;
-
-      nes.loadROM(data);
-
-      lastRomData = data;
-      romLoaded = true;
-
-      placeholder.style.display = "none";
-      statusText.textContent = "Đang chơi: " + (name || "Game .NES");
-
-      startLoop();
-    }catch(err){
-      romLoaded = false;
-      placeholder.style.display = "flex";
-      placeholder.innerHTML = "KHÔNG ĐỌC ĐƯỢC ROM<br>HÃY CHỌN FILE .NES KHÁC";
-      statusText.textContent = "Không thể nạp game";
-      console.error(err);
-      alert("Không đọc được ROM này: " + err.message);
-    }
-  }
-
-  function loadDefaultMario(){
-    statusText.textContent = "Đang nạp Super Mario Bros...";
-    placeholder.style.display = "flex";
-    placeholder.textContent = "ĐANG NẠP SUPER MARIO BROS...";
-
-    fetch(MARIO_ROM_URL)
-      .then(function(response){
-        if(!response.ok){
-          throw new Error("Không thể tải Super Mario Bros.");
-        }
-        return response.arrayBuffer();
-      })
-      .then(function(buffer){
-        loadRom(new Uint8Array(buffer), "Super Mario Bros.");
-      })
-      .catch(function(err){
-        console.error(err);
-        placeholder.innerHTML = "KHÔNG THỂ TẢI MARIO<br>HÃY KIỂM TRA KẾT NỐI";
-        statusText.textContent = "Mario chưa được nạp";
-      });
-  }
-
-  var loader = document.getElementById("loader");
-  var fileInput = document.getElementById("rom-input");
-  var chooseRom = document.getElementById("choose-rom");
-
-  chooseRom.addEventListener("click", function(e){
-    e.stopPropagation();
-    fileInput.click();
-  });
-
-  loader.addEventListener("click", function(){
-    fileInput.click();
-  });
-
-  fileInput.addEventListener("change", function(){
-    var file = fileInput.files[0];
-    if(file) readFile(file);
-    fileInput.value = "";
-  });
-
-  loader.addEventListener("dragover", function(e){
-    e.preventDefault();
-    loader.classList.add("drag");
-  });
-
-  loader.addEventListener("dragleave", function(e){
-    e.preventDefault();
-    loader.classList.remove("drag");
-  });
-
-  loader.addEventListener("drop", function(e){
-    e.preventDefault();
-    loader.classList.remove("drag");
-
-    var file = e.dataTransfer.files[0];
-    if(file) readFile(file);
-  });
-
-  function readFile(file){
-    if(!file.name.toLowerCase().endsWith(".nes")){
-      alert("Vui lòng chọn đúng file game có đuôi .nes");
-      return;
-    }
-
-    statusText.textContent = "Đang nạp: " + file.name;
-    placeholder.style.display = "flex";
-    placeholder.textContent = "ĐANG NẠP GAME...";
-
-    var reader = new FileReader();
-
-    reader.onload = function(){
-      loadRom(new Uint8Array(reader.result), file.name);
-    };
-
-    reader.onerror = function(){
-      placeholder.innerHTML = "KHÔNG ĐỌC ĐƯỢC FILE";
-      statusText.textContent = "Lỗi đọc file";
-    };
-
-    reader.readAsArrayBuffer(file);
-  }
-
-  document.getElementById("btn-mute").addEventListener("click", function(e){
-    resumeAudio();
-
-    muted = !muted;
-
-    if(gainNode){
-      gainNode.gain.value = muted ? 0 : 0.3;
-    }
-
-    e.currentTarget.textContent = muted ? "🔇" : "🔊";
-    e.currentTarget.classList.toggle("on", muted);
-  });
-
-  document.getElementById("btn-pause").addEventListener("click", function(e){
-    if(!romLoaded) return;
-
-    if(running){
-      stopLoop();
-      e.currentTarget.textContent = "▶";
-      e.currentTarget.classList.add("on");
-    }else{
-      startLoop();
-      e.currentTarget.textContent = "⏸";
-      e.currentTarget.classList.remove("on");
-      resumeAudio();
-    }
-  });
-
-  document.getElementById("btn-reset").addEventListener("click", function(){
-    if(lastRomData){
-      loadRom(lastRomData, statusText.textContent.replace("Đang chơi: ", ""));
-      resumeAudio();
-    }
-  });
-
-  document.getElementById("btn-fullscreen").addEventListener("click", function(e){
-    var app = document.getElementById("app");
-
-    if(!document.fullscreenElement && !document.webkitFullscreenElement){
-      if(app.requestFullscreen) app.requestFullscreen();
-      else if(app.webkitRequestFullscreen) app.webkitRequestFullscreen();
-
-      e.currentTarget.classList.add("on");
-    }else{
-      if(document.exitFullscreen) document.exitFullscreen();
-      else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
-
-      e.currentTarget.classList.remove("on");
-    }
-  });
-
-  var C = jsnes.Controller;
-
-  function vibrate(ms){
-    if(navigator.vibrate) navigator.vibrate(ms);
-  }
-
-  function down(button){
-    nes.buttonDown(1, button);
-    resumeAudio();
-  }
-
-  function up(button){
-    nes.buttonUp(1, button);
-  }
-
-  var dpadTouch = document.getElementById("dpad-touch");
-  var dpadPointer = null;
-
-  var dpadState = {
-    up:false,
-    down:false,
-    left:false,
-    right:false
-  };
-
-  var arrows = {
-    up:document.getElementById("arrow-up"),
-    down:document.getElementById("arrow-down"),
-    left:document.getElementById("arrow-left"),
-    right:document.getElementById("arrow-right")
-  };
-
-  var directionMap = {
-    up:C.BUTTON_UP,
-    down:C.BUTTON_DOWN,
-    left:C.BUTTON_LEFT,
-    right:C.BUTTON_RIGHT
-  };
-
-  function setDir(direction, active){
-    if(dpadState[direction] === active) return;
-
-    dpadState[direction] = active;
-
-    if(active){
-      down(directionMap[direction]);
-      arrows[direction].classList.add("active");
-    }else{
-      up(directionMap[direction]);
-      arrows[direction].classList.remove("active");
-    }
-  }
-
-  function clearDpad(){
-    setDir("up", false);
-    setDir("down", false);
-    setDir("left", false);
-    setDir("right", false);
-  }
-
-  function updateDpad(clientX, clientY){
-    var rect = dpadTouch.getBoundingClientRect();
-    var centerX = rect.left + rect.width / 2;
-    var centerY = rect.top + rect.height / 2;
-
-    var dx = clientX - centerX;
-    var dy = clientY - centerY;
-    var distance = Math.sqrt(dx * dx + dy * dy);
-    var deadzone = rect.width * 0.16;
-
-    if(distance < deadzone){
-      clearDpad();
-      return;
-    }
-
-    var angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
-    setDir("up", angle < -22.5 && angle > -157.5);
-    setDir("down", angle > 22.5 && angle < 157.5);
-    setDir("right", angle >= -67.5 && angle <= 67.5);
-    setDir("left", angle >= 112.5 || angle <= -112.5);
-  }
-
-  dpadTouch.addEventListener("pointerdown", function(e){
-    if(dpadPointer !== null) return;
-
-    dpadPointer = e.pointerId;
-    dpadTouch.setPointerCapture(e.pointerId);
-
-    updateDpad(e.clientX, e.clientY);
-    vibrate(8);
-    e.preventDefault();
-  });
-
-  dpadTouch.addEventListener("pointermove", function(e){
-    if(e.pointerId !== dpadPointer) return;
-
-    updateDpad(e.clientX, e.clientY);
-    e.preventDefault();
-  });
-
-  function releaseDpad(e){
-    if(e.pointerId !== dpadPointer) return;
-
-    dpadPointer = null;
-    clearDpad();
-    e.preventDefault();
-  }
-
-  dpadTouch.addEventListener("pointerup", releaseDpad);
-  dpadTouch.addEventListener("pointercancel", releaseDpad);
-
-  function bindButton(element, nesButton, strong){
-    var pointers = new Set();
-
-    function press(id){
-      if(pointers.has(id)) return;
-
-      pointers.add(id);
-
-      if(pointers.size === 1){
-        down(nesButton);
-        element.classList.add("pressed");
-        vibrate(strong ? 15 : 8);
+    onAudioSample(left,right){
+      if(audioQueue.length<18000){
+        audioQueue.push(left,right);
       }
     }
+  });
+}
 
-    function release(id){
-      if(!pointers.has(id)) return;
+function binaryStringFromArrayBuffer(buffer){
+  const bytes=new Uint8Array(buffer);
+  const chunkSize=8192;
+  let result="";
 
-      pointers.delete(id);
-
-      if(pointers.size === 0){
-        up(nesButton);
-        element.classList.remove("pressed");
-      }
-    }
-
-    element.addEventListener("pointerdown", function(e){
-      element.setPointerCapture(e.pointerId);
-      press(e.pointerId);
-      e.preventDefault();
-    });
-
-    element.addEventListener("pointerup", function(e){
-      release(e.pointerId);
-      e.preventDefault();
-    });
-
-    element.addEventListener("pointercancel", function(e){
-      release(e.pointerId);
-      e.preventDefault();
-    });
-
-    return {
-      press:function(){ press("keyboard"); },
-      release:function(){ release("keyboard"); }
-    };
+  for(let i=0;i<bytes.length;i+=chunkSize){
+    result+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunkSize));
   }
 
-  var btnA = bindButton(document.getElementById("btn-a"), C.BUTTON_A, true);
-  var btnB = bindButton(document.getElementById("btn-b"), C.BUTTON_B, true);
-  var btnStart = bindButton(document.getElementById("btn-start"), C.BUTTON_START, false);
-  var btnSelect = bindButton(document.getElementById("btn-select"), C.BUTTON_SELECT, false);
+  return result;
+}
 
-  var keyMap = {
-    ArrowUp:"up",
-    ArrowDown:"down",
-    ArrowLeft:"left",
-    ArrowRight:"right"
-  };
+async function loadDefaultGame(){
+  try{
+    status.textContent="Đang tải Super Mario Bros...";
+    screenMessage.style.display="flex";
+    screenMessage.innerHTML="<strong>Đang tải Super Mario Bros</strong><span>Vui lòng chờ trong giây lát...</span>";
 
-  window.addEventListener("keydown", function(e){
-    if(e.repeat) return;
+    createNES();
 
-    if(keyMap[e.key]){
-      setDir(keyMap[e.key], true);
-      e.preventDefault();
-      return;
+    const response=await fetch(DEFAULT_ROM_URL);
+
+    if(!response.ok){
+      throw new Error("Không tải được file game. Mã lỗi: "+response.status);
     }
 
-    if(e.key === "x" || e.key === "X"){
-      btnA.press();
-      e.preventDefault();
-    }else if(e.key === "z" || e.key === "Z"){
-      btnB.press();
-      e.preventDefault();
-    }else if(e.key === "Enter"){
-      btnStart.press();
-      e.preventDefault();
-    }else if(e.key === "Shift"){
-      btnSelect.press();
-      e.preventDefault();
+    const buffer=await response.arrayBuffer();
+
+    if(buffer.byteLength<16){
+      throw new Error("File game không hợp lệ.");
     }
+
+    nes.loadROM(binaryStringFromArrayBuffer(buffer));
+
+    gameLoaded=true;
+    paused=false;
+    pauseButton.textContent="Tạm dừng";
+    status.textContent="Super Mario Bros đã sẵn sàng";
+    screenMessage.style.display="none";
+  }catch(error){
+    console.error(error);
+    gameLoaded=false;
+    status.textContent="Không thể tải game";
+    screenMessage.style.display="flex";
+    screenMessage.innerHTML="<strong>Không thể tải game</strong><span>"+(error.message||"Vui lòng kiểm tra lại đường link ROM và kết nối mạng.")+"</span>";
+  }
+}
+
+function gameLoop(){
+  if(gameLoaded&&!paused&&nes){
+    nes.frame();
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+function setButton(key,isDown){
+  if(!gameLoaded||!nes||!Object.prototype.hasOwnProperty.call(buttons,key)) return;
+
+  initAudio();
+
+  if(isDown){
+    nes.buttonDown(1,buttons[key]);
+  }else{
+    nes.buttonUp(1,buttons[key]);
+  }
+}
+
+function releaseAllButtons(){
+  if(!nes) return;
+
+  Object.keys(buttons).forEach(key=>{
+    nes.buttonUp(1,buttons[key]);
   });
 
-  window.addEventListener("keyup", function(e){
-    if(keyMap[e.key]){
-      setDir(keyMap[e.key], false);
-      e.preventDefault();
-      return;
-    }
-
-    if(e.key === "x" || e.key === "X"){
-      btnA.release();
-      e.preventDefault();
-    }else if(e.key === "z" || e.key === "Z"){
-      btnB.release();
-      e.preventDefault();
-    }else if(e.key === "Enter"){
-      btnStart.release();
-      e.preventDefault();
-    }else if(e.key === "Shift"){
-      btnSelect.release();
-      e.preventDefault();
-    }
+  document.querySelectorAll("[data-key]").forEach(button=>{
+    button.classList.remove("pressed");
   });
+}
 
-  window.addEventListener("blur", function(){
-    clearDpad();
-    btnA.release();
-    btnB.release();
-    btnStart.release();
-    btnSelect.release();
-  });
+pauseButton.addEventListener("click",function(){
+  if(!gameLoaded) return;
 
-  document.body.addEventListener("pointerdown", function(){
-    resumeAudio();
-  }, {passive:true});
+  paused=!paused;
+  pauseButton.textContent=paused?"Tiếp tục":"Tạm dừng";
+  status.textContent=paused?"Game đang tạm dừng":"Đang chơi";
+  releaseAllButtons();
+});
 
-  loadDefaultMario();
-})();
+soundButton.addEventListener("click",function(){
+  soundEnabled=!soundEnabled;
+  soundButton.textContent="Âm thanh: "+(soundEnabled?"Bật":"Tắt");
+
+  if(soundEnabled){
+    initAudio();
+  }
+});
+
+document.querySelectorAll("[data-key]").forEach(button=>{
+  const key=button.dataset.key;
+
+  function press(event){
+    event.preventDefault();
+    button.classList.add("pressed");
+    setButton(key,true);
+
+    if(event.pointerId!==undefined){
+      try{
+        button.setPointerCapture(event.pointerId);
+      }catch(error){}
+    }
+  }
+
+  function release(event){
+    event.preventDefault();
+    button.classList.remove("pressed");
+    setButton(key,false);
+  }
+
+  button.addEventListener("pointerdown",press);
+  button.addEventListener("pointerup",release);
+  button.addEventListener("pointercancel",release);
+  button.addEventListener("lostpointercapture",release);
+});
+
+const keyboardMap={
+  ArrowUp:"UP",
+  ArrowDown:"DOWN",
+  ArrowLeft:"LEFT",
+  ArrowRight:"RIGHT",
+  z:"A",
+  Z:"A",
+  x:"B",
+  X:"B",
+  Enter:"START",
+  Shift:"SELECT"
+};
+
+window.addEventListener("keydown",event=>{
+  const key=keyboardMap[event.key];
+
+  if(!key||event.repeat) return;
+
+  event.preventDefault();
+  setButton(key,true);
+
+  const element=document.querySelector('[data-key="'+key+'"]');
+  if(element) element.classList.add("pressed");
+});
+
+window.addEventListener("keyup",event=>{
+  const key=keyboardMap[event.key];
+
+  if(!key) return;
+
+  event.preventDefault();
+  setButton(key,false);
+
+  const element=document.querySelector('[data-key="'+key+'"]');
+  if(element) element.classList.remove("pressed");
+});
+
+window.addEventListener("blur",releaseAllButtons);
+
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden) releaseAllButtons();
+});
+
+gameLoop();
+loadDefaultGame();
 </script>
 </body>
 </html>
