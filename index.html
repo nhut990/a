@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Super Mario Bros - NES</title>
 
-<script src="https://cdn.jsdelivr.net/npm/jsnes@1.2.1/dist/jsnes.js"></script>
+<script src="https://unpkg.com/jsnes@2/dist/jsnes.min.js"></script>
 
 <style>
 *{
@@ -18,7 +18,6 @@
 
 :root{
   --bg:#0a0f1d;
-  --panel:#161f36;
   --border:#3b4c73;
   --text:#eef3ff;
   --muted:#9ba9ca;
@@ -356,12 +355,12 @@ button:active,
 (function(){
   "use strict";
 
-  const DEFAULT_ROM_URL="https://github.com/nhut990/files/raw/refs/heads/main/hinh/SuperMarioBros.nes";
+  const DEFAULT_ROM_URL="https://raw.githubusercontent.com/nhut990/files/main/hinh/SuperMarioBros.nes";
 
   const canvas=document.getElementById("screen");
   const ctx=canvas.getContext("2d",{alpha:false});
   const imageData=ctx.createImageData(256,240);
-  const pixels=imageData.data;
+  const pixels=new Uint32Array(imageData.data.buffer);
 
   const status=document.getElementById("status");
   const screenMessage=document.getElementById("screenMessage");
@@ -370,8 +369,7 @@ button:active,
 
   if(typeof window.jsnes==="undefined"){
     status.textContent="Không tải được thư viện giả lập";
-    screenMessage.style.display="flex";
-    screenMessage.innerHTML="<strong>Lỗi jsnes</strong><span>Không thể tải thư viện giả lập. Hãy kiểm tra kết nối mạng rồi tải lại trang.</span>";
+    screenMessage.innerHTML="<strong>Lỗi thư viện jsnes</strong><span>Hãy kiểm tra mạng rồi tải lại trang.</span>";
     return;
   }
 
@@ -390,16 +388,11 @@ button:active,
   let audioWriteIndex=0;
   let audioReadIndex=0;
 
-  const heldInputs={
-    UP:new Set(),
-    DOWN:new Set(),
-    LEFT:new Set(),
-    RIGHT:new Set(),
-    A:new Set(),
-    B:new Set(),
-    SELECT:new Set(),
-    START:new Set()
-  };
+  const FRAME_TIME=1000/60.0988;
+  const MAX_CATCHUP_FRAMES=3;
+
+  let lastFrameTime=0;
+  let frameAccumulator=0;
 
   const buttons={
     UP:jsnes.Controller.BUTTON_UP,
@@ -412,19 +405,20 @@ button:active,
     START:jsnes.Controller.BUTTON_START
   };
 
-  const FRAME_TIME=1000/60.0988;
-  const MAX_CATCHUP_FRAMES=3;
-
-  let lastFrameTime=0;
-  let frameAccumulator=0;
+  const heldInputs={
+    UP:new Set(),
+    DOWN:new Set(),
+    LEFT:new Set(),
+    RIGHT:new Set(),
+    A:new Set(),
+    B:new Set(),
+    SELECT:new Set(),
+    START:new Set()
+  };
 
   function clearAudioBuffer(){
     audioWriteIndex=0;
     audioReadIndex=0;
-  }
-
-  function getAudioAvailable(){
-    return (audioWriteIndex-audioReadIndex+AUDIO_BUFFER_SIZE)%AUDIO_BUFFER_SIZE;
   }
 
   function initAudio(){
@@ -460,18 +454,13 @@ button:active,
       };
 
       audioNode.connect(audioContext.destination);
-
-      if(audioContext.state==="suspended"){
-        audioContext.resume().catch(function(){});
-      }
+      audioContext.resume().catch(function(){});
     }catch(error){
-      console.error("Không thể khởi tạo âm thanh:",error);
+      console.error("Lỗi khởi tạo âm thanh:",error);
     }
   }
 
   function writeAudioSample(left,right){
-    if(!soundEnabled) return;
-
     const nextIndex=(audioWriteIndex+1)%AUDIO_BUFFER_SIZE;
 
     if(nextIndex===audioReadIndex) return;
@@ -485,16 +474,9 @@ button:active,
     clearAudioBuffer();
 
     nes=new jsnes.NES({
-      sampleRate:44100,
-
       onFrame:function(framebuffer){
-        for(let i=0,p=0;i<framebuffer.length;i++,p+=4){
-          const color=framebuffer[i];
-
-          pixels[p]=(color>>16)&0xFF;
-          pixels[p+1]=(color>>8)&0xFF;
-          pixels[p+2]=color&0xFF;
-          pixels[p+3]=255;
+        for(let i=0;i<framebuffer.length;i++){
+          pixels[i]=0xFF000000|framebuffer[i];
         }
 
         ctx.putImageData(imageData,0,0);
@@ -506,18 +488,6 @@ button:active,
     });
   }
 
-  function binaryStringFromArrayBuffer(buffer){
-    const bytes=new Uint8Array(buffer);
-    const chunkSize=8192;
-    let result="";
-
-    for(let i=0;i<bytes.length;i+=chunkSize){
-      result+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunkSize));
-    }
-
-    return result;
-  }
-
   async function loadDefaultGame(){
     try{
       status.textContent="Đang tải Super Mario Bros...";
@@ -526,32 +496,25 @@ button:active,
 
       createNES();
 
-      const response=await fetch(DEFAULT_ROM_URL,{
-        cache:"no-store"
-      });
+      const response=await fetch(DEFAULT_ROM_URL,{cache:"no-store"});
 
       if(!response.ok){
-        throw new Error("Không tải được file game. Mã lỗi: "+response.status);
+        throw new Error("Không tải được ROM. Mã lỗi: "+response.status);
       }
 
-      const buffer=await response.arrayBuffer();
-
-      if(buffer.byteLength<16){
-        throw new Error("File game không hợp lệ hoặc file quá nhỏ.");
-      }
-
-      const header=new Uint8Array(buffer.slice(0,4));
+      const romData=new Uint8Array(await response.arrayBuffer());
 
       if(
-        header[0]!==0x4E||
-        header[1]!==0x45||
-        header[2]!==0x53||
-        header[3]!==0x1A
+        romData.length<16||
+        romData[0]!==0x4E||
+        romData[1]!==0x45||
+        romData[2]!==0x53||
+        romData[3]!==0x1A
       ){
-        throw new Error("File tải về không phải ROM NES hợp lệ.");
+        throw new Error("File tại link không phải ROM NES hợp lệ.");
       }
 
-      nes.loadROM(binaryStringFromArrayBuffer(buffer));
+      nes.loadROM(romData);
 
       gameLoaded=true;
       paused=false;
@@ -559,7 +522,7 @@ button:active,
       frameAccumulator=0;
 
       pauseButton.textContent="Tạm dừng";
-      status.textContent="Super Mario Bros đã sẵn sàng";
+      status.textContent="Đang chơi Super Mario Bros";
       screenMessage.style.display="none";
     }catch(error){
       console.error(error);
@@ -567,7 +530,7 @@ button:active,
       gameLoaded=false;
       status.textContent="Không thể tải game";
       screenMessage.style.display="flex";
-      screenMessage.innerHTML="<strong>Không thể tải game</strong><span>"+(error.message||"Vui lòng kiểm tra lại link ROM và kết nối mạng.")+"</span>";
+      screenMessage.innerHTML="<strong>Không thể tải game</strong><span>"+(error.message||"Vui lòng kiểm tra link ROM.")+"</span>";
     }
   }
 
@@ -588,29 +551,28 @@ button:active,
     lastFrameTime=time;
 
     if(delta>250) delta=250;
-    if(delta<0) delta=0;
 
     frameAccumulator+=delta;
 
-    let framesRun=0;
+    let frameCount=0;
 
-    while(frameAccumulator>=FRAME_TIME&&framesRun<MAX_CATCHUP_FRAMES){
+    while(frameAccumulator>=FRAME_TIME&&frameCount<MAX_CATCHUP_FRAMES){
       nes.frame();
       frameAccumulator-=FRAME_TIME;
-      framesRun++;
+      frameCount++;
     }
   }
 
   function updateButtonVisual(key){
     const element=document.querySelector('[data-key="'+key+'"]');
 
-    if(!element) return;
-
-    element.classList.toggle("pressed",heldInputs[key].size>0);
+    if(element){
+      element.classList.toggle("pressed",heldInputs[key].size>0);
+    }
   }
 
   function setButton(key,source,isDown){
-    if(!Object.prototype.hasOwnProperty.call(buttons,key)) return;
+    if(!buttons.hasOwnProperty(key)) return;
 
     const sources=heldInputs[key];
     const wasPressed=sources.size>0;
@@ -653,7 +615,7 @@ button:active,
 
     paused=!paused;
     pauseButton.textContent=paused?"Tiếp tục":"Tạm dừng";
-    status.textContent=paused?"Game đang tạm dừng":"Đang chơi";
+    status.textContent=paused?"Game đang tạm dừng":"Đang chơi Super Mario Bros";
 
     lastFrameTime=0;
     frameAccumulator=0;
@@ -663,9 +625,8 @@ button:active,
 
   soundButton.addEventListener("click",function(){
     soundEnabled=!soundEnabled;
-    clearAudioBuffer();
-
     soundButton.textContent="Âm thanh: "+(soundEnabled?"Bật":"Tắt");
+    clearAudioBuffer();
 
     if(soundEnabled){
       initAudio();
@@ -675,15 +636,11 @@ button:active,
   document.querySelectorAll("[data-key]").forEach(function(button){
     const key=button.dataset.key;
 
-    function getSource(event){
-      return "pointer-"+event.pointerId;
-    }
-
     function press(event){
       event.preventDefault();
-
       initAudio();
-      setButton(key,getSource(event),true);
+
+      setButton(key,"pointer-"+event.pointerId,true);
 
       try{
         button.setPointerCapture(event.pointerId);
@@ -692,7 +649,7 @@ button:active,
 
     function release(event){
       event.preventDefault();
-      setButton(key,getSource(event),false);
+      setButton(key,"pointer-"+event.pointerId,false);
     }
 
     button.addEventListener("pointerdown",press);
