@@ -3,19 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0d1018">
-<title>Cadillacs and Dinosaurs Arcade</title>
+<meta name="theme-color" content="#0b0f18">
+<title>Arcade ZIP Player</title>
 
 <style>
 :root{
-  --bg:#0d1018;
-  --panel:#171c29;
-  --panel2:#222a3c;
-  --line:#39445d;
-  --text:#f5f7ff;
-  --muted:#aab5cb;
-  --red:#e34045;
-  --yellow:#ffc83d;
+  --bg:#0b0f18;
+  --panel:#161d2c;
+  --line:#3c4b68;
+  --text:#f4f7ff;
+  --muted:#aebbd3;
+  --red:#e84b4f;
+  --blue:#4b8dff;
 }
 
 *{
@@ -26,74 +25,68 @@
   user-select:none;
 }
 
-html,
-body{
+html,body{
   width:100%;
-  min-height:100%;
+  height:100%;
   margin:0;
   overflow:hidden;
-  background:
-    radial-gradient(circle at top,#29324c 0%,#151a27 42%,var(--bg) 100%);
+  background:radial-gradient(circle at top,#263655 0%,#121927 46%,var(--bg) 100%);
   color:var(--text);
   font-family:Arial,Helvetica,sans-serif;
   touch-action:none;
 }
 
-body{
-  min-height:100vh;
-  min-height:100dvh;
-}
-
 .app{
-  width:min(100%,900px);
-  min-height:100vh;
-  min-height:100dvh;
+  width:min(100%,1000px);
+  height:100vh;
+  height:100dvh;
   margin:auto;
   padding:
     calc(10px + env(safe-area-inset-top))
     10px
-    calc(12px + env(safe-area-inset-bottom));
+    calc(10px + env(safe-area-inset-bottom));
   display:flex;
   flex-direction:column;
   gap:10px;
 }
 
 .header{
-  min-height:42px;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:10px;
+  min-height:38px;
   padding:0 4px;
+  gap:10px;
 }
 
 .logo{
   display:flex;
   align-items:center;
-  min-width:0;
   gap:9px;
+  min-width:0;
+  font-size:15px;
   font-weight:900;
-  letter-spacing:.4px;
+  letter-spacing:.6px;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
 
-.logo-icon{
-  width:30px;
-  height:30px;
+.logo-mark{
+  width:28px;
+  height:28px;
   display:grid;
   place-items:center;
   flex:none;
-  border:2px solid #ff8a8c;
+  border:2px solid #ff9a9c;
   border-radius:7px;
-  background:linear-gradient(145deg,#ff5d5d,#ad1f34);
-  box-shadow:0 3px 8px rgba(0,0,0,.35);
-  font-size:12px;
+  background:linear-gradient(145deg,#ff6266,#ad2439);
+  box-shadow:0 3px 10px rgba(0,0,0,.35);
+  font-size:10px;
 }
 
-.status{
-  max-width:45%;
+#status{
+  max-width:46%;
   color:var(--muted);
   font-size:11px;
   text-align:right;
@@ -102,114 +95,136 @@ body{
   text-overflow:ellipsis;
 }
 
-.game-shell{
+#game-box{
   position:relative;
-  flex:1 1 auto;
+  flex:1;
   min-height:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
   overflow:hidden;
-  border:3px solid #3b455c;
+  border:3px solid var(--line);
   border-radius:15px;
   background:#000;
-  box-shadow:
-    0 12px 28px rgba(0,0,0,.42),
-    inset 0 0 0 2px rgba(255,255,255,.04);
+  box-shadow:0 12px 30px rgba(0,0,0,.45);
 }
 
 #game{
   width:100%;
   height:100%;
-  min-height:250px;
   background:#000;
 }
 
-.loading{
+#select-screen{
   position:absolute;
-  z-index:5;
+  z-index:20;
   inset:0;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:12px;
-  padding:24px;
-  background:radial-gradient(circle,#26324c,#080b12 72%);
+  gap:14px;
+  padding:22px;
   text-align:center;
-  pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 35%,rgba(43,62,99,.96),rgba(6,9,15,.98) 72%);
 }
 
-.loading strong{
+#select-screen.hidden{
+  display:none;
+}
+
+.arcade-icon{
+  width:62px;
+  height:62px;
+  display:grid;
+  place-items:center;
+  border:3px solid #7ba7ff;
+  border-radius:15px;
+  color:#d9e6ff;
+  background:linear-gradient(145deg,#3c69c5,#202e61);
+  box-shadow:0 7px 22px rgba(0,0,0,.42);
+  font-size:28px;
+}
+
+#select-screen strong{
   font-size:18px;
 }
 
-.loading span{
-  max-width:330px;
-  color:#b8c4dc;
+#select-screen p{
+  max-width:410px;
+  margin:0;
+  color:#bdc9df;
   font-size:12px;
-  line-height:1.5;
+  line-height:1.55;
 }
 
-.loader-dot{
-  width:13px;
-  height:13px;
-  border-radius:50%;
-  background:var(--yellow);
-  box-shadow:0 0 15px var(--yellow);
-  animation:pulse .9s infinite alternate;
+#rom-input{
+  display:none;
 }
 
-@keyframes pulse{
-  from{transform:scale(.7);opacity:.5}
-  to{transform:scale(1.25);opacity:1}
+#choose-button{
+  min-height:48px;
+  padding:0 20px;
+  border:2px solid #9bbbff;
+  border-radius:11px;
+  background:linear-gradient(145deg,#4c89ff,#2752b4);
+  color:white;
+  box-shadow:0 4px 0 #172c65,0 8px 18px rgba(0,0,0,.3);
+  font:700 14px Arial,sans-serif;
+  cursor:pointer;
+  touch-action:manipulation;
 }
 
-.note{
+#choose-button:active{
+  transform:translateY(3px);
+  box-shadow:0 1px 0 #172c65;
+}
+
+.warning{
+  max-width:440px;
+  color:#ffdc83 !important;
+  font-size:11px !important;
+}
+
+.bottom-note{
   flex:none;
   padding:8px 10px;
-  border:1px solid #3b455c;
+  border:1px solid var(--line);
   border-radius:10px;
-  background:rgba(24,30,44,.9);
-  color:#afbad0;
+  background:rgba(21,28,43,.88);
+  color:#aebbd3;
   font-size:11px;
   line-height:1.4;
   text-align:center;
 }
 
-.note b{
-  color:#fff1af;
+.bottom-note b{
+  color:#fff;
 }
 
 @media (orientation:landscape) and (max-height:600px){
   .app{
+    gap:5px;
     padding:
       calc(5px + env(safe-area-inset-top))
       8px
       calc(5px + env(safe-area-inset-bottom));
-    gap:5px;
   }
 
   .header{
-    min-height:30px;
-  }
-
-  .logo-icon{
-    width:24px;
-    height:24px;
-    font-size:10px;
+    min-height:28px;
   }
 
   .logo{
-    font-size:13px;
+    font-size:12px;
   }
 
-  .note{
+  .logo-mark{
+    width:23px;
+    height:23px;
+    font-size:8px;
+  }
+
+  .bottom-note{
     display:none;
-  }
-
-  #game{
-    min-height:0;
   }
 }
 </style>
@@ -217,87 +232,150 @@ body{
 
 <body>
 <div class="app">
-
   <div class="header">
     <div class="logo">
-      <div class="logo-icon">AR</div>
-      CADILLACS AND DINOSAURS
+      <div class="logo-mark">AR</div>
+      ARCADE ZIP PLAYER
     </div>
-    <div class="status" id="status">Đang tải game...</div>
+    <div id="status">Chưa chọn ROM</div>
   </div>
 
-  <div class="game-shell">
+  <div id="game-box">
     <div id="game"></div>
 
-    <div class="loading" id="loading">
-      <div class="loader-dot"></div>
-      <strong>ĐANG NẠP DINO.ZIP</strong>
-      <span>Chờ tải ROM và bộ giả lập. Sau khi vào game, chạm màn hình để hiện đầy đủ nút cảm ứng.</span>
+    <div id="select-screen">
+      <div class="arcade-icon">🕹</div>
+      <strong>CHỌN GAME ARCADE .ZIP</strong>
+      <p>Chọn file ROM ZIP từ máy để chạy bằng FBNeo ngay trên trình duyệt.</p>
+
+      <button id="choose-button">CHỌN FILE .ZIP</button>
+      <input id="rom-input" type="file" accept=".zip,application/zip,application/x-zip-compressed">
+
+      <p class="warning">
+        Không giải nén file ROM. Một số game CPS/Neo Geo cần thêm BIOS hoặc ROM phụ đúng phiên bản nên có thể không chạy nếu ROM set thiếu file.
+      </p>
     </div>
   </div>
 
-  <div class="note">
-    <b>Điện thoại:</b> xoay ngang để chơi thoải mái hơn. Nút cảm ứng gồm joystick, A/B/C, Start, Coin, menu, fullscreen và lưu/tải game sẽ hiện trong trình giả lập.
+  <div class="bottom-note">
+    <b>Điện thoại:</b> xoay ngang để chơi. Sau khi game chạy, EmulatorJS sẽ hiện joystick và các nút cảm ứng A/B/C, Start, Coin, menu và toàn màn hình.
   </div>
-
 </div>
 
 <script>
-const EJS_player = "#game";
-const EJS_core = "fbneo";
-const EJS_gameUrl = "https://github.com/nhut990/files/raw/refs/heads/main/hinh/dino.zip";
-const EJS_gameID = "cadillacs-and-dinosaurs-dino";
-const EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
-const EJS_startOnLoaded = true;
-const EJS_language = "vi-VN";
-const EJS_volume = 0.75;
+(function(){
+  "use strict";
 
-const EJS_Buttons = {
-  play: true,
-  restart: true,
-  mute: true,
-  settings: true,
-  fullscreen: true,
-  saveState: true,
-  loadState: true,
-  quickSave: true,
-  quickLoad: true,
-  screenshot: true,
-  volume: true,
-  gamepad: true,
-  cacheManager: true
-};
+  var input = document.getElementById("rom-input");
+  var chooseButton = document.getElementById("choose-button");
+  var selectScreen = document.getElementById("select-screen");
+  var status = document.getElementById("status");
+  var started = false;
+  var romBlobUrl = null;
 
-const EJS_defaultControls = {
-  0: {
-    0: "z",
-    1: "x",
-    2: "a",
-    3: "s",
-    4: "q",
-    5: "w",
-    8: "Enter",
-    9: "Shift",
-    12: "ArrowUp",
-    13: "ArrowDown",
-    14: "ArrowLeft",
-    15: "ArrowRight"
-  }
-};
+  chooseButton.addEventListener("click", function(){
+    if(!started) input.click();
+  });
 
-window.addEventListener("load", function(){
-  const loading = document.getElementById("loading");
-  const status = document.getElementById("status");
+  input.addEventListener("change", function(){
+    var file = input.files && input.files[0];
 
-  status.textContent = "Đang nạp ROM Dino...";
+    if(!file || started) return;
 
-  setTimeout(function(){
-    loading.style.display = "none";
-    status.textContent = "Đang chơi • FBNeo";
-  }, 7000);
-});
+    if(!file.name.toLowerCase().endsWith(".zip")){
+      status.textContent = "Hãy chọn đúng file .zip";
+      return;
+    }
+
+    if(file.size < 1000){
+      status.textContent = "File ROM không hợp lệ";
+      return;
+    }
+
+    started = true;
+    chooseButton.disabled = true;
+    status.textContent = "Đang nạp: " + file.name;
+
+    selectScreen.querySelector("strong").textContent = "ĐANG NẠP ROM...";
+    selectScreen.querySelector("p").textContent = file.name + " • " + (file.size / 1024 / 1024).toFixed(2) + " MB";
+
+    romBlobUrl = URL.createObjectURL(file);
+
+    window.EJS_player = "#game";
+    window.EJS_core = "fbneo";
+    window.EJS_gameUrl = romBlobUrl;
+    window.EJS_gameID = "arcade-" + file.name.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+    window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
+    window.EJS_startOnLoaded = true;
+    window.EJS_language = "vi-VN";
+    window.EJS_volume = 0.8;
+
+    window.EJS_Buttons = {
+      play: true,
+      pause: true,
+      restart: true,
+      mute: true,
+      settings: true,
+      fullscreen: true,
+      saveState: true,
+      loadState: true,
+      quickSave: true,
+      quickLoad: true,
+      screenshot: true,
+      volume: true,
+      gamepad: true,
+      cacheManager: true
+    };
+
+    window.EJS_defaultControls = {
+      0: {
+        0: "z",
+        1: "x",
+        2: "a",
+        3: "s",
+        4: "q",
+        5: "w",
+        8: "Enter",
+        9: "Shift",
+        12: "ArrowUp",
+        13: "ArrowDown",
+        14: "ArrowLeft",
+        15: "ArrowRight"
+      }
+    };
+
+    window.EJS_onGameStart = function(){
+      selectScreen.classList.add("hidden");
+      status.textContent = "Đang chơi: " + file.name;
+    };
+
+    window.EJS_onLoadState = function(){
+      status.textContent = "Đã tải save game";
+    };
+
+    window.EJS_onSaveState = function(){
+      status.textContent = "Đã lưu save game";
+    };
+
+    var loader = document.createElement("script");
+    loader.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
+    loader.async = true;
+
+    loader.onerror = function(){
+      status.textContent = "Không tải được bộ giả lập";
+      started = false;
+      chooseButton.disabled = false;
+      selectScreen.querySelector("strong").textContent = "LỖI TẢI GIẢ LẬP";
+      selectScreen.querySelector("p").textContent = "Kiểm tra mạng rồi tải lại trang để thử lại.";
+    };
+
+    document.body.appendChild(loader);
+  });
+
+  window.addEventListener("beforeunload", function(){
+    if(romBlobUrl) URL.revokeObjectURL(romBlobUrl);
+  });
+})();
 </script>
-
-<script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
 </body>
 </html>
