@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Super Mario Bros - NES</title>
 
 <script src="https://unpkg.com/jsnes@2/dist/jsnes.min.js"></script>
@@ -11,16 +11,9 @@
 *{
   box-sizing:border-box;
   -webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;
   -webkit-user-select:none;
   user-select:none;
-  -webkit-touch-callout:none;
-}
-
-:root{
-  --bg:#0a0f1d;
-  --border:#3b4c73;
-  --text:#eef3ff;
-  --muted:#9ba9ca;
 }
 
 html,
@@ -28,9 +21,11 @@ body{
   margin:0;
   width:100%;
   min-height:100%;
-  overflow-x:hidden;
+  overflow:hidden;
+  overscroll-behavior:none;
+  touch-action:none;
   background:radial-gradient(circle at top,#293965 0%,#11192f 44%,#070b15 100%);
-  color:var(--text);
+  color:#eef3ff;
   font-family:Arial,Helvetica,sans-serif;
 }
 
@@ -44,7 +39,7 @@ body{
   min-height:100vh;
   min-height:100dvh;
   margin:auto;
-  padding:16px 14px calc(26px + env(safe-area-inset-bottom));
+  padding:16px 14px calc(24px + env(safe-area-inset-bottom));
   display:flex;
   flex-direction:column;
   gap:14px;
@@ -54,13 +49,14 @@ body{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:12px;
+  gap:10px;
 }
 
 .brand{
   display:flex;
   align-items:center;
   gap:10px;
+  min-width:0;
   font-size:18px;
   font-weight:800;
   letter-spacing:.5px;
@@ -69,7 +65,8 @@ body{
 
 .brand-icon{
   width:40px;
-  height:27px;
+  height:29px;
+  flex:none;
   display:grid;
   place-items:center;
   border:2px solid #fff;
@@ -80,11 +77,11 @@ body{
 }
 
 .status{
-  max-width:56%;
+  max-width:42%;
   overflow:hidden;
   white-space:nowrap;
   text-overflow:ellipsis;
-  color:var(--muted);
+  color:#aab7d4;
   font-size:12px;
   text-align:right;
 }
@@ -139,16 +136,24 @@ canvas{
 }
 
 button{
+  appearance:none;
+  -webkit-appearance:none;
   min-height:46px;
-  border:1px solid var(--border);
+  border:1px solid #3b4c73;
   border-radius:12px;
-  color:var(--text);
+  color:#eef3ff;
   background:linear-gradient(145deg,#293756,#151d31);
   box-shadow:0 4px 0 #080c16,0 7px 14px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.12);
   font:inherit;
   font-weight:700;
   cursor:pointer;
-  touch-action:manipulation;
+  outline:none;
+  touch-action:none;
+}
+
+button:focus,
+button:focus-visible{
+  outline:none;
 }
 
 button:active,
@@ -293,12 +298,6 @@ button:active,
     margin-left:-15px;
   }
 }
-
-@media(min-width:600px){
-  .controls{
-    padding:12px 60px 0;
-  }
-}
 </style>
 </head>
 
@@ -347,7 +346,7 @@ button:active,
     <button class="middle" data-key="START">START</button>
   </div>
 
-  <div class="hint">Chạm một nút bất kỳ để bật âm thanh trên iPhone</div>
+  <div class="hint">Giữ hướng và bấm A hoặc B cùng lúc để chơi</div>
 
 </div>
 
@@ -358,7 +357,7 @@ button:active,
   const DEFAULT_ROM_URL="https://raw.githubusercontent.com/nhut990/files/main/hinh/SuperMarioBros.nes";
 
   const canvas=document.getElementById("screen");
-  const ctx=canvas.getContext("2d",{alpha:false});
+  const ctx=canvas.getContext("2d",{alpha:false,desynchronized:true});
   const imageData=ctx.createImageData(256,240);
   const pixels=new Uint32Array(imageData.data.buffer);
 
@@ -369,7 +368,7 @@ button:active,
 
   if(typeof window.jsnes==="undefined"){
     status.textContent="Không tải được thư viện giả lập";
-    screenMessage.innerHTML="<strong>Lỗi thư viện jsnes</strong><span>Hãy kiểm tra mạng rồi tải lại trang.</span>";
+    screenMessage.innerHTML="<strong>Lỗi thư viện jsnes</strong><span>Hãy kiểm tra kết nối mạng rồi tải lại trang.</span>";
     return;
   }
 
@@ -381,7 +380,9 @@ button:active,
   let audioContext=null;
   let audioNode=null;
 
-  const AUDIO_BUFFER_SIZE=32768;
+  const AUDIO_BUFFER_SIZE=8192;
+  const AUDIO_TARGET_DELAY=1536;
+
   const audioLeft=new Float32Array(AUDIO_BUFFER_SIZE);
   const audioRight=new Float32Array(AUDIO_BUFFER_SIZE);
 
@@ -389,7 +390,7 @@ button:active,
   let audioReadIndex=0;
 
   const FRAME_TIME=1000/60.0988;
-  const MAX_CATCHUP_FRAMES=3;
+  const MAX_CATCHUP_FRAMES=2;
 
   let lastFrameTime=0;
   let frameAccumulator=0;
@@ -416,9 +417,15 @@ button:active,
     START:new Set()
   };
 
+  const activePointers=new Map();
+
   function clearAudioBuffer(){
     audioWriteIndex=0;
     audioReadIndex=0;
+  }
+
+  function audioAvailable(){
+    return (audioWriteIndex-audioReadIndex+AUDIO_BUFFER_SIZE)%AUDIO_BUFFER_SIZE;
   }
 
   function initAudio(){
@@ -435,17 +442,26 @@ button:active,
 
     try{
       audioContext=new AudioContextClass();
-      audioNode=audioContext.createScriptProcessor(2048,0,2);
+      audioNode=audioContext.createScriptProcessor(1024,0,2);
 
       audioNode.onaudioprocess=function(event){
         const left=event.outputBuffer.getChannelData(0);
         const right=event.outputBuffer.getChannelData(1);
 
+        let available=audioAvailable();
+
+        if(available>AUDIO_TARGET_DELAY*2){
+          const skip=available-AUDIO_TARGET_DELAY;
+          audioReadIndex=(audioReadIndex+skip)%AUDIO_BUFFER_SIZE;
+          available=audioAvailable();
+        }
+
         for(let i=0;i<left.length;i++){
-          if(soundEnabled&&audioReadIndex!==audioWriteIndex){
+          if(soundEnabled&&available>0){
             left[i]=audioLeft[audioReadIndex];
             right[i]=audioRight[audioReadIndex];
             audioReadIndex=(audioReadIndex+1)%AUDIO_BUFFER_SIZE;
+            available--;
           }else{
             left[i]=0;
             right[i]=0;
@@ -456,14 +472,16 @@ button:active,
       audioNode.connect(audioContext.destination);
       audioContext.resume().catch(function(){});
     }catch(error){
-      console.error("Lỗi khởi tạo âm thanh:",error);
+      console.error(error);
     }
   }
 
   function writeAudioSample(left,right){
     const nextIndex=(audioWriteIndex+1)%AUDIO_BUFFER_SIZE;
 
-    if(nextIndex===audioReadIndex) return;
+    if(nextIndex===audioReadIndex){
+      audioReadIndex=(audioReadIndex+1)%AUDIO_BUFFER_SIZE;
+    }
 
     audioLeft[audioWriteIndex]=left;
     audioRight[audioWriteIndex]=right;
@@ -550,7 +568,8 @@ button:active,
     let delta=time-lastFrameTime;
     lastFrameTime=time;
 
-    if(delta>250) delta=250;
+    if(delta>100) delta=100;
+    if(delta<0) delta=0;
 
     frameAccumulator+=delta;
 
@@ -572,7 +591,7 @@ button:active,
   }
 
   function setButton(key,source,isDown){
-    if(!buttons.hasOwnProperty(key)) return;
+    if(!Object.prototype.hasOwnProperty.call(buttons,key)) return;
 
     const sources=heldInputs[key];
     const wasPressed=sources.size>0;
@@ -589,8 +608,6 @@ button:active,
 
     if(!gameLoaded||!nes||wasPressed===isPressed) return;
 
-    initAudio();
-
     if(isPressed){
       nes.buttonDown(1,buttons[key]);
     }else{
@@ -598,7 +615,18 @@ button:active,
     }
   }
 
+  function releasePointer(pointerId){
+    const key=activePointers.get(pointerId);
+
+    if(!key) return;
+
+    setButton(key,"pointer-"+pointerId,false);
+    activePointers.delete(pointerId);
+  }
+
   function releaseAllButtons(){
+    activePointers.clear();
+
     Object.keys(buttons).forEach(function(key){
       heldInputs[key].clear();
 
@@ -619,13 +647,14 @@ button:active,
 
     lastFrameTime=0;
     frameAccumulator=0;
-
+    clearAudioBuffer();
     releaseAllButtons();
   });
 
   soundButton.addEventListener("click",function(){
     soundEnabled=!soundEnabled;
     soundButton.textContent="Âm thanh: "+(soundEnabled?"Bật":"Tắt");
+
     clearAudioBuffer();
 
     if(soundEnabled){
@@ -636,26 +665,45 @@ button:active,
   document.querySelectorAll("[data-key]").forEach(function(button){
     const key=button.dataset.key;
 
-    function press(event){
+    button.addEventListener("pointerdown",function(event){
       event.preventDefault();
+      event.stopPropagation();
+
       initAudio();
 
+      activePointers.set(event.pointerId,key);
       setButton(key,"pointer-"+event.pointerId,true);
 
       try{
         button.setPointerCapture(event.pointerId);
       }catch(error){}
-    }
+    });
 
-    function release(event){
+    button.addEventListener("pointerup",function(event){
       event.preventDefault();
-      setButton(key,"pointer-"+event.pointerId,false);
-    }
+      releasePointer(event.pointerId);
+    });
 
-    button.addEventListener("pointerdown",press);
-    button.addEventListener("pointerup",release);
-    button.addEventListener("pointercancel",release);
-    button.addEventListener("lostpointercapture",release);
+    button.addEventListener("pointercancel",function(event){
+      event.preventDefault();
+      releasePointer(event.pointerId);
+    });
+
+    button.addEventListener("lostpointercapture",function(event){
+      releasePointer(event.pointerId);
+    });
+  });
+
+  window.addEventListener("pointerup",function(event){
+    releasePointer(event.pointerId);
+  },true);
+
+  window.addEventListener("pointercancel",function(event){
+    releasePointer(event.pointerId);
+  },true);
+
+  document.addEventListener("contextmenu",function(event){
+    event.preventDefault();
   });
 
   const keyboardMap={
@@ -691,13 +739,14 @@ button:active,
   });
 
   window.addEventListener("blur",function(){
+    clearAudioBuffer();
     releaseAllButtons();
   });
 
   document.addEventListener("visibilitychange",function(){
     if(document.hidden){
-      releaseAllButtons();
       clearAudioBuffer();
+      releaseAllButtons();
       lastFrameTime=0;
       frameAccumulator=0;
     }
