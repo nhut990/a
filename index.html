@@ -30,6 +30,7 @@ body{
   color:var(--text);
   font-family:Arial,Helvetica,sans-serif;
   overflow:hidden; /* không cuộn trang */
+  touch-action:none; /* chặn cử chỉ zoom/pan */
 }
 
 .app{
@@ -167,10 +168,11 @@ button:active,.control.pressed{
   padding:4px 2px 0;
 }
 
+/* Điều chỉnh kích thước dpad - tối thiểu 140px để không bị nhỏ quá */
 .dpad{
   position:relative;
-  width:clamp(110px, 25vw, 154px);   /* tự co giãn theo màn hình */
-  height:clamp(110px, 25vw, 154px);
+  width:clamp(140px, 28vw, 160px);
+  height:clamp(140px, 28vw, 160px);
   flex:none;
 }
 
@@ -191,7 +193,7 @@ button:active,.control.pressed{
   width:34%;
   height:34%;
   border-radius:10px;
-  font-size:clamp(16px, 4vw, 21px);
+  font-size:clamp(18px, 5vw, 24px);
 }
 
 .up{top:0;left:33%}
@@ -211,23 +213,24 @@ button:active,.control.pressed{
 .right-controls{
   display:flex;
   align-items:center;
-  gap:clamp(8px, 2vw, 13px);
+  gap:clamp(10px, 2.5vw, 16px);
   flex:none;
   padding-right:2px;
 }
 
+/* Nút tròn to hơn, tối thiểu 65px */
 .round{
   position:relative;
-  width:clamp(50px, 12vw, 67px);
-  height:clamp(50px, 12vw, 67px);
+  width:clamp(65px, 15vw, 75px);
+  height:clamp(65px, 15vw, 75px);
   border-radius:50%;
-  font-size:clamp(14px, 4vw, 20px);
+  font-size:clamp(16px, 5vw, 24px);
   background:linear-gradient(145deg,#ff7180,#bd2548);
   border-color:#ff9eaa;
 }
 
 .round.b{
-  margin-top:clamp(20px, 5vw, 30px);
+  margin-top:clamp(25px, 5vw, 35px);
   background:linear-gradient(145deg,#6e9bff,#375fd7);
   border-color:#a6bfff;
 }
@@ -268,13 +271,13 @@ button:active,.control.pressed{
   flex:0 0 auto;
 }
 
-/* Điều chỉnh thêm cho màn hình rất thấp */
+/* Điều chỉnh cho màn hình thấp */
 @media(max-height:640px){
   .app{gap:6px; padding:8px 10px 12px;}
   .screen-box{max-height:38vh;}
-  .dpad{width:clamp(90px, 22vw, 120px); height:clamp(90px, 22vw, 120px);}
-  .round{width:clamp(45px, 11vw, 55px); height:clamp(45px, 11vw, 55px);}
-  .round.b{margin-top:clamp(15px, 3vw, 20px);}
+  .dpad{width:clamp(120px, 25vw, 140px); height:clamp(120px, 25vw, 140px);}
+  .round{width:clamp(55px, 14vw, 65px); height:clamp(55px, 14vw, 65px);}
+  .round.b{margin-top:clamp(18px, 4vw, 25px);}
   .middle{margin-top:2px;}
 }
 </style>
@@ -351,6 +354,17 @@ let soundEnabled = true;
 let audioContext = null;
 let audioNode = null;
 let audioQueue = [];
+
+// ====== CHẶN KÍNH LÚP & GESTURE MẶC ĐỊNH ======
+document.addEventListener('touchstart', function(e) {
+  if (e.target.closest('button, .control')) {
+    e.preventDefault();               // ngăn hành vi mặc định (bao gồm magnifier)
+  }
+}, { passive: false });
+
+document.addEventListener('gesturestart', function(e) {
+  e.preventDefault();                 // chặn cử chỉ zoom/pan trên iOS
+});
 
 // Kiểm tra jsnes đã tải chưa
 if (typeof jsnes === 'undefined') {
