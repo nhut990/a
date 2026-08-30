@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta
   name="viewport"
-  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
 >
 <title>NES Emulator</title>
 
@@ -20,11 +20,9 @@
 }
 
 :root{
-  --bg:#0a0f1d;
-  --panel:#161f36;
-  --border:#3b4c73;
   --text:#eef3ff;
   --muted:#9ba9ca;
+  --border:#3b4c73;
 }
 
 html,
@@ -60,7 +58,7 @@ body{
   align-items:center;
   justify-content:space-between;
   gap:12px;
-  flex:0 0 auto;
+  flex:none;
 }
 
 .brand{
@@ -73,23 +71,23 @@ body{
   letter-spacing:.5px;
 }
 
-.brand-name{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-
 .brand-icon{
+  display:grid;
   width:clamp(34px,7vw,40px);
   height:clamp(23px,5vw,27px);
   flex:none;
-  display:grid;
   place-items:center;
   border:2px solid #fff;
   border-radius:8px;
   background:linear-gradient(145deg,#ff6578,#bc2447);
   box-shadow:0 4px 10px rgba(0,0,0,.3);
   font-size:clamp(10px,2vw,12px);
+}
+
+.brand-name{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 
 .status{
@@ -112,7 +110,7 @@ body{
   border:5px solid #394866;
   border-radius:16px;
   background:#000;
-  aspect-ratio:4/3;
+  aspect-ratio:4 / 3;
   box-shadow:
     0 15px 35px rgba(0,0,0,.4),
     inset 0 0 0 2px rgba(255,255,255,.05);
@@ -154,7 +152,7 @@ canvas{
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:8px;
-  flex:0 0 auto;
+  flex:none;
 }
 
 button{
@@ -293,7 +291,7 @@ button:active,
   display:flex;
   justify-content:center;
   gap:12px;
-  flex:0 0 auto;
+  flex:none;
   margin-top:4px;
 }
 
@@ -326,7 +324,7 @@ button:active,
 }
 
 .game-modal-card{
-  width:min(100%,470px);
+  width:min(100%,455px);
   overflow:hidden;
   border:1px solid rgba(142,172,240,.42);
   border-radius:19px;
@@ -439,9 +437,13 @@ button:active,
   white-space:nowrap;
 }
 
+.game-ready{
+  color:#8ff3b7 !important;
+}
+
 @keyframes modalFade{
-  from{opacity:0}
-  to{opacity:1}
+  from{ opacity:0; }
+  to{ opacity:1; }
 }
 
 @keyframes modalPop{
@@ -478,10 +480,6 @@ button:active,
 
   .round.b{
     margin-top:clamp(20px,5vw,30px);
-  }
-
-  .middle{
-    margin-top:2px;
   }
 }
 </style>
@@ -536,11 +534,12 @@ button:active,
 
 <input type="file" id="fileInput" accept=".nes" style="display:none">
 
+<!-- MENU GAME KHÁC -->
 <div class="game-modal" id="gameModal">
   <div class="game-modal-card">
     <div class="game-modal-header">
       <div>
-        <strong>CHỌN GAME</strong>
+        <strong>GAME KHÁC</strong>
         <span>Mở ROM từ máy hoặc chọn game có sẵn</span>
       </div>
 
@@ -556,31 +555,15 @@ button:active,
         <span class="game-icon">📁</span>
         <span class="game-info">
           <strong>Mở file .nes từ máy</strong>
-          <small>Chọn ROM NES có trong điện thoại hoặc máy tính</small>
+          <small>Chọn ROM NES trong điện thoại hoặc máy tính</small>
         </span>
       </button>
 
-      <button
-        class="game-item"
-        data-rom-url="https://raw.githubusercontent.com/nhut990/files/main/music/021%20Contra.nes"
-        data-game-name="Contra"
-      >
+      <button class="game-item" id="contraButton">
         <span class="game-icon">🎮</span>
         <span class="game-info">
           <strong>Contra</strong>
-          <small>Tải game từ GitHub</small>
-        </span>
-      </button>
-
-      <button
-        class="game-item"
-        data-rom-url="https://raw.githubusercontent.com/nhut990/files/main/music/Qi%20Wang%20-%20Chinese%20Chess%20(Asia)%20(Micro%20Genius)%20(Unl).nes"
-        data-game-name="Qi Wang - Chinese Chess (Asia) (Micro Genius) (Unl)"
-      >
-        <span class="game-icon">♟</span>
-        <span class="game-info">
-          <strong>Qi Wang - Chinese Chess</strong>
-          <small>Chinese Chess (Asia) – Micro Genius</small>
+          <small id="contraStatus">Đang tải sẵn game...</small>
         </span>
       </button>
     </div>
@@ -588,11 +571,21 @@ button:active,
 </div>
 
 <script>
+/* =========================================================
+   LINK ROM
+========================================================= */
 const DEFAULT_ROM_URL =
   "https://raw.githubusercontent.com/nhut990/files/main/hinh/SuperMarioBros.nes";
 
-const DEFAULT_GAME_NAME = "Super Mario Bros";
+const CONTRA_ROM_URL =
+  "https://raw.githubusercontent.com/nhut990/files/main/music/021%20Contra.nes";
 
+const DEFAULT_GAME_NAME = "Super Mario Bros";
+const CONTRA_GAME_NAME = "Contra";
+
+/* =========================================================
+   KHAI BÁO GIAO DIỆN
+========================================================= */
 const canvas = document.getElementById("screen");
 const ctx = canvas.getContext("2d", { alpha:false });
 const imageData = ctx.createImageData(256, 240);
@@ -612,6 +605,12 @@ const closeGameModal = document.getElementById("closeGameModal");
 const openFileButton = document.getElementById("openFileButton");
 const fileInput = document.getElementById("fileInput");
 
+const contraButton = document.getElementById("contraButton");
+const contraStatus = document.getElementById("contraStatus");
+
+/* =========================================================
+   TRẠNG THÁI GAME
+========================================================= */
 let nes = null;
 let gameLoaded = false;
 let paused = false;
@@ -622,23 +621,36 @@ let audioNode = null;
 let audioQueue = [];
 
 /*
-  Mỗi lần người dùng chọn game mới, số này sẽ tăng.
-  Nếu game cũ tải chậm hơn game mới, game cũ sẽ bị bỏ qua,
-  không thể tự nhiên ghi đè lên game đang chọn.
+  Bộ nhớ ROM đã tải.
+  Contra sẽ được lưu ArrayBuffer ở đây sau khi trang mở.
+*/
+let contraROMBuffer = null;
+let contraPreloadPromise = null;
+let contraPreloadError = null;
+
+/*
+  Tránh trường hợp game tải cũ hoàn tất muộn và ghi đè
+  lên game mới mà người dùng vừa chọn.
 */
 let loadToken = 0;
 
+/* =========================================================
+   KIỂM TRA JSNES
+========================================================= */
 if (typeof jsnes === "undefined") {
   status.textContent = "Không tải được thư viện jsnes";
 
   showScreenMessage(
     "Lỗi thư viện",
-    "Không thể tải jsnes. Vui lòng kiểm tra mạng rồi tải lại trang."
+    "Không thể tải jsnes. Hãy kiểm tra mạng rồi tải lại trang."
   );
 
   throw new Error("jsnes is not loaded");
 }
 
+/* =========================================================
+   PHÍM NES
+========================================================= */
 const buttons = {
   UP: jsnes.Controller.BUTTON_UP,
   DOWN: jsnes.Controller.BUTTON_DOWN,
@@ -650,6 +662,9 @@ const buttons = {
   START: jsnes.Controller.BUTTON_START
 };
 
+/* =========================================================
+   THÔNG BÁO MÀN HÌNH
+========================================================= */
 function showScreenMessage(title, text) {
   screenMessage.style.display = "flex";
   screenMessage.innerHTML = "";
@@ -682,6 +697,9 @@ function formatBytes(bytes) {
   return (bytes / (1024 * 1024)).toFixed(2) + " MB";
 }
 
+/* =========================================================
+   ÂM THANH
+========================================================= */
 function initAudio() {
   if (audioContext) {
     if (audioContext.state === "suspended") {
@@ -718,12 +736,19 @@ function initAudio() {
   audioNode.connect(audioContext.destination);
 }
 
+/* =========================================================
+   TẠO MÁY NES
+========================================================= */
 function createNES() {
   audioQueue = [];
 
   nes = new jsnes.NES({
     onFrame(framebuffer) {
-      for (let i = 0, pixelIndex = 0; i < framebuffer.length; i++, pixelIndex += 4) {
+      for (
+        let i = 0, pixelIndex = 0;
+        i < framebuffer.length;
+        i++, pixelIndex += 4
+      ) {
         const color = framebuffer[i];
 
         pixels[pixelIndex] = color & 0xFF;
@@ -737,7 +762,7 @@ function createNES() {
 
     onAudioSample(left, right) {
       /*
-        Không để hàng chờ quá dài để âm thanh không bị trễ quá nhiều.
+        Giới hạn hàng chờ để âm thanh không bị chậm.
       */
       if (audioQueue.length < 12000) {
         audioQueue.push(left, right);
@@ -746,10 +771,12 @@ function createNES() {
   });
 }
 
+/* =========================================================
+   XỬ LÝ DỮ LIỆU ROM
+========================================================= */
 function binaryStringFromArrayBuffer(buffer) {
   const bytes = new Uint8Array(buffer);
   const chunkSize = 8192;
-
   let result = "";
 
   for (let start = 0; start < bytes.length; start += chunkSize) {
@@ -773,19 +800,6 @@ function isValidNESRom(buffer) {
   );
 }
 
-function getRomInfo(buffer) {
-  const bytes = new Uint8Array(buffer);
-
-  if (bytes.length < 16) {
-    return "ROM quá ngắn.";
-  }
-
-  const prgSize = bytes[4] * 16;
-  const chrSize = bytes[5] * 8;
-
-  return "PRG: " + prgSize + " KB • CHR: " + chrSize + " KB";
-}
-
 function releaseAllButtons() {
   if (nes) {
     Object.keys(buttons).forEach(key => {
@@ -801,7 +815,7 @@ function releaseAllButtons() {
 function loadROM(buffer, gameName) {
   if (!isValidNESRom(buffer)) {
     throw new Error(
-      "Dữ liệu tải về không có header NES hợp lệ. Có thể link không trả về file ROM."
+      "Dữ liệu này không phải ROM NES hợp lệ hoặc ROM đã bị lỗi."
     );
   }
 
@@ -815,11 +829,6 @@ function loadROM(buffer, gameName) {
 
   const romData = binaryStringFromArrayBuffer(buffer);
 
-  /*
-    Nếu ROM lỗi, jsnes sẽ báo Load failed tại đây.
-    Nhưng hai ROM này chạy từ file máy, nên khi tải đúng byte từ raw GitHub
-    chúng cũng sẽ nạp được như vậy.
-  */
   nes.loadROM(romData);
 
   gameLoaded = true;
@@ -830,6 +839,28 @@ function loadROM(buffer, gameName) {
   status.textContent = "Đang chơi: " + gameName;
 
   hideScreenMessage();
+}
+
+/* =========================================================
+   TẢI ROM TỪ GITHUB
+========================================================= */
+async function downloadROM(url) {
+  const response = await fetch(url, {
+    method:"GET",
+    cache:"force-cache"
+  });
+
+  if (!response.ok) {
+    throw new Error("Không thể tải ROM. Lỗi HTTP: " + response.status);
+  }
+
+  const buffer = await response.arrayBuffer();
+
+  if (!isValidNESRom(buffer)) {
+    throw new Error("Link không trả về file ROM NES hợp lệ.");
+  }
+
+  return buffer;
 }
 
 async function loadGameFromURL(url, gameName) {
@@ -852,41 +883,10 @@ async function loadGameFromURL(url, gameName) {
       "Đang lấy ROM từ GitHub..."
     );
 
-    const response = await fetch(url, {
-      method:"GET",
-      cache:"no-store"
-    });
-
-    /*
-      Nếu trong khi tải, bạn đã chọn một game khác,
-      lượt tải cũ sẽ không làm gì thêm.
-    */
-    if (currentToken !== loadToken) {
-      return;
-    }
-
-    if (!response.ok) {
-      throw new Error(
-        "GitHub trả về lỗi " + response.status + ". Không tải được ROM."
-      );
-    }
-
-    const buffer = await response.arrayBuffer();
+    const buffer = await downloadROM(url);
 
     if (currentToken !== loadToken) {
       return;
-    }
-
-    if (!isValidNESRom(buffer)) {
-      const preview = new TextDecoder()
-        .decode(new Uint8Array(buffer).slice(0, 80))
-        .replace(/\s+/g, " ")
-        .trim();
-
-      throw new Error(
-        "Link không trả về ROM NES hợp lệ. Dữ liệu nhận được: " +
-        (preview || "không xác định")
-      );
     }
 
     status.textContent =
@@ -908,11 +908,117 @@ async function loadGameFromURL(url, gameName) {
 
     showScreenMessage(
       "Không thể tải game",
-      error.message || "Vui lòng kiểm tra lại link ROM và mạng."
+      error.message || "Vui lòng kiểm tra lại kết nối mạng."
     );
   }
 }
 
+/* =========================================================
+   TẢI SẴN CONTRA NGAY KHI MỞ TRANG
+========================================================= */
+function preloadContra() {
+  if (contraROMBuffer) {
+    return Promise.resolve(contraROMBuffer);
+  }
+
+  if (contraPreloadPromise) {
+    return contraPreloadPromise;
+  }
+
+  contraStatus.textContent = "Đang tải sẵn game...";
+
+  contraPreloadPromise = downloadROM(CONTRA_ROM_URL)
+    .then(buffer => {
+      contraROMBuffer = buffer;
+      contraPreloadError = null;
+
+      contraStatus.textContent =
+        "Đã sẵn sàng • " + formatBytes(buffer.byteLength);
+
+      contraStatus.classList.add("game-ready");
+
+      return buffer;
+    })
+    .catch(error => {
+      console.error("Không thể tải sẵn Contra:", error);
+
+      contraPreloadError = error;
+      contraPreloadPromise = null;
+
+      contraStatus.textContent = "Chưa tải sẵn được — chạm để thử lại";
+      contraStatus.classList.remove("game-ready");
+
+      throw error;
+    });
+
+  return contraPreloadPromise;
+}
+
+/* =========================================================
+   MỞ CONTRA TỪ BỘ NHỚ TẢI SẴN
+========================================================= */
+async function loadContra() {
+  const currentToken = ++loadToken;
+
+  try {
+    releaseAllButtons();
+
+    gameLoaded = false;
+    paused = false;
+    audioQueue = [];
+
+    pauseButton.textContent = "Tạm dừng";
+    gameTitle.textContent = CONTRA_GAME_NAME.toUpperCase();
+
+    showScreenMessage(
+      "Đang mở Contra",
+      contraROMBuffer
+        ? "Đang nạp game đã tải sẵn..."
+        : "Contra đang được tải..."
+    );
+
+    status.textContent = contraROMBuffer
+      ? "Đang nạp Contra..."
+      : "Đang chờ tải Contra...";
+
+    /*
+      Nếu Contra đã tải sẵn, lệnh này nhận ngay ROM từ RAM.
+      Nếu vẫn đang tải, nó chỉ chờ tiến trình tải đó hoàn tất,
+      không tạo thêm một lượt tải mới.
+    */
+    const buffer = contraROMBuffer || await preloadContra();
+
+    if (currentToken !== loadToken) {
+      return;
+    }
+
+    status.textContent =
+      "Đang nạp Contra • " + formatBytes(buffer.byteLength);
+
+    loadROM(buffer, CONTRA_GAME_NAME);
+  } catch (error) {
+    if (currentToken !== loadToken) {
+      return;
+    }
+
+    console.error("Lỗi mở Contra:", error);
+
+    gameLoaded = false;
+    paused = false;
+    audioQueue = [];
+
+    status.textContent = "Không thể tải Contra";
+
+    showScreenMessage(
+      "Không thể tải Contra",
+      error.message || "Hãy kiểm tra mạng rồi thử lại."
+    );
+  }
+}
+
+/* =========================================================
+   MỞ FILE NES TỪ MÁY
+========================================================= */
 function loadLocalROM(file) {
   const currentToken = ++loadToken;
 
@@ -947,7 +1053,7 @@ function loadLocalROM(file) {
 
       loadROM(buffer, gameName);
     } catch (error) {
-      console.error("Lỗi nạp ROM từ máy:", error);
+      console.error("Lỗi ROM từ máy:", error);
 
       gameLoaded = false;
       status.textContent = "Không thể mở file";
@@ -969,13 +1075,16 @@ function loadLocalROM(file) {
 
     showScreenMessage(
       "Không thể đọc file",
-      "Vui lòng thử lại bằng một file .nes khác."
+      "Hãy thử lại bằng một file .nes khác."
     );
   };
 
   reader.readAsArrayBuffer(file);
 }
 
+/* =========================================================
+   VÒNG LẶP GAME
+========================================================= */
 function gameLoop() {
   if (gameLoaded && !paused && nes) {
     nes.frame();
@@ -984,6 +1093,9 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
+/* =========================================================
+   BẤM PHÍM NES
+========================================================= */
 function setButton(key, isDown) {
   if (
     !gameLoaded ||
@@ -1002,6 +1114,9 @@ function setButton(key, isDown) {
   }
 }
 
+/* =========================================================
+   NÚT TẠM DỪNG / ÂM THANH
+========================================================= */
 pauseButton.addEventListener("click", function() {
   if (!gameLoaded) return;
 
@@ -1033,6 +1148,9 @@ soundButton.addEventListener("click", function() {
   }
 });
 
+/* =========================================================
+   MENU GAME KHÁC
+========================================================= */
 gameButton.addEventListener("click", function() {
   releaseAllButtons();
   gameModal.classList.add("show");
@@ -1053,26 +1171,23 @@ openFileButton.addEventListener("click", function() {
   fileInput.click();
 });
 
+contraButton.addEventListener("click", function() {
+  gameModal.classList.remove("show");
+  loadContra();
+});
+
 fileInput.addEventListener("change", function(event) {
   const file = event.target.files[0];
 
   if (!file) return;
 
   loadLocalROM(file);
-
   fileInput.value = "";
 });
 
-document.querySelectorAll("[data-rom-url]").forEach(button => {
-  button.addEventListener("click", function() {
-    const url = button.dataset.romUrl;
-    const gameName = button.dataset.gameName;
-
-    gameModal.classList.remove("show");
-    loadGameFromURL(url, gameName);
-  });
-});
-
+/* =========================================================
+   ĐIỀU KHIỂN CẢM ỨNG
+========================================================= */
 document.querySelectorAll("[data-key]").forEach(button => {
   const key = button.dataset.key;
   const activePointers = new Set();
@@ -1119,6 +1234,9 @@ document.querySelectorAll("[data-key]").forEach(button => {
   });
 });
 
+/* =========================================================
+   BÀN PHÍM MÁY TÍNH
+========================================================= */
 const keyboardMap = {
   ArrowUp:"UP",
   ArrowDown:"DOWN",
@@ -1172,6 +1290,9 @@ window.addEventListener("keyup", function(event) {
   }
 });
 
+/* =========================================================
+   TRÁNH KẸT NÚT / ZOOM TRÊN ĐIỆN THOẠI
+========================================================= */
 document.addEventListener("gesturestart", event => {
   event.preventDefault();
 }, { passive:false });
@@ -1205,8 +1326,23 @@ document.addEventListener("visibilitychange", function() {
   }
 });
 
+/* =========================================================
+   KHỞI ĐỘNG
+========================================================= */
 gameLoop();
+
+/*
+  Mario được mở ngay từ đầu.
+  Contra tải song song vào bộ nhớ nhưng không làm đổi trạng thái màn hình.
+*/
 loadGameFromURL(DEFAULT_ROM_URL, DEFAULT_GAME_NAME);
+
+preloadContra().catch(() => {
+  /*
+    Lỗi tải sẵn chỉ hiển thị nhỏ trong menu Contra,
+    không ảnh hưởng tới Mario đang chạy.
+  */
+});
 </script>
 </body>
-</html>hyy
+</html>
