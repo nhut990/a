@@ -2,63 +2,59 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
->
-<title>NES Emulator</title>
-
-<script src="https://cdn.jsdelivr.net/npm/jsnes@1.2.1/dist/jsnes.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#101217">
+<title>Camera Thời Gian & Vị Trí</title>
 
 <style>
+:root{
+  --bg:#101217;
+  --panel:#1b1f28;
+  --panel2:#252b37;
+  --line:rgba(255,255,255,.13);
+  --text:#f8f9ff;
+  --muted:#b8c0cf;
+  --blue:#4d91ff;
+  --red:#ff5b63;
+  --green:#36d98c;
+}
+
 *{
   box-sizing:border-box;
   -webkit-tap-highlight-color:transparent;
-  -webkit-touch-callout:none;
-  -webkit-user-select:none;
-  user-select:none;
 }
 
-:root{
-  --text:#eef3ff;
-  --muted:#9ba9ca;
-  --border:#3b4c73;
+html,body{
+  margin:0;
+  width:100%;
+  min-height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;
 }
 
-html,
 body{
   overscroll-behavior:none;
 }
 
-body{
-  margin:0;
-  height:100vh;
-  height:100dvh;
-  overflow:hidden;
-  color:var(--text);
-  font-family:Arial,Helvetica,sans-serif;
-  background:
-    radial-gradient(circle at top,#293965 0%,#11192f 44%,#070b15 100%);
-  touch-action:none;
-}
-
 .app{
-  width:min(100%,760px);
-  height:100vh;
-  height:100dvh;
+  width:min(100%,850px);
+  min-height:100dvh;
   margin:auto;
-  padding:12px 14px 20px;
+  padding:
+    calc(12px + env(safe-area-inset-top))
+    12px
+    calc(18px + env(safe-area-inset-bottom));
   display:flex;
   flex-direction:column;
-  gap:10px;
+  gap:12px;
 }
 
 .header{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:12px;
-  flex:none;
+  gap:10px;
 }
 
 .brand{
@@ -66,420 +62,431 @@ body{
   align-items:center;
   gap:10px;
   min-width:0;
-  font-size:clamp(14px,3vw,18px);
-  font-weight:800;
-  letter-spacing:.5px;
 }
 
-.brand-icon{
-  display:grid;
-  width:clamp(34px,7vw,40px);
-  height:clamp(23px,5vw,27px);
+.logo{
+  width:42px;
+  height:42px;
   flex:none;
-  place-items:center;
-  border:2px solid #fff;
-  border-radius:8px;
-  background:linear-gradient(145deg,#ff6578,#bc2447);
-  box-shadow:0 4px 10px rgba(0,0,0,.3);
-  font-size:clamp(10px,2vw,12px);
-}
-
-.brand-name{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-
-.status{
-  max-width:52%;
-  overflow:hidden;
-  color:var(--muted);
-  font-size:clamp(10px,2vw,12px);
-  text-align:right;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-
-.screen-box{
-  position:relative;
-  width:100%;
-  min-height:0;
-  max-height:42vh;
-  flex:1 1 auto;
-  overflow:hidden;
-  border:5px solid #394866;
-  border-radius:16px;
-  background:#000;
-  aspect-ratio:4 / 3;
-  box-shadow:
-    0 15px 35px rgba(0,0,0,.4),
-    inset 0 0 0 2px rgba(255,255,255,.05);
-}
-
-canvas{
-  display:block;
-  width:100%;
-  height:100%;
-  background:#000;
-  image-rendering:pixelated;
-  image-rendering:crisp-edges;
-}
-
-.screen-message{
-  position:absolute;
-  inset:0;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  padding:24px;
-  text-align:center;
-  background:radial-gradient(circle,rgba(35,49,84,.92),rgba(5,8,16,.97));
-}
-
-.screen-message strong{
-  font-size:clamp(16px,4vw,20px);
-}
-
-.screen-message span{
-  color:#b0bddc;
-  font-size:clamp(11px,2.5vw,13px);
-  line-height:1.5;
-}
-
-.top-actions{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:8px;
-  flex:none;
-}
-
-button{
-  min-height:clamp(38px,8vh,46px);
-  padding:0 8px;
-  border:1px solid var(--border);
-  border-radius:12px;
-  color:var(--text);
-  background:linear-gradient(145deg,#293756,#151d31);
-  box-shadow:
-    0 4px 0 #080c16,
-    0 7px 14px rgba(0,0,0,.2),
-    inset 0 1px rgba(255,255,255,.12);
-  font:inherit;
-  font-size:clamp(11px,2.5vw,14px);
-  font-weight:700;
-  cursor:pointer;
-  white-space:nowrap;
-  touch-action:manipulation;
-}
-
-button:active,
-.control.pressed{
-  transform:translateY(3px) scale(.98);
-  box-shadow:
-    0 1px 0 #080c16,
-    inset 0 2px 8px rgba(0,0,0,.42);
-  filter:brightness(.88);
-}
-
-.controls{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  min-height:0;
-  flex:1 1 auto;
-  padding:4px 2px 0;
-}
-
-.dpad{
-  position:relative;
-  width:clamp(160px,32vw,180px);
-  height:clamp(160px,32vw,180px);
-  flex:none;
-}
-
-.control{
-  position:absolute;
   display:grid;
   place-items:center;
-  border:2px solid #566783;
-  color:#fff;
-  background:linear-gradient(145deg,#465875,#202b42);
-  box-shadow:
-    0 5px 0 #0a0f1d,
-    0 8px 14px rgba(0,0,0,.28),
-    inset 0 1px rgba(255,255,255,.16);
-  font-weight:900;
-  cursor:pointer;
-  touch-action:none;
-}
-
-.dpad .control{
-  width:34%;
-  height:34%;
-  border-radius:10px;
-  font-size:clamp(20px,6vw,28px);
-}
-
-.up{
-  top:0;
-  left:33%;
-}
-
-.down{
-  bottom:0;
-  left:33%;
-}
-
-.left{
-  top:33%;
-  left:0;
-}
-
-.right{
-  top:33%;
-  right:0;
-}
-
-.dpad-center{
-  position:absolute;
-  top:33%;
-  left:33%;
-  width:34%;
-  height:34%;
-  background:#202b42;
-}
-
-.right-controls{
-  display:flex;
-  align-items:center;
-  gap:clamp(12px,3vw,18px);
-  flex:none;
-  padding-right:2px;
-}
-
-.round{
-  position:relative;
-  width:clamp(75px,18vw,90px);
-  height:clamp(75px,18vw,90px);
-  border-radius:50%;
-  font-size:clamp(20px,6vw,30px);
-  background:linear-gradient(145deg,#ff7180,#bd2548);
-  border-color:#ff9eaa;
-}
-
-.round.b{
-  margin-top:clamp(30px,6vw,40px);
-  background:linear-gradient(145deg,#6e9bff,#375fd7);
-  border-color:#a6bfff;
-}
-
-.round::after{
-  content:attr(data-label);
-  position:absolute;
-  top:calc(100% + 6px);
-  left:50%;
-  transform:translateX(-50%);
-  color:#c7d2ed;
-  font-size:clamp(10px,2.5vw,12px);
-  font-weight:800;
-}
-
-.middle-controls{
-  display:flex;
-  justify-content:center;
-  gap:12px;
-  flex:none;
-  margin-top:4px;
-}
-
-.middle{
-  position:relative;
-  min-width:clamp(70px,20vw,90px);
-  min-height:clamp(32px,7vh,38px);
-  padding:0 12px;
-  border-radius:20px;
-  color:#d5def5;
-  font-size:clamp(11px,2.5vw,13px);
-}
-
-/* ===== MENU GAME KHÁC ===== */
-.game-modal{
-  position:fixed;
-  z-index:100;
-  inset:0;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  padding:18px;
-  background:rgba(2,5,13,.75);
-  backdrop-filter:blur(7px);
-}
-
-.game-modal.show{
-  display:flex;
-  animation:modalFade .18s ease;
-}
-
-.game-modal-card{
-  width:min(100%,455px);
-  overflow:hidden;
-  border:1px solid rgba(142,172,240,.42);
-  border-radius:19px;
-  background:linear-gradient(145deg,#26385f,#111a2e);
-  box-shadow:
-    0 22px 55px rgba(0,0,0,.58),
-    inset 0 1px rgba(255,255,255,.14);
-  animation:modalPop .22s cubic-bezier(.2,1.3,.4,1);
-}
-
-.game-modal-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  padding:17px 17px 14px;
-  border-bottom:1px solid rgba(153,183,245,.2);
-}
-
-.game-modal-header strong{
-  display:block;
-  color:#f3f6ff;
-  font-size:16px;
-  letter-spacing:.6px;
-}
-
-.game-modal-header span{
-  display:block;
-  margin-top:5px;
-  color:#aab9d8;
-  font-size:11px;
-}
-
-.close-game-modal{
-  display:grid;
-  width:36px;
-  min-height:36px;
-  flex:none;
-  place-items:center;
-  padding:0;
-  border-radius:50%;
-  color:#dce8ff;
-  font-size:17px;
-}
-
-.game-list{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-  padding:14px;
-}
-
-.game-item{
-  display:flex;
-  align-items:center;
-  gap:13px;
-  width:100%;
-  min-height:70px;
-  padding:10px 12px;
-  border:1px solid rgba(143,178,248,.3);
   border-radius:13px;
-  color:#eff4ff;
-  text-align:left;
-  background:linear-gradient(145deg,#334b78,#1a2742);
+  background:linear-gradient(145deg,#4d91ff,#254eaf);
+  border:1px solid rgba(255,255,255,.3);
+  box-shadow:0 6px 18px rgba(0,0,0,.3);
+  font-size:21px;
 }
 
-.game-item:hover{
-  filter:brightness(1.13);
-}
-
-.game-item:active{
-  transform:translateY(2px) scale(.99);
-}
-
-.local-game{
-  background:linear-gradient(145deg,#576183,#2b3450);
-}
-
-.game-icon{
-  display:grid;
-  width:43px;
-  height:43px;
-  flex:none;
-  place-items:center;
-  border-radius:11px;
-  background:rgba(8,14,29,.42);
-  font-size:23px;
-}
-
-.game-info{
+.brand-text{
   min-width:0;
 }
 
-.game-info strong{
+.brand-text b{
   display:block;
-  overflow:hidden;
-  color:#f2f6ff;
-  font-size:14px;
-  text-overflow:ellipsis;
-  white-space:nowrap;
+  font-size:15px;
+  letter-spacing:.3px;
 }
 
-.game-info small{
+.brand-text span{
   display:block;
-  overflow:hidden;
-  margin-top:5px;
-  color:#b5c4e1;
+  color:var(--muted);
   font-size:11px;
+  margin-top:3px;
+  white-space:nowrap;
+  overflow:hidden;
   text-overflow:ellipsis;
+}
+
+.gps-status{
+  font-size:11px;
+  font-weight:bold;
+  padding:8px 10px;
+  border:1px solid var(--line);
+  border-radius:20px;
+  color:#ffd98b;
+  background:rgba(255,190,80,.08);
   white-space:nowrap;
 }
 
-.game-ready{
-  color:#8ff3b7 !important;
+.gps-status.ok{
+  color:#86f1bb;
+  background:rgba(54,217,140,.1);
 }
 
-@keyframes modalFade{
-  from{ opacity:0; }
-  to{ opacity:1; }
+.camera-box{
+  position:relative;
+  width:100%;
+  flex:1;
+  min-height:300px;
+  overflow:hidden;
+  border-radius:20px;
+  background:#000;
+  border:2px solid #303846;
+  box-shadow:0 13px 35px rgba(0,0,0,.38);
 }
 
-@keyframes modalPop{
-  from{
-    transform:scale(.88) translateY(10px);
-    opacity:0;
-  }
-
-  to{
-    transform:scale(1) translateY(0);
-    opacity:1;
-  }
+#camera{
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:300px;
+  object-fit:cover;
+  background:#000;
 }
 
-@media(max-height:640px){
+.camera-grid{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:.3;
+  background:
+    linear-gradient(to right,
+      transparent 33.1%, rgba(255,255,255,.75) 33.3%, transparent 33.6%,
+      transparent 66.4%, rgba(255,255,255,.75) 66.6%, transparent 66.9%
+    ),
+    linear-gradient(to bottom,
+      transparent 33.1%, rgba(255,255,255,.75) 33.3%, transparent 33.6%,
+      transparent 66.4%, rgba(255,255,255,.75) 66.6%, transparent 66.9%
+    );
+}
+
+.live-stamp{
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:12px;
+  padding:11px 12px;
+  border-radius:10px;
+  color:white;
+  background:rgba(0,0,0,.64);
+  border-left:4px solid #ffc438;
+  backdrop-filter:blur(5px);
+  text-shadow:0 1px 2px #000;
+  pointer-events:none;
+}
+
+.live-time{
+  font-size:16px;
+  font-weight:900;
+  letter-spacing:.3px;
+}
+
+.live-info{
+  margin-top:5px;
+  font-size:11px;
+  line-height:1.35;
+  color:#f0f3ff;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.no-camera{
+  position:absolute;
+  z-index:2;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:20px;
+  text-align:center;
+  background:radial-gradient(circle at center,#28334a,#090b0f 70%);
+}
+
+.no-camera.hidden{
+  display:none;
+}
+
+.no-camera strong{
+  font-size:17px;
+}
+
+.no-camera p{
+  margin:0;
+  max-width:370px;
+  color:#c1cada;
+  font-size:12px;
+  line-height:1.5;
+}
+
+.action-row{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:20px;
+}
+
+.round-button{
+  border:0;
+  cursor:pointer;
+  color:white;
+  font-weight:bold;
+}
+
+.switch-camera{
+  width:49px;
+  height:49px;
+  border-radius:50%;
+  background:#273041;
+  border:1px solid rgba(255,255,255,.14);
+  font-size:21px;
+}
+
+.capture-button{
+  position:relative;
+  width:78px;
+  height:78px;
+  border-radius:50%;
+  background:white;
+  border:6px solid #dbe2ee;
+  box-shadow:0 4px 16px rgba(0,0,0,.35);
+}
+
+.capture-button:after{
+  content:"";
+  position:absolute;
+  inset:7px;
+  border-radius:50%;
+  border:2px solid #8792a6;
+}
+
+.capture-button:active{
+  transform:scale(.92);
+}
+
+.gallery-button{
+  width:49px;
+  height:49px;
+  border-radius:50%;
+  background:#273041;
+  border:1px solid rgba(255,255,255,.14);
+  font-size:19px;
+}
+
+.controls{
+  padding:13px;
+  border-radius:16px;
+  border:1px solid var(--line);
+  background:var(--panel);
+}
+
+.control-title{
+  margin:0 0 10px;
+  color:#dce5f5;
+  font-size:12px;
+  font-weight:bold;
+}
+
+.mode-list{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px;
+}
+
+.mode{
+  min-height:42px;
+  padding:7px 9px;
+  border:1px solid #3b4556;
+  border-radius:10px;
+  color:#ced7e6;
+  background:#222834;
+  font-size:11px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.mode.active{
+  color:white;
+  background:linear-gradient(145deg,#4d91ff,#2f5dbc);
+  border-color:#88b6ff;
+  box-shadow:0 4px 12px rgba(49,103,207,.32);
+}
+
+.extra-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:12px;
+  padding-top:11px;
+  border-top:1px solid var(--line);
+}
+
+.toggle-wrap{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:#c8d1e0;
+  font-size:11px;
+  font-weight:bold;
+}
+
+.toggle-wrap input{
+  display:none;
+}
+
+.toggle{
+  width:40px;
+  height:22px;
+  position:relative;
+  display:block;
+  border-radius:99px;
+  background:#5b6575;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.toggle:after{
+  content:"";
+  position:absolute;
+  width:16px;
+  height:16px;
+  left:3px;
+  top:3px;
+  border-radius:50%;
+  background:white;
+  transition:.2s;
+}
+
+.toggle-wrap input:checked + .toggle{
+  background:var(--green);
+}
+
+.toggle-wrap input:checked + .toggle:after{
+  transform:translateX(18px);
+}
+
+.color-select{
+  padding:7px 8px;
+  border-radius:8px;
+  border:1px solid #475266;
+  color:white;
+  background:#252d3a;
+  outline:none;
+  font-size:11px;
+}
+
+#result-box{
+  display:none;
+  position:fixed;
+  z-index:99;
+  inset:0;
+  padding:
+    calc(15px + env(safe-area-inset-top))
+    15px
+    calc(15px + env(safe-area-inset-bottom));
+  background:rgba(0,0,0,.92);
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+}
+
+#result-box.show{
+  display:flex;
+}
+
+#result-image{
+  max-width:100%;
+  max-height:72dvh;
+  border-radius:12px;
+  border:1px solid #4c5667;
+  box-shadow:0 10px 35px rgba(0,0,0,.6);
+}
+
+.result-actions{
+  display:flex;
+  width:min(100%,420px);
+  gap:10px;
+}
+
+.result-actions button,
+.result-actions a{
+  flex:1;
+  min-height:47px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:11px;
+  border:1px solid #526079;
+  color:white;
+  background:#263042;
+  text-decoration:none;
+  font-size:13px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.result-actions a{
+  background:linear-gradient(145deg,#4d91ff,#2c5bb8);
+  border-color:#91b9ff;
+}
+
+@media (orientation:landscape) and (max-height:650px){
   .app{
-    gap:6px;
-    padding:8px 10px 12px;
+    padding-top:7px;
+    padding-bottom:7px;
+    gap:7px;
   }
 
-  .screen-box{
-    max-height:38vh;
+  .header{
+    display:none;
   }
 
-  .dpad{
-    width:clamp(140px,30vw,160px);
-    height:clamp(140px,30vw,160px);
+  .camera-box{
+    min-height:180px;
   }
 
-  .round{
-    width:clamp(65px,16vw,75px);
-    height:clamp(65px,16vw,75px);
+  #camera{
+    min-height:180px;
   }
 
-  .round.b{
-    margin-top:clamp(20px,5vw,30px);
+  .controls{
+    padding:8px 10px;
+  }
+
+  .control-title{
+    display:none;
+  }
+
+  .mode-list{
+    grid-template-columns:repeat(4,1fr);
+  }
+
+  .extra-row{
+    margin-top:7px;
+    padding-top:7px;
+  }
+
+  .capture-button{
+    width:58px;
+    height:58px;
+    border-width:5px;
+  }
+
+  .capture-button:after{
+    inset:5px;
+  }
+
+  .switch-camera,.gallery-button{
+    width:42px;
+    height:42px;
+  }
+
+  .live-stamp{
+    padding:7px 9px;
+    bottom:8px;
+  }
+
+  .live-time{
+    font-size:13px;
+  }
+
+  .live-info{
+    font-size:10px;
+    margin-top:2px;
   }
 }
 </style>
@@ -487,862 +494,434 @@ button:active,
 
 <body>
 <div class="app">
+
   <div class="header">
     <div class="brand">
-      <div class="brand-icon">NES</div>
-      <span class="brand-name" id="gameTitle">SUPER MARIO BROS</span>
+      <div class="logo">📍</div>
+      <div class="brand-text">
+        <b>CAMERA THỜI GIAN THỰC</b>
+        <span>Ngày giờ · GPS · Địa chỉ trên ảnh</span>
+      </div>
     </div>
-
-    <div class="status" id="status">Đang chuẩn bị...</div>
+    <div id="gps-status" class="gps-status">● Đang tìm GPS...</div>
   </div>
 
-  <div class="screen-box">
-    <canvas id="screen" width="256" height="240"></canvas>
+  <div class="camera-box">
+    <video id="camera" autoplay playsinline muted></video>
+    <div id="grid" class="camera-grid"></div>
 
-    <div class="screen-message" id="screenMessage">
-      <strong>Đang tải Super Mario Bros</strong>
-      <span>Vui lòng chờ trong giây lát...</span>
+    <div id="live-stamp" class="live-stamp">
+      <div id="live-time" class="live-time">--/--/---- --:--:--</div>
+      <div id="live-info" class="live-info">Đang lấy vị trí...</div>
+    </div>
+
+    <div id="no-camera" class="no-camera">
+      <div style="font-size:42px">📷</div>
+      <strong>Đang chuẩn bị camera</strong>
+      <p>Hãy cho phép quyền sử dụng Camera và Vị trí khi trình duyệt yêu cầu.</p>
     </div>
   </div>
 
-  <div class="top-actions">
-    <button id="pauseButton">Tạm dừng</button>
-    <button id="soundButton">Âm thanh: Bật</button>
-    <button id="gameButton">Game khác</button>
+  <div class="action-row">
+    <button id="switch-camera" class="round-button switch-camera" title="Đổi camera">🔄</button>
+    <button id="capture" class="round-button capture-button" title="Chụp ảnh"></button>
+    <button id="refresh-location" class="round-button gallery-button" title="Làm mới vị trí">📍</button>
   </div>
 
   <div class="controls">
-    <div class="dpad">
-      <button class="control up" data-key="UP">▲</button>
-      <button class="control down" data-key="DOWN">▼</button>
-      <button class="control left" data-key="LEFT">◀</button>
-      <button class="control right" data-key="RIGHT">▶</button>
-      <div class="dpad-center"></div>
+    <p class="control-title">NỘI DUNG HIỂN THỊ TRÊN ẢNH</p>
+
+    <div class="mode-list">
+      <button class="mode active" data-mode="full">ĐẦY ĐỦ</button>
+      <button class="mode" data-mode="time">CHỈ NGÀY GIỜ</button>
+      <button class="mode" data-mode="coords">GIỜ + TỌA ĐỘ</button>
+      <button class="mode" data-mode="address">GIỜ + ĐỊA CHỈ</button>
     </div>
 
-    <div class="right-controls">
-      <button class="control round b" data-key="B" data-label="B">B</button>
-      <button class="control round a" data-key="A" data-label="A">A</button>
-    </div>
-  </div>
+    <div class="extra-row">
+      <label class="toggle-wrap">
+        <input id="grid-toggle" type="checkbox" checked>
+        <span class="toggle"></span>
+        Hiện lưới camera
+      </label>
 
-  <div class="middle-controls">
-    <button class="middle" data-key="SELECT">SELECT</button>
-    <button class="middle" data-key="START">START</button>
-  </div>
-</div>
-
-<input type="file" id="fileInput" accept=".nes" style="display:none">
-
-<!-- MENU GAME KHÁC -->
-<div class="game-modal" id="gameModal">
-  <div class="game-modal-card">
-    <div class="game-modal-header">
-      <div>
-        <strong>GAME KHÁC</strong>
-        <span>Mở ROM từ máy hoặc chọn game có sẵn</span>
-      </div>
-
-      <button
-        id="closeGameModal"
-        class="close-game-modal"
-        aria-label="Đóng menu game"
-      >✕</button>
-    </div>
-
-    <div class="game-list">
-      <button class="game-item local-game" id="openFileButton">
-        <span class="game-icon">📁</span>
-        <span class="game-info">
-          <strong>Mở file .nes từ máy</strong>
-          <small>Chọn ROM NES trong điện thoại hoặc máy tính</small>
-        </span>
-      </button>
-
-      <button class="game-item" id="contraButton">
-        <span class="game-icon">🎮</span>
-        <span class="game-info">
-          <strong>Contra</strong>
-          <small id="contraStatus">Đang tải sẵn game...</small>
-        </span>
-      </button>
+      <select id="stamp-color" class="color-select">
+        <option value="yellow">Vàng thời gian</option>
+        <option value="blue">Xanh dương</option>
+        <option value="green">Xanh lá</option>
+        <option value="red">Đỏ</option>
+      </select>
     </div>
   </div>
 </div>
+
+<div id="result-box">
+  <img id="result-image" alt="Ảnh vừa chụp">
+  <div class="result-actions">
+    <button id="close-result">CHỤP LẠI</button>
+    <a id="download-image" download="camera-thoi-gian.jpg">TẢI ẢNH</a>
+  </div>
+</div>
+
+<canvas id="photo-canvas" hidden></canvas>
 
 <script>
-/* =========================================================
-   LINK ROM
-========================================================= */
-const DEFAULT_ROM_URL =
-  "https://raw.githubusercontent.com/nhut990/files/main/hinh/SuperMarioBros.nes";
+"use strict";
 
-const CONTRA_ROM_URL =
-  "https://raw.githubusercontent.com/nhut990/files/main/music/021%20Contra.nes";
+const video = document.getElementById("camera");
+const noCamera = document.getElementById("no-camera");
+const gpsStatus = document.getElementById("gps-status");
+const liveTime = document.getElementById("live-time");
+const liveInfo = document.getElementById("live-info");
+const liveStamp = document.getElementById("live-stamp");
+const canvas = document.getElementById("photo-canvas");
+const resultBox = document.getElementById("result-box");
+const resultImage = document.getElementById("result-image");
+const downloadImage = document.getElementById("download-image");
+const grid = document.getElementById("grid");
 
-const DEFAULT_GAME_NAME = "Super Mario Bros";
-const CONTRA_GAME_NAME = "Contra";
+let currentStream = null;
+let facingMode = "environment";
+let currentMode = "full";
 
-/* =========================================================
-   KHAI BÁO GIAO DIỆN
-========================================================= */
-const canvas = document.getElementById("screen");
-const ctx = canvas.getContext("2d", { alpha:false });
-const imageData = ctx.createImageData(256, 240);
-const pixels = imageData.data;
-
-const status = document.getElementById("status");
-const gameTitle = document.getElementById("gameTitle");
-const screenMessage = document.getElementById("screenMessage");
-
-const pauseButton = document.getElementById("pauseButton");
-const soundButton = document.getElementById("soundButton");
-const gameButton = document.getElementById("gameButton");
-
-const gameModal = document.getElementById("gameModal");
-const closeGameModal = document.getElementById("closeGameModal");
-
-const openFileButton = document.getElementById("openFileButton");
-const fileInput = document.getElementById("fileInput");
-
-const contraButton = document.getElementById("contraButton");
-const contraStatus = document.getElementById("contraStatus");
-
-/* =========================================================
-   TRẠNG THÁI GAME
-========================================================= */
-let nes = null;
-let gameLoaded = false;
-let paused = false;
-let soundEnabled = true;
-
-let audioContext = null;
-let audioNode = null;
-let audioQueue = [];
-
-/*
-  Bộ nhớ ROM đã tải.
-  Contra sẽ được lưu ArrayBuffer ở đây sau khi trang mở.
-*/
-let contraROMBuffer = null;
-let contraPreloadPromise = null;
-let contraPreloadError = null;
-
-/*
-  Tránh trường hợp game tải cũ hoàn tất muộn và ghi đè
-  lên game mới mà người dùng vừa chọn.
-*/
-let loadToken = 0;
-
-/* =========================================================
-   KIỂM TRA JSNES
-========================================================= */
-if (typeof jsnes === "undefined") {
-  status.textContent = "Không tải được thư viện jsnes";
-
-  showScreenMessage(
-    "Lỗi thư viện",
-    "Không thể tải jsnes. Hãy kiểm tra mạng rồi tải lại trang."
-  );
-
-  throw new Error("jsnes is not loaded");
-}
-
-/* =========================================================
-   PHÍM NES
-========================================================= */
-const buttons = {
-  UP: jsnes.Controller.BUTTON_UP,
-  DOWN: jsnes.Controller.BUTTON_DOWN,
-  LEFT: jsnes.Controller.BUTTON_LEFT,
-  RIGHT: jsnes.Controller.BUTTON_RIGHT,
-  A: jsnes.Controller.BUTTON_A,
-  B: jsnes.Controller.BUTTON_B,
-  SELECT: jsnes.Controller.BUTTON_SELECT,
-  START: jsnes.Controller.BUTTON_START
+let locationData = {
+  lat: null,
+  lng: null,
+  accuracy: null,
+  address: "Chưa lấy được địa chỉ"
 };
 
-/* =========================================================
-   THÔNG BÁO MÀN HÌNH
-========================================================= */
-function showScreenMessage(title, text) {
-  screenMessage.style.display = "flex";
-  screenMessage.innerHTML = "";
+const stampThemes = {
+  yellow: { accent:"#ffc438", bg:"rgba(0,0,0,.68)" },
+  blue:   { accent:"#50a0ff", bg:"rgba(0,16,42,.72)" },
+  green:  { accent:"#37df94", bg:"rgba(0,35,20,.72)" },
+  red:    { accent:"#ff5e66", bg:"rgba(48,0,4,.74)" }
+};
 
-  const strong = document.createElement("strong");
-  strong.textContent = title;
+function formatDateTime(date = new Date()) {
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
 
-  const span = document.createElement("span");
-  span.textContent = text;
+  const h = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  const s = String(date.getSeconds()).padStart(2, "0");
 
-  screenMessage.appendChild(strong);
-  screenMessage.appendChild(span);
+  return `${d}/${m}/${y} ${h}:${min}:${s}`;
 }
 
-function hideScreenMessage() {
-  screenMessage.style.display = "none";
+function getCoordinatesText() {
+  if (locationData.lat === null) return "GPS: Đang xác định vị trí...";
+  return `GPS: ${locationData.lat.toFixed(6)}, ${locationData.lng.toFixed(6)} • ±${Math.round(locationData.accuracy)}m`;
 }
 
-function formatBytes(bytes) {
-  if (!bytes) return "0 KB";
+function getDisplayLines() {
+  const time = formatDateTime();
+  const coords = getCoordinatesText();
+  const address = locationData.address || "Chưa lấy được địa chỉ";
 
-  if (bytes < 1024) {
-    return bytes + " B";
+  if (currentMode === "time") {
+    return [time];
   }
 
-  if (bytes < 1024 * 1024) {
-    return (bytes / 1024).toFixed(1) + " KB";
+  if (currentMode === "coords") {
+    return [time, coords];
   }
 
-  return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+  if (currentMode === "address") {
+    return [time, address];
+  }
+
+  return [time, coords, address];
 }
 
-/* =========================================================
-   ÂM THANH
-========================================================= */
-function initAudio() {
-  if (audioContext) {
-    if (audioContext.state === "suspended") {
-      audioContext.resume();
-    }
+function updateLiveStamp() {
+  const lines = getDisplayLines();
 
+  liveTime.textContent = lines[0];
+  liveInfo.innerHTML = lines.slice(1).map(line => `<div>${escapeHtml(line)}</div>`).join("");
+
+  if (lines.length === 1) {
+    liveInfo.style.display = "none";
+  } else {
+    liveInfo.style.display = "block";
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function updateStampTheme() {
+  const theme = stampThemes[document.getElementById("stamp-color").value];
+  liveStamp.style.borderLeftColor = theme.accent;
+  liveStamp.style.background = theme.bg;
+}
+
+async function startCamera() {
+  stopCamera();
+
+  noCamera.classList.remove("hidden");
+  noCamera.querySelector("strong").textContent = "Đang mở camera...";
+  noCamera.querySelector("p").textContent = "Vui lòng chờ một chút.";
+
+  try {
+    currentStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: facingMode },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 }
+      },
+      audio: false
+    });
+
+    video.srcObject = currentStream;
+    await video.play();
+
+    noCamera.classList.add("hidden");
+  } catch (error) {
+    console.error(error);
+    noCamera.classList.remove("hidden");
+    noCamera.querySelector("strong").textContent = "Không mở được camera";
+    noCamera.querySelector("p").textContent =
+      "Hãy kiểm tra quyền Camera. Trang cũng cần được mở bằng HTTPS hoặc localhost.";
+  }
+}
+
+function stopCamera() {
+  if (currentStream) {
+    currentStream.getTracks().forEach(track => track.stop());
+    currentStream = null;
+  }
+}
+
+function getLocation() {
+  if (!navigator.geolocation) {
+    gpsStatus.textContent = "● Máy không hỗ trợ GPS";
+    liveInfo.textContent = "Thiết bị không hỗ trợ định vị GPS";
     return;
   }
 
-  const AudioContextClass =
-    window.AudioContext || window.webkitAudioContext;
+  gpsStatus.classList.remove("ok");
+  gpsStatus.textContent = "● Đang tìm GPS...";
 
-  if (!AudioContextClass) return;
+  navigator.geolocation.getCurrentPosition(
+    async position => {
+      locationData.lat = position.coords.latitude;
+      locationData.lng = position.coords.longitude;
+      locationData.accuracy = position.coords.accuracy;
 
-  audioContext = new AudioContextClass();
+      gpsStatus.classList.add("ok");
+      gpsStatus.textContent = "● GPS đã kết nối";
 
-  audioNode = audioContext.createScriptProcessor(1024, 0, 2);
-
-  audioNode.onaudioprocess = function(event) {
-    const leftChannel = event.outputBuffer.getChannelData(0);
-    const rightChannel = event.outputBuffer.getChannelData(1);
-
-    for (let i = 0; i < leftChannel.length; i++) {
-      if (soundEnabled && audioQueue.length >= 2) {
-        leftChannel[i] = audioQueue.shift();
-        rightChannel[i] = audioQueue.shift();
-      } else {
-        leftChannel[i] = 0;
-        rightChannel[i] = 0;
-      }
-    }
-  };
-
-  audioNode.connect(audioContext.destination);
-}
-
-/* =========================================================
-   TẠO MÁY NES
-========================================================= */
-function createNES() {
-  audioQueue = [];
-
-  nes = new jsnes.NES({
-    onFrame(framebuffer) {
-      for (
-        let i = 0, pixelIndex = 0;
-        i < framebuffer.length;
-        i++, pixelIndex += 4
-      ) {
-        const color = framebuffer[i];
-
-        pixels[pixelIndex] = color & 0xFF;
-        pixels[pixelIndex + 1] = (color >> 8) & 0xFF;
-        pixels[pixelIndex + 2] = (color >> 16) & 0xFF;
-        pixels[pixelIndex + 3] = 255;
-      }
-
-      ctx.putImageData(imageData, 0, 0);
+      updateLiveStamp();
+      await getAddressFromCoordinates();
     },
+    error => {
+      console.warn(error);
 
-    onAudioSample(left, right) {
-      /*
-        Giới hạn hàng chờ để âm thanh không bị chậm.
-      */
-      if (audioQueue.length < 12000) {
-        audioQueue.push(left, right);
+      gpsStatus.classList.remove("ok");
+      gpsStatus.textContent = "● Chưa có quyền GPS";
+      locationData.address = "Không thể lấy vị trí hiện tại";
+      updateLiveStamp();
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 10000
+    }
+  );
+}
+
+async function getAddressFromCoordinates() {
+  if (locationData.lat === null || locationData.lng === null) return;
+
+  locationData.address = "Đang tìm địa chỉ...";
+  updateLiveStamp();
+
+  try {
+    const url =
+      "https://nominatim.openstreetmap.org/reverse?format=jsonv2" +
+      `&lat=${locationData.lat}&lon=${locationData.lng}` +
+      "&zoom=18&addressdetails=1&accept-language=vi";
+
+    const response = await fetch(url, {
+      headers: {
+        "Accept-Language": "vi"
       }
-    }
-  });
-}
-
-/* =========================================================
-   XỬ LÝ DỮ LIỆU ROM
-========================================================= */
-function binaryStringFromArrayBuffer(buffer) {
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 8192;
-  let result = "";
-
-  for (let start = 0; start < bytes.length; start += chunkSize) {
-    const chunk = bytes.subarray(start, start + chunkSize);
-
-    result += String.fromCharCode.apply(null, chunk);
-  }
-
-  return result;
-}
-
-function isValidNESRom(buffer) {
-  const bytes = new Uint8Array(buffer);
-
-  return (
-    bytes.length >= 16 &&
-    bytes[0] === 0x4E &&
-    bytes[1] === 0x45 &&
-    bytes[2] === 0x53 &&
-    bytes[3] === 0x1A
-  );
-}
-
-function releaseAllButtons() {
-  if (nes) {
-    Object.keys(buttons).forEach(key => {
-      nes.buttonUp(1, buttons[key]);
-    });
-  }
-
-  document.querySelectorAll("[data-key]").forEach(button => {
-    button.classList.remove("pressed");
-  });
-}
-
-function loadROM(buffer, gameName) {
-  if (!isValidNESRom(buffer)) {
-    throw new Error(
-      "Dữ liệu này không phải ROM NES hợp lệ hoặc ROM đã bị lỗi."
-    );
-  }
-
-  releaseAllButtons();
-
-  gameLoaded = false;
-  paused = false;
-  audioQueue = [];
-
-  createNES();
-
-  const romData = binaryStringFromArrayBuffer(buffer);
-
-  nes.loadROM(romData);
-
-  gameLoaded = true;
-  paused = false;
-
-  pauseButton.textContent = "Tạm dừng";
-  gameTitle.textContent = gameName.toUpperCase();
-  status.textContent = "Đang chơi: " + gameName;
-
-  hideScreenMessage();
-}
-
-/* =========================================================
-   TẢI ROM TỪ GITHUB
-========================================================= */
-async function downloadROM(url) {
-  const response = await fetch(url, {
-    method:"GET",
-    cache:"force-cache"
-  });
-
-  if (!response.ok) {
-    throw new Error("Không thể tải ROM. Lỗi HTTP: " + response.status);
-  }
-
-  const buffer = await response.arrayBuffer();
-
-  if (!isValidNESRom(buffer)) {
-    throw new Error("Link không trả về file ROM NES hợp lệ.");
-  }
-
-  return buffer;
-}
-
-async function loadGameFromURL(url, gameName) {
-  const currentToken = ++loadToken;
-
-  try {
-    releaseAllButtons();
-
-    gameLoaded = false;
-    paused = false;
-    audioQueue = [];
-
-    pauseButton.textContent = "Tạm dừng";
-    gameTitle.textContent = gameName.toUpperCase();
-
-    status.textContent = "Đang tải " + gameName + "...";
-
-    showScreenMessage(
-      "Đang tải " + gameName,
-      "Đang lấy ROM từ GitHub..."
-    );
-
-    const buffer = await downloadROM(url);
-
-    if (currentToken !== loadToken) {
-      return;
-    }
-
-    status.textContent =
-      "Đang nạp " + gameName + " • " + formatBytes(buffer.byteLength);
-
-    loadROM(buffer, gameName);
-  } catch (error) {
-    if (currentToken !== loadToken) {
-      return;
-    }
-
-    console.error("Lỗi tải ROM:", error);
-
-    gameLoaded = false;
-    paused = false;
-    audioQueue = [];
-
-    status.textContent = "Không thể tải " + gameName;
-
-    showScreenMessage(
-      "Không thể tải game",
-      error.message || "Vui lòng kiểm tra lại kết nối mạng."
-    );
-  }
-}
-
-/* =========================================================
-   TẢI SẴN CONTRA NGAY KHI MỞ TRANG
-========================================================= */
-function preloadContra() {
-  if (contraROMBuffer) {
-    return Promise.resolve(contraROMBuffer);
-  }
-
-  if (contraPreloadPromise) {
-    return contraPreloadPromise;
-  }
-
-  contraStatus.textContent = "Đang tải sẵn game...";
-
-  contraPreloadPromise = downloadROM(CONTRA_ROM_URL)
-    .then(buffer => {
-      contraROMBuffer = buffer;
-      contraPreloadError = null;
-
-      contraStatus.textContent =
-        "Đã sẵn sàng • " + formatBytes(buffer.byteLength);
-
-      contraStatus.classList.add("game-ready");
-
-      return buffer;
-    })
-    .catch(error => {
-      console.error("Không thể tải sẵn Contra:", error);
-
-      contraPreloadError = error;
-      contraPreloadPromise = null;
-
-      contraStatus.textContent = "Chưa tải sẵn được — chạm để thử lại";
-      contraStatus.classList.remove("game-ready");
-
-      throw error;
     });
 
-  return contraPreloadPromise;
-}
+    if (!response.ok) throw new Error("Không lấy được địa chỉ");
 
-/* =========================================================
-   MỞ CONTRA TỪ BỘ NHỚ TẢI SẴN
-========================================================= */
-async function loadContra() {
-  const currentToken = ++loadToken;
+    const data = await response.json();
 
-  try {
-    releaseAllButtons();
-
-    gameLoaded = false;
-    paused = false;
-    audioQueue = [];
-
-    pauseButton.textContent = "Tạm dừng";
-    gameTitle.textContent = CONTRA_GAME_NAME.toUpperCase();
-
-    showScreenMessage(
-      "Đang mở Contra",
-      contraROMBuffer
-        ? "Đang nạp game đã tải sẵn..."
-        : "Contra đang được tải..."
-    );
-
-    status.textContent = contraROMBuffer
-      ? "Đang nạp Contra..."
-      : "Đang chờ tải Contra...";
-
-    /*
-      Nếu Contra đã tải sẵn, lệnh này nhận ngay ROM từ RAM.
-      Nếu vẫn đang tải, nó chỉ chờ tiến trình tải đó hoàn tất,
-      không tạo thêm một lượt tải mới.
-    */
-    const buffer = contraROMBuffer || await preloadContra();
-
-    if (currentToken !== loadToken) {
-      return;
+    if (data.display_name) {
+      locationData.address = data.display_name;
+    } else {
+      locationData.address = "Không xác định được địa chỉ gần đây";
     }
-
-    status.textContent =
-      "Đang nạp Contra • " + formatBytes(buffer.byteLength);
-
-    loadROM(buffer, CONTRA_GAME_NAME);
   } catch (error) {
-    if (currentToken !== loadToken) {
-      return;
-    }
-
-    console.error("Lỗi mở Contra:", error);
-
-    gameLoaded = false;
-    paused = false;
-    audioQueue = [];
-
-    status.textContent = "Không thể tải Contra";
-
-    showScreenMessage(
-      "Không thể tải Contra",
-      error.message || "Hãy kiểm tra mạng rồi thử lại."
-    );
-  }
-}
-
-/* =========================================================
-   MỞ FILE NES TỪ MÁY
-========================================================= */
-function loadLocalROM(file) {
-  const currentToken = ++loadToken;
-
-  releaseAllButtons();
-
-  gameLoaded = false;
-  paused = false;
-  audioQueue = [];
-
-  const gameName = file.name.replace(/\.nes$/i, "");
-
-  gameTitle.textContent = gameName.toUpperCase();
-  status.textContent = "Đang đọc: " + file.name;
-
-  showScreenMessage(
-    "Đang mở game",
-    "Đang đọc ROM từ thiết bị..."
-  );
-
-  const reader = new FileReader();
-
-  reader.onload = function(event) {
-    if (currentToken !== loadToken) {
-      return;
-    }
-
-    try {
-      const buffer = event.target.result;
-
-      status.textContent =
-        "Đang nạp " + gameName + " • " + formatBytes(buffer.byteLength);
-
-      loadROM(buffer, gameName);
-    } catch (error) {
-      console.error("Lỗi ROM từ máy:", error);
-
-      gameLoaded = false;
-      status.textContent = "Không thể mở file";
-
-      showScreenMessage(
-        "Không thể mở game",
-        error.message || "File .nes này không thể nạp."
-      );
-    }
-  };
-
-  reader.onerror = function() {
-    if (currentToken !== loadToken) {
-      return;
-    }
-
-    gameLoaded = false;
-    status.textContent = "Không thể đọc file";
-
-    showScreenMessage(
-      "Không thể đọc file",
-      "Hãy thử lại bằng một file .nes khác."
-    );
-  };
-
-  reader.readAsArrayBuffer(file);
-}
-
-/* =========================================================
-   VÒNG LẶP GAME
-========================================================= */
-function gameLoop() {
-  if (gameLoaded && !paused && nes) {
-    nes.frame();
+    console.warn(error);
+    locationData.address = "Không lấy được địa chỉ trực tuyến";
   }
 
-  requestAnimationFrame(gameLoop);
+  updateLiveStamp();
 }
 
-/* =========================================================
-   BẤM PHÍM NES
-========================================================= */
-function setButton(key, isDown) {
-  if (
-    !gameLoaded ||
-    !nes ||
-    !Object.prototype.hasOwnProperty.call(buttons, key)
-  ) {
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = text.split(" ");
+  let line = "";
+  let currentY = y;
+
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line + words[n] + " ";
+    const metrics = ctx.measureText(testLine);
+
+    if (metrics.width > maxWidth && n > 0) {
+      ctx.fillText(line.trim(), x, currentY);
+      line = words[n] + " ";
+      currentY += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+
+  if (line.trim()) {
+    ctx.fillText(line.trim(), x, currentY);
+  }
+
+  return currentY;
+}
+
+function capturePhoto() {
+  if (!video.videoWidth || !video.videoHeight) {
+    alert("Camera chưa sẵn sàng, thử lại sau vài giây nhé.");
     return;
   }
 
-  initAudio();
+  const width = video.videoWidth;
+  const height = video.videoHeight;
 
-  if (isDown) {
-    nes.buttonDown(1, buttons[key]);
-  } else {
-    nes.buttonUp(1, buttons[key]);
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0, width, height);
+
+  const lines = getDisplayLines();
+  const theme = stampThemes[document.getElementById("stamp-color").value];
+
+  const padding = Math.round(width * 0.035);
+  const fontBig = Math.max(28, Math.round(width * 0.033));
+  const fontSmall = Math.max(19, Math.round(width * 0.021));
+  const lineHeight = Math.round(fontSmall * 1.4);
+
+  ctx.font = `bold ${fontBig}px Arial`;
+  const timeHeight = fontBig * 1.5;
+
+  ctx.font = `bold ${fontSmall}px Arial`;
+  let infoHeight = 0;
+
+  if (lines.length > 1) {
+    for (let i = 1; i < lines.length; i++) {
+      const estimatedRows = Math.ceil(ctx.measureText(lines[i]).width / (width - padding * 3));
+      infoHeight += estimatedRows * lineHeight;
+    }
   }
+
+  const boxHeight = padding * 2 + timeHeight + infoHeight;
+  const boxY = height - boxHeight - padding;
+
+  ctx.fillStyle = theme.bg;
+  roundRect(ctx, padding, boxY, width - padding * 2, boxHeight, Math.round(width * 0.012));
+  ctx.fill();
+
+  ctx.fillStyle = theme.accent;
+  ctx.fillRect(padding, boxY, Math.max(8, Math.round(width * 0.009)), boxHeight);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "rgba(0,0,0,.9)";
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 2;
+
+  let textX = padding + Math.round(width * 0.025);
+  let textY = boxY + padding + fontBig;
+
+  ctx.font = `bold ${fontBig}px Arial`;
+  ctx.fillText(lines[0], textX, textY);
+
+  ctx.font = `bold ${fontSmall}px Arial`;
+  textY += Math.round(fontBig * 1.15);
+
+  for (let i = 1; i < lines.length; i++) {
+    textY = wrapText(ctx, lines[i], textX, textY, width - padding * 3, lineHeight);
+    textY += Math.round(fontSmall * 0.35);
+  }
+
+  ctx.shadowColor = "transparent";
+
+  const imageUrl = canvas.toDataURL("image/jpeg", 0.94);
+  resultImage.src = imageUrl;
+  downloadImage.href = imageUrl;
+
+  const now = new Date();
+  const fileDate =
+    `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}` +
+    `_${String(now.getHours()).padStart(2,"0")}${String(now.getMinutes()).padStart(2,"0")}${String(now.getSeconds()).padStart(2,"0")}`;
+
+  downloadImage.download = `Anh_thoi_gian_${fileDate}.jpg`;
+
+  resultBox.classList.add("show");
 }
 
-/* =========================================================
-   NÚT TẠM DỪNG / ÂM THANH
-========================================================= */
-pauseButton.addEventListener("click", function() {
-  if (!gameLoaded) return;
+function roundRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + width, y, x + width, y + height, radius);
+  ctx.arcTo(x + width, y + height, x, y + height, radius);
+  ctx.arcTo(x, y + height, x, y, radius);
+  ctx.arcTo(x, y, x + width, y, radius);
+  ctx.closePath();
+}
 
-  paused = !paused;
-
-  pauseButton.textContent = paused ? "Tiếp tục" : "Tạm dừng";
-
-  status.textContent = paused
-    ? "Game đang tạm dừng"
-    : "Đang chơi";
-
-  if (paused) {
-    audioQueue = [];
-  }
-
-  releaseAllButtons();
-});
-
-soundButton.addEventListener("click", function() {
-  soundEnabled = !soundEnabled;
-
-  soundButton.textContent =
-    "Âm thanh: " + (soundEnabled ? "Bật" : "Tắt");
-
-  if (soundEnabled) {
-    initAudio();
-  } else {
-    audioQueue = [];
-  }
-});
-
-/* =========================================================
-   MENU GAME KHÁC
-========================================================= */
-gameButton.addEventListener("click", function() {
-  releaseAllButtons();
-  gameModal.classList.add("show");
-});
-
-closeGameModal.addEventListener("click", function() {
-  gameModal.classList.remove("show");
-});
-
-gameModal.addEventListener("click", function(event) {
-  if (event.target === gameModal) {
-    gameModal.classList.remove("show");
-  }
-});
-
-openFileButton.addEventListener("click", function() {
-  gameModal.classList.remove("show");
-  fileInput.click();
-});
-
-contraButton.addEventListener("click", function() {
-  gameModal.classList.remove("show");
-  loadContra();
-});
-
-fileInput.addEventListener("change", function(event) {
-  const file = event.target.files[0];
-
-  if (!file) return;
-
-  loadLocalROM(file);
-  fileInput.value = "";
-});
-
-/* =========================================================
-   ĐIỀU KHIỂN CẢM ỨNG
-========================================================= */
-document.querySelectorAll("[data-key]").forEach(button => {
-  const key = button.dataset.key;
-  const activePointers = new Set();
-
-  function press(event) {
-    event.preventDefault();
-
-    if (activePointers.has(event.pointerId)) {
-      return;
-    }
-
-    activePointers.add(event.pointerId);
-
-    try {
-      button.setPointerCapture(event.pointerId);
-    } catch (error) {}
-
-    button.classList.add("pressed");
-    setButton(key, true);
-  }
-
-  function release(event) {
-    event.preventDefault();
-
-    if (!activePointers.has(event.pointerId)) {
-      return;
-    }
-
-    activePointers.delete(event.pointerId);
-
-    if (activePointers.size === 0) {
-      button.classList.remove("pressed");
-      setButton(key, false);
-    }
-  }
-
-  button.addEventListener("pointerdown", press);
-  button.addEventListener("pointerup", release);
-  button.addEventListener("pointercancel", release);
-  button.addEventListener("lostpointercapture", release);
-
-  button.addEventListener("contextmenu", function(event) {
-    event.preventDefault();
+document.querySelectorAll(".mode").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".mode").forEach(btn => btn.classList.remove("active"));
+    button.classList.add("active");
+    currentMode = button.dataset.mode;
+    updateLiveStamp();
   });
 });
 
-/* =========================================================
-   BÀN PHÍM MÁY TÍNH
-========================================================= */
-const keyboardMap = {
-  ArrowUp:"UP",
-  ArrowDown:"DOWN",
-  ArrowLeft:"LEFT",
-  ArrowRight:"RIGHT",
-  z:"A",
-  Z:"A",
-  x:"B",
-  X:"B",
-  Enter:"START",
-  Shift:"SELECT"
-};
-
-window.addEventListener("keydown", function(event) {
-  const key = keyboardMap[event.key];
-
-  if (!key || event.repeat) {
-    return;
-  }
-
-  event.preventDefault();
-
-  setButton(key, true);
-
-  const button = document.querySelector(
-    '[data-key="' + key + '"]'
-  );
-
-  if (button) {
-    button.classList.add("pressed");
-  }
+document.getElementById("switch-camera").addEventListener("click", () => {
+  facingMode = facingMode === "environment" ? "user" : "environment";
+  startCamera();
 });
 
-window.addEventListener("keyup", function(event) {
-  const key = keyboardMap[event.key];
+document.getElementById("refresh-location").addEventListener("click", getLocation);
 
-  if (!key) {
-    return;
-  }
+document.getElementById("capture").addEventListener("click", capturePhoto);
 
-  event.preventDefault();
-
-  setButton(key, false);
-
-  const button = document.querySelector(
-    '[data-key="' + key + '"]'
-  );
-
-  if (button) {
-    button.classList.remove("pressed");
-  }
+document.getElementById("close-result").addEventListener("click", () => {
+  resultBox.classList.remove("show");
 });
 
-/* =========================================================
-   TRÁNH KẸT NÚT / ZOOM TRÊN ĐIỆN THOẠI
-========================================================= */
-document.addEventListener("gesturestart", event => {
-  event.preventDefault();
-}, { passive:false });
-
-document.addEventListener("gesturechange", event => {
-  event.preventDefault();
-}, { passive:false });
-
-document.addEventListener("gestureend", event => {
-  event.preventDefault();
-}, { passive:false });
-
-document.addEventListener("dblclick", event => {
-  event.preventDefault();
-}, { passive:false });
-
-window.addEventListener("blur", function() {
-  releaseAllButtons();
+document.getElementById("grid-toggle").addEventListener("change", function() {
+  grid.style.display = this.checked ? "block" : "none";
 });
 
-document.addEventListener("visibilitychange", function() {
-  if (document.hidden) {
-    releaseAllButtons();
+document.getElementById("stamp-color").addEventListener("change", updateStampTheme);
 
-    if (gameLoaded && !paused) {
-      paused = true;
-      pauseButton.textContent = "Tiếp tục";
-      status.textContent = "Game đang tạm dừng";
-      audioQueue = [];
-    }
-  }
-});
+setInterval(updateLiveStamp, 1000);
 
-/* =========================================================
-   KHỞI ĐỘNG
-========================================================= */
-gameLoop();
+updateLiveStamp();
+updateStampTheme();
+startCamera();
+getLocation();
 
-/*
-  Mario được mở ngay từ đầu.
-  Contra tải song song vào bộ nhớ nhưng không làm đổi trạng thái màn hình.
-*/
-loadGameFromURL(DEFAULT_ROM_URL, DEFAULT_GAME_NAME);
-
-preloadContra().catch(() => {
-  /*
-    Lỗi tải sẵn chỉ hiển thị nhỏ trong menu Contra,
-    không ảnh hưởng tới Mario đang chạy.
-  */
-});
+window.addEventListener("beforeunload", stopCamera);
 </script>
 </body>
 </html>
