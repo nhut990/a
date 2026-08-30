@@ -6,7 +6,7 @@
   name="viewport"
   content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
 >
-<title>Super Mario Bros - NES</title>
+<title>NES Emulator</title>
 
 <script src="https://cdn.jsdelivr.net/npm/jsnes@1.2.1/dist/jsnes.js"></script>
 
@@ -67,14 +67,22 @@ body{
   display:flex;
   align-items:center;
   gap:10px;
+  min-width:0;
   font-size:clamp(14px,3vw,18px);
   font-weight:800;
   letter-spacing:.5px;
 }
 
+.brand-name{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
 .brand-icon{
   width:clamp(34px,7vw,40px);
   height:clamp(23px,5vw,27px);
+  flex:none;
   display:grid;
   place-items:center;
   border:2px solid #fff;
@@ -85,7 +93,7 @@ body{
 }
 
 .status{
-  max-width:56%;
+  max-width:52%;
   overflow:hidden;
   color:var(--muted);
   font-size:clamp(10px,2vw,12px);
@@ -290,6 +298,7 @@ button:active,
 }
 
 .middle{
+  position:relative;
   min-width:clamp(70px,20vw,90px);
   min-height:clamp(32px,7vh,38px);
   padding:0 12px;
@@ -317,7 +326,7 @@ button:active,
 }
 
 .game-modal-card{
-  width:min(100%,455px);
+  width:min(100%,470px);
   overflow:hidden;
   border:1px solid rgba(142,172,240,.42);
   border-radius:19px;
@@ -440,6 +449,7 @@ button:active,
     transform:scale(.88) translateY(10px);
     opacity:0;
   }
+
   to{
     transform:scale(1) translateY(0);
     opacity:1;
@@ -482,10 +492,10 @@ button:active,
   <div class="header">
     <div class="brand">
       <div class="brand-icon">NES</div>
-      <span id="gameTitle">SUPER MARIO BROS</span>
+      <span class="brand-name" id="gameTitle">SUPER MARIO BROS</span>
     </div>
 
-    <div class="status" id="status">Đang tải game...</div>
+    <div class="status" id="status">Đang chuẩn bị...</div>
   </div>
 
   <div class="screen-box">
@@ -519,14 +529,13 @@ button:active,
   </div>
 
   <div class="middle-controls">
-    <button class="middle control-middle" data-key="SELECT">SELECT</button>
-    <button class="middle control-middle" data-key="START">START</button>
+    <button class="middle" data-key="SELECT">SELECT</button>
+    <button class="middle" data-key="START">START</button>
   </div>
 </div>
 
 <input type="file" id="fileInput" accept=".nes" style="display:none">
 
-<!-- MENU GAME KHÁC -->
 <div class="game-modal" id="gameModal">
   <div class="game-modal-card">
     <div class="game-modal-header">
@@ -536,8 +545,8 @@ button:active,
       </div>
 
       <button
-        class="close-game-modal"
         id="closeGameModal"
+        class="close-game-modal"
         aria-label="Đóng menu game"
       >✕</button>
     </div>
@@ -547,25 +556,25 @@ button:active,
         <span class="game-icon">📁</span>
         <span class="game-info">
           <strong>Mở file .nes từ máy</strong>
-          <small>Chọn ROM NES từ điện thoại hoặc máy tính</small>
+          <small>Chọn ROM NES có trong điện thoại hoặc máy tính</small>
         </span>
       </button>
 
       <button
         class="game-item"
-        data-rom-url="https://github.com/nhut990/files/raw/refs/heads/main/music/021%20Contra.nes"
+        data-rom-url="https://raw.githubusercontent.com/nhut990/files/main/music/021%20Contra.nes"
         data-game-name="Contra"
       >
         <span class="game-icon">🎮</span>
         <span class="game-info">
           <strong>Contra</strong>
-          <small>Tải ROM trực tiếp từ GitHub</small>
+          <small>Tải game từ GitHub</small>
         </span>
       </button>
 
       <button
         class="game-item"
-        data-rom-url="https://github.com/nhut990/files/raw/refs/heads/main/music/Qi%20Wang%20-%20Chinese%20Chess%20(Asia)%20(Micro%20Genius)%20(Unl).nes"
+        data-rom-url="https://raw.githubusercontent.com/nhut990/files/main/music/Qi%20Wang%20-%20Chinese%20Chess%20(Asia)%20(Micro%20Genius)%20(Unl).nes"
         data-game-name="Qi Wang - Chinese Chess (Asia) (Micro Genius) (Unl)"
       >
         <span class="game-icon">♟</span>
@@ -579,9 +588,6 @@ button:active,
 </div>
 
 <script>
-/* =========================================================
-   LINK ROM MẶC ĐỊNH
-========================================================= */
 const DEFAULT_ROM_URL =
   "https://raw.githubusercontent.com/nhut990/files/main/hinh/SuperMarioBros.nes";
 
@@ -593,17 +599,18 @@ const imageData = ctx.createImageData(256, 240);
 const pixels = imageData.data;
 
 const status = document.getElementById("status");
+const gameTitle = document.getElementById("gameTitle");
 const screenMessage = document.getElementById("screenMessage");
+
 const pauseButton = document.getElementById("pauseButton");
 const soundButton = document.getElementById("soundButton");
 const gameButton = document.getElementById("gameButton");
-const gameTitle = document.getElementById("gameTitle");
-
-const fileInput = document.getElementById("fileInput");
-const openFileButton = document.getElementById("openFileButton");
 
 const gameModal = document.getElementById("gameModal");
 const closeGameModal = document.getElementById("closeGameModal");
+
+const openFileButton = document.getElementById("openFileButton");
+const fileInput = document.getElementById("fileInput");
 
 let nes = null;
 let gameLoaded = false;
@@ -614,23 +621,24 @@ let audioContext = null;
 let audioNode = null;
 let audioQueue = [];
 
-/* =========================================================
-   KIỂM TRA THƯ VIỆN JSNES
-========================================================= */
-if (typeof jsnes === "undefined") {
-  status.textContent = "Lỗi: Không thể tải thư viện jsnes";
+/*
+  Mỗi lần người dùng chọn game mới, số này sẽ tăng.
+  Nếu game cũ tải chậm hơn game mới, game cũ sẽ bị bỏ qua,
+  không thể tự nhiên ghi đè lên game đang chọn.
+*/
+let loadToken = 0;
 
-  screenMessage.innerHTML = `
-    <strong>Lỗi thư viện</strong>
-    <span>Vui lòng kiểm tra kết nối mạng và tải lại trang.</span>
-  `;
+if (typeof jsnes === "undefined") {
+  status.textContent = "Không tải được thư viện jsnes";
+
+  showScreenMessage(
+    "Lỗi thư viện",
+    "Không thể tải jsnes. Vui lòng kiểm tra mạng rồi tải lại trang."
+  );
 
   throw new Error("jsnes is not loaded");
 }
 
-/* =========================================================
-   CÁC PHÍM NES
-========================================================= */
 const buttons = {
   UP: jsnes.Controller.BUTTON_UP,
   DOWN: jsnes.Controller.BUTTON_DOWN,
@@ -642,9 +650,6 @@ const buttons = {
   START: jsnes.Controller.BUTTON_START
 };
 
-/* =========================================================
-   HIỂN THỊ THÔNG BÁO MÀN HÌNH
-========================================================= */
 function showScreenMessage(title, text) {
   screenMessage.style.display = "flex";
   screenMessage.innerHTML = "";
@@ -663,14 +668,26 @@ function hideScreenMessage() {
   screenMessage.style.display = "none";
 }
 
-/* =========================================================
-   ÂM THANH
-========================================================= */
+function formatBytes(bytes) {
+  if (!bytes) return "0 KB";
+
+  if (bytes < 1024) {
+    return bytes + " B";
+  }
+
+  if (bytes < 1024 * 1024) {
+    return (bytes / 1024).toFixed(1) + " KB";
+  }
+
+  return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+}
+
 function initAudio() {
   if (audioContext) {
     if (audioContext.state === "suspended") {
       audioContext.resume();
     }
+
     return;
   }
 
@@ -684,16 +701,16 @@ function initAudio() {
   audioNode = audioContext.createScriptProcessor(1024, 0, 2);
 
   audioNode.onaudioprocess = function(event) {
-    const left = event.outputBuffer.getChannelData(0);
-    const right = event.outputBuffer.getChannelData(1);
+    const leftChannel = event.outputBuffer.getChannelData(0);
+    const rightChannel = event.outputBuffer.getChannelData(1);
 
-    for (let i = 0; i < left.length; i++) {
+    for (let i = 0; i < leftChannel.length; i++) {
       if (soundEnabled && audioQueue.length >= 2) {
-        left[i] = audioQueue.shift();
-        right[i] = audioQueue.shift();
+        leftChannel[i] = audioQueue.shift();
+        rightChannel[i] = audioQueue.shift();
       } else {
-        left[i] = 0;
-        right[i] = 0;
+        leftChannel[i] = 0;
+        rightChannel[i] = 0;
       }
     }
   };
@@ -701,47 +718,44 @@ function initAudio() {
   audioNode.connect(audioContext.destination);
 }
 
-/* =========================================================
-   TẠO MÁY NES
-========================================================= */
 function createNES() {
   audioQueue = [];
 
   nes = new jsnes.NES({
     onFrame(framebuffer) {
-      for (let i = 0, p = 0; i < framebuffer.length; i++, p += 4) {
+      for (let i = 0, pixelIndex = 0; i < framebuffer.length; i++, pixelIndex += 4) {
         const color = framebuffer[i];
 
-        pixels[p] = color & 0xFF;
-        pixels[p + 1] = (color >> 8) & 0xFF;
-        pixels[p + 2] = (color >> 16) & 0xFF;
-        pixels[p + 3] = 255;
+        pixels[pixelIndex] = color & 0xFF;
+        pixels[pixelIndex + 1] = (color >> 8) & 0xFF;
+        pixels[pixelIndex + 2] = (color >> 16) & 0xFF;
+        pixels[pixelIndex + 3] = 255;
       }
 
       ctx.putImageData(imageData, 0, 0);
     },
 
     onAudioSample(left, right) {
-      if (audioQueue.length < 18000) {
+      /*
+        Không để hàng chờ quá dài để âm thanh không bị trễ quá nhiều.
+      */
+      if (audioQueue.length < 12000) {
         audioQueue.push(left, right);
       }
     }
   });
 }
 
-/* =========================================================
-   XỬ LÝ ROM
-========================================================= */
 function binaryStringFromArrayBuffer(buffer) {
   const bytes = new Uint8Array(buffer);
   const chunkSize = 8192;
+
   let result = "";
 
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    result += String.fromCharCode.apply(
-      null,
-      bytes.subarray(i, i + chunkSize)
-    );
+  for (let start = 0; start < bytes.length; start += chunkSize) {
+    const chunk = bytes.subarray(start, start + chunkSize);
+
+    result += String.fromCharCode.apply(null, chunk);
   }
 
   return result;
@@ -759,42 +773,68 @@ function isValidNESRom(buffer) {
   );
 }
 
-function loadROM(buffer, gameName) {
-  try {
-    if (!isValidNESRom(buffer)) {
-      throw new Error("File không phải ROM NES hợp lệ hoặc đã bị hỏng.");
-    }
+function getRomInfo(buffer) {
+  const bytes = new Uint8Array(buffer);
 
-    releaseAllButtons();
-    createNES();
-
-    nes.loadROM(binaryStringFromArrayBuffer(buffer));
-
-    gameLoaded = true;
-    paused = false;
-
-    pauseButton.textContent = "Tạm dừng";
-    gameTitle.textContent = gameName.toUpperCase();
-    status.textContent = "Đang chơi: " + gameName;
-
-    hideScreenMessage();
-  } catch (error) {
-    console.error(error);
-
-    gameLoaded = false;
-    status.textContent = "Không thể tải game";
-
-    showScreenMessage(
-      "Không thể tải game",
-      error.message || "File game không hợp lệ."
-    );
+  if (bytes.length < 16) {
+    return "ROM quá ngắn.";
   }
+
+  const prgSize = bytes[4] * 16;
+  const chrSize = bytes[5] * 8;
+
+  return "PRG: " + prgSize + " KB • CHR: " + chrSize + " KB";
 }
 
-/* =========================================================
-   TẢI ROM TỪ LINK
-========================================================= */
+function releaseAllButtons() {
+  if (nes) {
+    Object.keys(buttons).forEach(key => {
+      nes.buttonUp(1, buttons[key]);
+    });
+  }
+
+  document.querySelectorAll("[data-key]").forEach(button => {
+    button.classList.remove("pressed");
+  });
+}
+
+function loadROM(buffer, gameName) {
+  if (!isValidNESRom(buffer)) {
+    throw new Error(
+      "Dữ liệu tải về không có header NES hợp lệ. Có thể link không trả về file ROM."
+    );
+  }
+
+  releaseAllButtons();
+
+  gameLoaded = false;
+  paused = false;
+  audioQueue = [];
+
+  createNES();
+
+  const romData = binaryStringFromArrayBuffer(buffer);
+
+  /*
+    Nếu ROM lỗi, jsnes sẽ báo Load failed tại đây.
+    Nhưng hai ROM này chạy từ file máy, nên khi tải đúng byte từ raw GitHub
+    chúng cũng sẽ nạp được như vậy.
+  */
+  nes.loadROM(romData);
+
+  gameLoaded = true;
+  paused = false;
+
+  pauseButton.textContent = "Tạm dừng";
+  gameTitle.textContent = gameName.toUpperCase();
+  status.textContent = "Đang chơi: " + gameName;
+
+  hideScreenMessage();
+}
+
 async function loadGameFromURL(url, gameName) {
+  const currentToken = ++loadToken;
+
   try {
     releaseAllButtons();
 
@@ -803,52 +843,139 @@ async function loadGameFromURL(url, gameName) {
     audioQueue = [];
 
     pauseButton.textContent = "Tạm dừng";
+    gameTitle.textContent = gameName.toUpperCase();
+
     status.textContent = "Đang tải " + gameName + "...";
 
     showScreenMessage(
       "Đang tải " + gameName,
-      "Vui lòng chờ trong giây lát..."
+      "Đang lấy ROM từ GitHub..."
     );
 
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      method:"GET",
+      cache:"no-store"
+    });
+
+    /*
+      Nếu trong khi tải, bạn đã chọn một game khác,
+      lượt tải cũ sẽ không làm gì thêm.
+    */
+    if (currentToken !== loadToken) {
+      return;
+    }
 
     if (!response.ok) {
       throw new Error(
-        "Không tải được game. Mã lỗi: " + response.status
+        "GitHub trả về lỗi " + response.status + ". Không tải được ROM."
       );
     }
 
     const buffer = await response.arrayBuffer();
 
-    if (!isValidNESRom(buffer)) {
-      throw new Error("Game tải về không phải ROM NES hợp lệ.");
+    if (currentToken !== loadToken) {
+      return;
     }
+
+    if (!isValidNESRom(buffer)) {
+      const preview = new TextDecoder()
+        .decode(new Uint8Array(buffer).slice(0, 80))
+        .replace(/\s+/g, " ")
+        .trim();
+
+      throw new Error(
+        "Link không trả về ROM NES hợp lệ. Dữ liệu nhận được: " +
+        (preview || "không xác định")
+      );
+    }
+
+    status.textContent =
+      "Đang nạp " + gameName + " • " + formatBytes(buffer.byteLength);
 
     loadROM(buffer, gameName);
   } catch (error) {
-    console.error(error);
+    if (currentToken !== loadToken) {
+      return;
+    }
+
+    console.error("Lỗi tải ROM:", error);
 
     gameLoaded = false;
+    paused = false;
+    audioQueue = [];
+
     status.textContent = "Không thể tải " + gameName;
 
     showScreenMessage(
       "Không thể tải game",
-      error.message ||
-      "Vui lòng kiểm tra link ROM và kết nối mạng."
+      error.message || "Vui lòng kiểm tra lại link ROM và mạng."
     );
   }
 }
 
-/* =========================================================
-   GAME MẶC ĐỊNH: SUPER MARIO BROS
-========================================================= */
-function loadDefaultGame() {
-  loadGameFromURL(DEFAULT_ROM_URL, DEFAULT_GAME_NAME);
+function loadLocalROM(file) {
+  const currentToken = ++loadToken;
+
+  releaseAllButtons();
+
+  gameLoaded = false;
+  paused = false;
+  audioQueue = [];
+
+  const gameName = file.name.replace(/\.nes$/i, "");
+
+  gameTitle.textContent = gameName.toUpperCase();
+  status.textContent = "Đang đọc: " + file.name;
+
+  showScreenMessage(
+    "Đang mở game",
+    "Đang đọc ROM từ thiết bị..."
+  );
+
+  const reader = new FileReader();
+
+  reader.onload = function(event) {
+    if (currentToken !== loadToken) {
+      return;
+    }
+
+    try {
+      const buffer = event.target.result;
+
+      status.textContent =
+        "Đang nạp " + gameName + " • " + formatBytes(buffer.byteLength);
+
+      loadROM(buffer, gameName);
+    } catch (error) {
+      console.error("Lỗi nạp ROM từ máy:", error);
+
+      gameLoaded = false;
+      status.textContent = "Không thể mở file";
+
+      showScreenMessage(
+        "Không thể mở game",
+        error.message || "File .nes này không thể nạp."
+      );
+    }
+  };
+
+  reader.onerror = function() {
+    if (currentToken !== loadToken) {
+      return;
+    }
+
+    gameLoaded = false;
+    status.textContent = "Không thể đọc file";
+
+    showScreenMessage(
+      "Không thể đọc file",
+      "Vui lòng thử lại bằng một file .nes khác."
+    );
+  };
+
+  reader.readAsArrayBuffer(file);
 }
 
-/* =========================================================
-   VÒNG LẶP GAME
-========================================================= */
 function gameLoop() {
   if (gameLoaded && !paused && nes) {
     nes.frame();
@@ -857,9 +984,6 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-/* =========================================================
-   ĐIỀU KHIỂN NES
-========================================================= */
 function setButton(key, isDown) {
   if (
     !gameLoaded ||
@@ -878,27 +1002,13 @@ function setButton(key, isDown) {
   }
 }
 
-function releaseAllButtons() {
-  if (!nes) return;
-
-  Object.keys(buttons).forEach(key => {
-    nes.buttonUp(1, buttons[key]);
-  });
-
-  document.querySelectorAll("[data-key]").forEach(button => {
-    button.classList.remove("pressed");
-  });
-}
-
-/* =========================================================
-   NÚT TẠM DỪNG
-========================================================= */
 pauseButton.addEventListener("click", function() {
   if (!gameLoaded) return;
 
   paused = !paused;
 
   pauseButton.textContent = paused ? "Tiếp tục" : "Tạm dừng";
+
   status.textContent = paused
     ? "Game đang tạm dừng"
     : "Đang chơi";
@@ -910,9 +1020,6 @@ pauseButton.addEventListener("click", function() {
   releaseAllButtons();
 });
 
-/* =========================================================
-   NÚT ÂM THANH
-========================================================= */
 soundButton.addEventListener("click", function() {
   soundEnabled = !soundEnabled;
 
@@ -926,9 +1033,6 @@ soundButton.addEventListener("click", function() {
   }
 });
 
-/* =========================================================
-   MENU GAME KHÁC
-========================================================= */
 gameButton.addEventListener("click", function() {
   releaseAllButtons();
   gameModal.classList.add("show");
@@ -949,53 +1053,26 @@ openFileButton.addEventListener("click", function() {
   fileInput.click();
 });
 
-document.querySelectorAll("[data-rom-url]").forEach(button => {
-  button.addEventListener("click", function() {
-    const romUrl = button.dataset.romUrl;
-    const gameName = button.dataset.gameName;
-
-    gameModal.classList.remove("show");
-    loadGameFromURL(romUrl, gameName);
-  });
-});
-
-/* =========================================================
-   MỞ FILE NES TỪ MÁY
-========================================================= */
 fileInput.addEventListener("change", function(event) {
   const file = event.target.files[0];
 
   if (!file) return;
 
-  status.textContent = "Đang đọc file: " + file.name;
+  loadLocalROM(file);
 
-  showScreenMessage(
-    "Đang mở game",
-    "Đang đọc file ROM từ thiết bị..."
-  );
-
-  const reader = new FileReader();
-
-  reader.onload = function(e) {
-    loadROM(e.target.result, file.name.replace(/\.nes$/i, ""));
-  };
-
-  reader.onerror = function() {
-    status.textContent = "Không thể đọc file";
-
-    showScreenMessage(
-      "Không thể đọc file",
-      "Vui lòng thử lại bằng một file .nes khác."
-    );
-  };
-
-  reader.readAsArrayBuffer(file);
   fileInput.value = "";
 });
 
-/* =========================================================
-   ĐIỀU KHIỂN CẢM ỨNG / POINTER
-========================================================= */
+document.querySelectorAll("[data-rom-url]").forEach(button => {
+  button.addEventListener("click", function() {
+    const url = button.dataset.romUrl;
+    const gameName = button.dataset.gameName;
+
+    gameModal.classList.remove("show");
+    loadGameFromURL(url, gameName);
+  });
+});
+
 document.querySelectorAll("[data-key]").forEach(button => {
   const key = button.dataset.key;
   const activePointers = new Set();
@@ -1003,7 +1080,9 @@ document.querySelectorAll("[data-key]").forEach(button => {
   function press(event) {
     event.preventDefault();
 
-    if (activePointers.has(event.pointerId)) return;
+    if (activePointers.has(event.pointerId)) {
+      return;
+    }
 
     activePointers.add(event.pointerId);
 
@@ -1018,7 +1097,9 @@ document.querySelectorAll("[data-key]").forEach(button => {
   function release(event) {
     event.preventDefault();
 
-    if (!activePointers.has(event.pointerId)) return;
+    if (!activePointers.has(event.pointerId)) {
+      return;
+    }
 
     activePointers.delete(event.pointerId);
 
@@ -1038,61 +1119,59 @@ document.querySelectorAll("[data-key]").forEach(button => {
   });
 });
 
-/* =========================================================
-   BÀN PHÍM MÁY TÍNH
-========================================================= */
 const keyboardMap = {
-  ArrowUp: "UP",
-  ArrowDown: "DOWN",
-  ArrowLeft: "LEFT",
-  ArrowRight: "RIGHT",
-  z: "A",
-  Z: "A",
-  x: "B",
-  X: "B",
-  Enter: "START",
-  Shift: "SELECT"
+  ArrowUp:"UP",
+  ArrowDown:"DOWN",
+  ArrowLeft:"LEFT",
+  ArrowRight:"RIGHT",
+  z:"A",
+  Z:"A",
+  x:"B",
+  X:"B",
+  Enter:"START",
+  Shift:"SELECT"
 };
 
-window.addEventListener("keydown", event => {
+window.addEventListener("keydown", function(event) {
   const key = keyboardMap[event.key];
 
-  if (!key || event.repeat) return;
+  if (!key || event.repeat) {
+    return;
+  }
 
   event.preventDefault();
 
   setButton(key, true);
 
-  const element = document.querySelector(
+  const button = document.querySelector(
     '[data-key="' + key + '"]'
   );
 
-  if (element) {
-    element.classList.add("pressed");
+  if (button) {
+    button.classList.add("pressed");
   }
 });
 
-window.addEventListener("keyup", event => {
+window.addEventListener("keyup", function(event) {
   const key = keyboardMap[event.key];
 
-  if (!key) return;
+  if (!key) {
+    return;
+  }
 
   event.preventDefault();
 
   setButton(key, false);
 
-  const element = document.querySelector(
+  const button = document.querySelector(
     '[data-key="' + key + '"]'
   );
 
-  if (element) {
-    element.classList.remove("pressed");
+  if (button) {
+    button.classList.remove("pressed");
   }
 });
 
-/* =========================================================
-   CHỐNG ZOOM / CHỐNG KẸT PHÍM
-========================================================= */
 document.addEventListener("gesturestart", event => {
   event.preventDefault();
 }, { passive:false });
@@ -1126,11 +1205,8 @@ document.addEventListener("visibilitychange", function() {
   }
 });
 
-/* =========================================================
-   KHỞI ĐỘNG
-========================================================= */
 gameLoop();
-loadDefaultGame();
+loadGameFromURL(DEFAULT_ROM_URL, DEFAULT_GAME_NAME);
 </script>
 </body>
-</html>
+</html>hyy
