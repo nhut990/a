@@ -1,1019 +1,202 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
-  >
-  <title>Arcade MAME / FBNeo Player</title>
-
-  <style>
-    :root{
-      --bg1:#253a6b;
-      --bg2:#10182d;
-      --bg3:#060a13;
-      --panel:#17233f;
-      --panel2:#263b65;
-      --line:#536d9e;
-      --text:#f0f5ff;
-      --muted:#aebdda;
-      --blue:#5d90ff;
-      --blue2:#315bbc;
-      --red:#ec526b;
-      --red2:#a52344;
-      --yellow:#f1c75a;
-      --green:#79ddb0;
-    }
-
-    *{
-      box-sizing:border-box;
-      -webkit-tap-highlight-color:transparent;
-      -webkit-touch-callout:none;
-      -webkit-user-select:none;
-      user-select:none;
-    }
-
-    html,
-    body{
-      margin:0;
-      min-height:100%;
-      overscroll-behavior:none;
-      background:var(--bg3);
-    }
-
-    body{
-      min-height:100vh;
-      min-height:100dvh;
-      overflow-x:hidden;
-      color:var(--text);
-      font-family:Arial, Helvetica, sans-serif;
-      background:
-        radial-gradient(circle at top, var(--bg1) 0%, var(--bg2) 42%, var(--bg3) 100%);
-    }
-
-    button,
-    select,
-    input{
-      font:inherit;
-    }
-
-    button{
-      border:0;
-      color:var(--text);
-      cursor:pointer;
-    }
-
-    .app{
-      width:min(100%, 900px);
-      min-height:100vh;
-      min-height:100dvh;
-      margin:auto;
-      padding:
-        max(12px, env(safe-area-inset-top))
-        max(14px, env(safe-area-inset-right))
-        max(20px, env(safe-area-inset-bottom))
-        max(14px, env(safe-area-inset-left));
-    }
-
-    .header{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      margin-bottom:12px;
-    }
-
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      min-width:0;
-    }
-
-    .arcade-icon{
-      display:grid;
-      place-items:center;
-      width:45px;
-      height:34px;
-      flex:none;
-      border:2px solid #dbe8ff;
-      border-radius:9px;
-      color:#fff;
-      background:linear-gradient(145deg,#ff6378,#b51f45);
-      box-shadow:
-        0 4px 0 #651127,
-        0 8px 15px rgba(0,0,0,.3),
-        inset 0 1px rgba(255,255,255,.25);
-      font-size:11px;
-      font-weight:900;
-      letter-spacing:.5px;
-    }
-
-    .brand-text{
-      min-width:0;
-    }
-
-    .brand-text strong,
-    .brand-text small{
-      display:block;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-    }
-
-    .brand-text strong{
-      font-size:clamp(16px, 4vw, 21px);
-      letter-spacing:.7px;
-    }
-
-    .brand-text small{
-      margin-top:3px;
-      color:var(--muted);
-      font-size:11px;
-    }
-
-    .status{
-      max-width:42%;
-      overflow:hidden;
-      color:var(--muted);
-      text-align:right;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-      font-size:11px;
-      line-height:1.4;
-    }
-
-    .screen-wrap{
-      position:relative;
-      width:100%;
-      overflow:hidden;
-      border:5px solid #3d5179;
-      border-radius:17px;
-      background:#000;
-      aspect-ratio:4 / 3;
-      box-shadow:
-        0 17px 35px rgba(0,0,0,.45),
-        inset 0 0 0 2px rgba(255,255,255,.06);
-    }
-
-    #game{
-      width:100%;
-      height:100%;
-      background:#000;
-    }
-
-    #game canvas{
-      display:block !important;
-      width:100% !important;
-      height:100% !important;
-      image-rendering:pixelated;
-      image-rendering:crisp-edges;
-    }
-
-    .screen-message{
-      position:absolute;
-      z-index:5;
-      inset:0;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:12px;
-      padding:24px;
-      text-align:center;
-      background:
-        radial-gradient(circle at 50% 35%, rgba(40,63,112,.95), rgba(4,8,16,.98));
-    }
-
-    .screen-message.hidden{
-      display:none;
-    }
-
-    .screen-message strong{
-      font-size:clamp(17px, 5vw, 23px);
-    }
-
-    .screen-message span{
-      max-width:440px;
-      color:#bdcbe5;
-      font-size:13px;
-      line-height:1.55;
-    }
-
-    .screen-message .tiny{
-      color:#91a5cc;
-      font-size:11px;
-    }
-
-    .setup{
-      margin-top:12px;
-      padding:13px;
-      border:1px solid rgba(129,159,220,.42);
-      border-radius:15px;
-      background:linear-gradient(145deg,rgba(39,61,105,.95),rgba(15,23,43,.96));
-      box-shadow:0 10px 24px rgba(0,0,0,.22);
-    }
-
-    .file-button{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      width:100%;
-      min-height:52px;
-      padding:10px;
-      border:1px solid #a2c1ff;
-      border-radius:12px;
-      color:#fff;
-      background:linear-gradient(145deg,#5a8dec,#2d55a9);
-      box-shadow:
-        0 4px 0 #193877,
-        0 9px 17px rgba(0,0,0,.22),
-        inset 0 1px rgba(255,255,255,.25);
-      font-weight:800;
-    }
-
-    .file-button:active,
-    .action-button:active,
-    .control:active,
-    .control.pressed{
-      transform:translateY(3px) scale(.98);
-      filter:brightness(.88);
-    }
-
-    #romFile{
-      display:none;
-    }
-
-    .setup-row{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      margin-top:11px;
-    }
-
-    .setup-row label{
-      color:var(--muted);
-      font-size:12px;
-      font-weight:700;
-      white-space:nowrap;
-    }
-
-    select{
-      min-width:0;
-      flex:1;
-      height:40px;
-      padding:0 10px;
-      border:1px solid var(--line);
-      border-radius:10px;
-      outline:none;
-      color:var(--text);
-      background:#0d1528;
-      font-size:13px;
-      font-weight:700;
-    }
-
-    .loaded-file{
-      margin-top:10px;
-      overflow:hidden;
-      color:var(--green);
-      text-overflow:ellipsis;
-      white-space:nowrap;
-      font-size:12px;
-    }
-
-    .top-actions{
-      display:grid;
-      grid-template-columns:repeat(3, 1fr);
-      gap:9px;
-      margin-top:11px;
-    }
-
-    .action-button{
-      min-height:43px;
-      padding:0 7px;
-      border:1px solid var(--line);
-      border-radius:11px;
-      background:linear-gradient(145deg,#324d82,#172641);
-      box-shadow:
-        0 4px 0 #080e1d,
-        0 8px 15px rgba(0,0,0,.22),
-        inset 0 1px rgba(255,255,255,.15);
-      font-size:12px;
-      font-weight:800;
-      touch-action:manipulation;
-    }
-
-    .controls-area{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      margin-top:15px;
-      padding:2px 3px 0;
-    }
-
-    .dpad{
-      position:relative;
-      width:clamp(132px, 31vw, 160px);
-      height:clamp(132px, 31vw, 160px);
-      flex:none;
-      filter:
-        drop-shadow(0 10px 12px rgba(0,0,0,.38))
-        drop-shadow(0 0 8px rgba(102,157,255,.13));
-    }
-
-    .control{
-      display:grid;
-      place-items:center;
-      border:2px solid #6c83a9;
-      color:#fff;
-      font-weight:900;
-      touch-action:none;
-    }
-
-    .dpad .control{
-      position:absolute;
-      z-index:2;
-      width:38%;
-      height:38%;
-      padding:0;
-      border-radius:10px;
-      background:linear-gradient(145deg,#4d6389,#1b2941);
-      box-shadow:
-        0 5px 0 #070d19,
-        0 8px 14px rgba(0,0,0,.3),
-        inset 0 2px 1px rgba(255,255,255,.2),
-        inset 0 -3px 5px rgba(0,0,0,.24);
-    }
-
-    .dpad .up{
-      top:0;
-      left:31%;
-      border-radius:12px 12px 4px 4px;
-    }
-
-    .dpad .down{
-      bottom:0;
-      left:31%;
-      border-radius:4px 4px 12px 12px;
-    }
-
-    .dpad .left{
-      top:31%;
-      left:0;
-      border-radius:12px 4px 4px 12px;
-    }
-
-    .dpad .right{
-      top:31%;
-      right:0;
-      border-radius:4px 12px 12px 4px;
-    }
-
-    .dpad-center{
-      position:absolute;
-      z-index:3;
-      top:31%;
-      left:31%;
-      width:38%;
-      height:38%;
-      border:2px solid #637a9f;
-      border-radius:4px;
-      pointer-events:none;
-      background:radial-gradient(circle at 35% 28%,#536a8b,#1b293f);
-      box-shadow:
-        inset 0 2px 3px rgba(255,255,255,.13),
-        inset 0 -3px 5px rgba(0,0,0,.35);
-    }
-
-    .arrow{
-      width:50%;
-      height:50%;
-      fill:#fff;
-      filter:drop-shadow(0 2px 1px rgba(0,0,0,.6));
-    }
-
-    .dpad .control.pressed{
-      z-index:4;
-      border-color:#b5d1ff;
-      background:linear-gradient(145deg,#283d60,#121e32);
-      box-shadow:
-        0 2px 0 #070d19,
-        inset 0 3px 8px rgba(0,0,0,.5),
-        0 0 13px rgba(111,166,255,.35);
-    }
-
-    .right-controls{
-      display:grid;
-      grid-template-columns:repeat(2, 1fr);
-      align-items:center;
-      gap:11px;
-      flex:none;
-      padding-right:2px;
-    }
-
-    .round{
-      width:clamp(54px, 14vw, 70px);
-      height:clamp(54px, 14vw, 70px);
-      padding:0;
-      border-radius:50%;
-      box-shadow:
-        0 5px 0 #5f1026,
-        0 9px 14px rgba(0,0,0,.32),
-        inset 0 2px rgba(255,255,255,.25);
-      font-size:clamp(16px, 4vw, 23px);
-    }
-
-    .round.b1,
-    .round.b3{
-      margin-top:24px;
-    }
-
-    .round.b1{
-      border-color:#ff9eac;
-      background:linear-gradient(145deg,#ff7182,#bb2649);
-    }
-
-    .round.b2{
-      border-color:#b4caff;
-      background:linear-gradient(145deg,#759dff,#3a61d3);
-      box-shadow:
-        0 5px 0 #1d398c,
-        0 9px 14px rgba(0,0,0,.32),
-        inset 0 2px rgba(255,255,255,.25);
-    }
-
-    .round.b3{
-      border-color:#ffe19a;
-      background:linear-gradient(145deg,#ffd66a,#bd8520);
-      box-shadow:
-        0 5px 0 #78500d,
-        0 9px 14px rgba(0,0,0,.32),
-        inset 0 2px rgba(255,255,255,.25);
-    }
-
-    .round.b4{
-      border-color:#b9f5d6;
-      background:linear-gradient(145deg,#6fe0ab,#219b71);
-      box-shadow:
-        0 5px 0 #0d6647,
-        0 9px 14px rgba(0,0,0,.32),
-        inset 0 2px rgba(255,255,255,.25);
-    }
-
-    .round.pressed{
-      box-shadow:
-        0 2px 0 rgba(0,0,0,.42),
-        inset 0 3px 9px rgba(0,0,0,.46);
-    }
-
-    .round::after{
-      content:attr(data-label);
-      position:absolute;
-      top:calc(100% + 5px);
-      left:50%;
-      transform:translateX(-50%);
-      color:#c5d2ed;
-      font-size:10px;
-      font-weight:800;
-    }
-
-    .middle-controls{
-      display:flex;
-      justify-content:center;
-      gap:13px;
-      margin-top:15px;
-    }
-
-    .middle{
-      position:relative;
-      min-width:92px;
-      min-height:38px;
-      padding:0 15px;
-      border:1px solid #637aa4;
-      border-radius:19px;
-      color:#edf4ff;
-      background:linear-gradient(145deg,#3a527e,#1a2842);
-      box-shadow:
-        0 4px 0 #080e1b,
-        0 7px 12px rgba(0,0,0,.24),
-        inset 0 1px rgba(255,255,255,.15);
-      font-size:11px;
-      font-weight:900;
-      touch-action:none;
-    }
-
-    .middle.coin{
-      border-color:#e6c36a;
-      background:linear-gradient(145deg,#97752b,#534015);
-    }
-
-    .help{
-      margin:16px 2px 0;
-      color:#a9b9d8;
-      text-align:center;
-      font-size:11px;
-      line-height:1.55;
-    }
-
-    .help b{
-      color:#e7efff;
-    }
-
-    @media (orientation:landscape) and (max-height:600px){
-      .app{
-        width:100%;
-        max-width:none;
-        height:100dvh;
-        min-height:0;
-        padding:
-          max(8px, env(safe-area-inset-top))
-          max(14px, env(safe-area-inset-right))
-          max(8px, env(safe-area-inset-bottom))
-          max(14px, env(safe-area-inset-left));
-        display:grid;
-        grid-template-columns:minmax(110px, 24vw) minmax(220px, 4fr) minmax(110px, 24vw);
-        grid-template-rows:minmax(0, 1fr) auto;
-        column-gap:clamp(10px, 3vw, 32px);
-        row-gap:4px;
-      }
-
-      .header,
-      .setup,
-      .top-actions,
-      .help{
-        display:none;
-      }
-
-      .screen-wrap{
-        grid-column:2;
-        grid-row:1;
-        width:100%;
-        max-width:min(66vw, calc((100dvh - 56px) * 4 / 3));
-        max-height:calc(100dvh - 56px);
-        margin:auto;
-        border-width:4px;
-        border-radius:13px;
-      }
-
-      .controls-area{
-        display:contents;
-      }
-
-      .dpad{
-        grid-column:1;
-        grid-row:1;
-        justify-self:center;
-        align-self:center;
-        width:clamp(105px, 20vw, 160px);
-        height:clamp(105px, 20vw, 160px);
-        transform:translateY(clamp(32px, 9vh, 56px));
-      }
-
-      .right-controls{
-        grid-column:3;
-        grid-row:1;
-        justify-self:center;
-        align-self:center;
-        gap:clamp(8px, 2vw, 14px);
-        transform:translateY(clamp(32px, 9vh, 56px));
-      }
-
-      .round{
-        width:clamp(52px, 10vw, 78px);
-        height:clamp(52px, 10vw, 78px);
-      }
-
-      .middle-controls{
-        grid-column:2;
-        grid-row:2;
-        margin:0;
-        gap:9px;
-        transform:translateY(4px);
-      }
-
-      .middle{
-        min-width:78px;
-        min-height:31px;
-        font-size:10px;
-      }
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Phân tích hợp âm từ MP3</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            background: #f9f9f9;
+            color: #222;
+        }
+        h1 {
+            font-size: 1.6rem;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 0.4rem;
+        }
+        .upload-area {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin: 1.5rem 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+        input[type="file"] {
+            flex: 1;
+            padding: 0.5rem;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.4rem;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        #result {
+            background: white;
+            padding: 1.2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .loading {
+            color: #555;
+            font-style: italic;
+        }
+        .error {
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 0.6rem;
+            border-radius: 4px;
+        }
+        .chord-item {
+            display: inline-block;
+            background: #e8f5e9;
+            padding: 0.2rem 0.6rem;
+            margin: 0.2rem 0.1rem;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+        .time-tag {
+            color: #888;
+            font-size: 0.75rem;
+        }
+    </style>
 </head>
-
 <body>
-  <main class="app">
-    <header class="header">
-      <div class="brand">
-        <div class="arcade-icon">ARCADE</div>
 
-        <div class="brand-text">
-          <strong id="gameName">MAME / FBNeo Player</strong>
-          <small>Chạy ROM arcade .zip trên trình duyệt</small>
-        </div>
-      </div>
+<h1>🎵 Trích xuất hợp âm từ MP3</h1>
 
-      <div class="status" id="status">Chọn ROM .zip để bắt đầu</div>
-    </header>
+<div class="upload-area">
+    <input type="file" id="fileInput" accept="audio/*" />
+    <button id="analyzeBtn">▶ Phân tích hợp âm</button>
+</div>
 
-    <section class="screen-wrap">
-      <div id="game"></div>
+<div id="result">
+    <span class="loading">Chọn file và nhấn nút để bắt đầu...</span>
+</div>
 
-      <div class="screen-message" id="screenMessage">
-        <strong>ARCADE PLAYER</strong>
-        <span>
-          Chọn một ROM arcade dạng <b>.zip</b> để chơi.
-          Hãy thử core <b>FBNeo</b> trước nếu chưa biết game dùng core nào.
-        </span>
-        <span class="tiny">
-          ROM sẽ được đọc ngay trên thiết bị của bạn, không được tải lên server.
-        </span>
-      </div>
-    </section>
-
-    <section class="setup" id="setupPanel">
-      <label class="file-button" for="romFile">
-        📁 Chọn ROM Arcade (.zip)
-      </label>
-
-      <input id="romFile" type="file" accept=".zip,.ZIP,application/zip">
-
-      <div class="setup-row">
-        <label for="coreSelect">Core giả lập:</label>
-
-        <select id="coreSelect">
-          <option value="fbneo" selected>FBNeo — Khuyên dùng</option>
-          <option value="mame2003_plus">MAME 2003-Plus</option>
-        </select>
-      </div>
-
-      <div class="loaded-file" id="loadedFile">
-        Chưa có ROM nào được chọn.
-      </div>
-    </section>
-
-    <section class="top-actions">
-      <button class="action-button" id="pauseButton">⏸ Tạm dừng</button>
-      <button class="action-button" id="menuButton">⚙ Menu / Cài đặt</button>
-      <button class="action-button" id="fullscreenButton">⛶ Toàn màn hình</button>
-    </section>
-
-    <section class="controls-area">
-      <div class="dpad">
-        <button class="control up" data-key="ArrowUp" aria-label="Lên">
-          <svg class="arrow" viewBox="0 0 24 24">
-            <path d="M12 4 4.5 12H9v8h6v-8h4.5L12 4z"></path>
-          </svg>
-        </button>
-
-        <button class="control down" data-key="ArrowDown" aria-label="Xuống">
-          <svg class="arrow" viewBox="0 0 24 24">
-            <path d="m12 20 7.5-8H15V4H9v8H4.5L12 20z"></path>
-          </svg>
-        </button>
-
-        <button class="control left" data-key="ArrowLeft" aria-label="Trái">
-          <svg class="arrow" viewBox="0 0 24 24">
-            <path d="m4 12 8-7.5V9h8v6h-8v4.5L4 12z"></path>
-          </svg>
-        </button>
-
-        <button class="control right" data-key="ArrowRight" aria-label="Phải">
-          <svg class="arrow" viewBox="0 0 24 24">
-            <path d="m20 12-8 7.5V15H4V9h8V4.5l8 7.5z"></path>
-          </svg>
-        </button>
-
-        <div class="dpad-center"></div>
-      </div>
-
-      <div class="right-controls">
-        <button class="control round b1" data-key="z" data-label="1">1</button>
-        <button class="control round b2" data-key="x" data-label="2">2</button>
-        <button class="control round b3" data-key="a" data-label="3">3</button>
-        <button class="control round b4" data-key="s" data-label="4">4</button>
-      </div>
-    </section>
-
-    <section class="middle-controls">
-      <button class="middle coin control" data-key="Shift">COIN</button>
-      <button class="middle control" data-key="Enter">START</button>
-    </section>
-
-    <p class="help">
-      Điều khiển mặc định: <b>COIN</b> rồi <b>START</b> để bắt đầu game.
-      Nút 1–4 tương ứng phím <b>Z / X / A / S</b>.
-    </p>
-  </main>
-
-  <script>
-    const romFile = document.getElementById("romFile");
-    const coreSelect = document.getElementById("coreSelect");
-    const screenMessage = document.getElementById("screenMessage");
-    const status = document.getElementById("status");
-    const gameName = document.getElementById("gameName");
-    const loadedFile = document.getElementById("loadedFile");
-    const gameContainer = document.getElementById("game");
-
-    let currentRomUrl = null;
-    let emulatorStarted = false;
-    let pauseState = false;
-
-    /*
-      EmulatorJS được tải khi người dùng chọn ROM.
-      Dùng Object URL để ROM vẫn nằm trên thiết bị.
-    */
-    function startEmulator(file) {
-      if (currentRomUrl) {
-        URL.revokeObjectURL(currentRomUrl);
-      }
-
-      currentRomUrl = URL.createObjectURL(file);
-
-      const core = coreSelect.value;
-      const name = file.name.replace(/\.zip$/i, "");
-
-      status.textContent = "Đang khởi động " + name + "...";
-      gameName.textContent = name.toUpperCase();
-      loadedFile.textContent = "ROM đã chọn: " + file.name + " — Core: " + core;
-
-      screenMessage.classList.remove("hidden");
-      screenMessage.innerHTML = `
-        <strong>Đang tải ${name}</strong>
-        <span>Đang khởi động core ${core}. Lần đầu tải có thể cần chờ một chút...</span>
-      `;
-
-      /*
-        Nếu đổi ROM, tải lại toàn bộ trang để EmulatorJS
-        khởi tạo sạch core và bộ nhớ game cũ.
-      */
-      if (emulatorStarted) {
-        sessionStorage.setItem("arcadeRomCore", core);
-        sessionStorage.setItem("arcadeRomName", file.name);
-
-        screenMessage.innerHTML = `
-          <strong>Hãy chọn lại ROM sau khi trang tải lại</strong>
-          <span>
-            Trình duyệt cần tải lại để thay core/ROM arcade một cách ổn định.
-          </span>
-        `;
-
-        return;
-      }
-
-      emulatorStarted = true;
-      gameContainer.innerHTML = "";
-
-      /*
-        Cấu hình EmulatorJS.
-        fbneo: phù hợp phần lớn game arcade cổ, Neo Geo, CPS...
-        mame2003_plus: phù hợp các ROM set MAME 2003-Plus.
-      */
-      window.EJS_player = "#game";
-      window.EJS_core = core;
-      window.EJS_gameUrl = currentRomUrl;
-
-      /*
-        Thư viện EmulatorJS từ CDN.
-        Khi làm website lâu dài, bạn nên tải thư mục data này
-        về host riêng để chủ động hơn.
-      */
-      window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
-      window.EJS_startOnLoaded = true;
-      window.EJS_language = "vi-VN";
-
-      /*
-        Không bật bộ nút ảo gốc vì trang này đã có nút cảm ứng riêng.
-      */
-      window.EJS_VirtualGamepadSettings = {
-        hideJoystick: true,
-        hideButtons: true
-      };
-
-      const loader = document.createElement("script");
-      loader.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
-
-      loader.onload = () => {
-        status.textContent = "Đang tải ROM: " + name;
-      };
-
-      loader.onerror = () => {
-        status.textContent = "Không tải được EmulatorJS";
-        screenMessage.classList.remove("hidden");
-        screenMessage.innerHTML = `
-          <strong>Không tải được thư viện</strong>
-          <span>Hãy kiểm tra kết nối mạng rồi thử tải lại trang.</span>
-        `;
-      };
-
-      document.body.appendChild(loader);
+<!-- Sử dụng Import Map để load thư viện từ CDN -->
+<script type="importmap">
+{
+    "imports": {
+        "@libraz/libsonare": "https://unpkg.com/@libraz/libsonare@0.4.0/dist/index.mjs"
     }
+}
+</script>
 
-    romFile.addEventListener("change", function(event) {
-      const file = event.target.files[0];
+<script type="module">
+    import { AudioProcessor, ChordRecognizer } from '@libraz/libsonare';
 
-      if (!file) return;
+    const fileInput = document.getElementById('fileInput');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const resultDiv = document.getElementById('result');
 
-      if (!/\.zip$/i.test(file.name)) {
-        alert("Hãy chọn ROM arcade dạng file .zip.");
-        return;
-      }
-
-      startEmulator(file);
-      romFile.value = "";
-    });
-
-    /*
-      Các nút cảm ứng phát sự kiện phím thật cho EmulatorJS:
-      - Arrow keys: di chuyển
-      - Z/X/A/S: các nút hành động 1–4
-      - Shift: Coin
-      - Enter: Start
-    */
-    const activePointers = new Map();
-    const pressedKeys = new Map();
-
-    function makeKeyboardEvent(type, key) {
-      const codeMap = {
-        ArrowUp: "ArrowUp",
-        ArrowDown: "ArrowDown",
-        ArrowLeft: "ArrowLeft",
-        ArrowRight: "ArrowRight",
-        Enter: "Enter",
-        Shift: "ShiftLeft",
-        z: "KeyZ",
-        x: "KeyX",
-        a: "KeyA",
-        s: "KeyS",
-        p: "KeyP",
-        Escape: "Escape"
-      };
-
-      return new KeyboardEvent(type, {
-        key: key,
-        code: codeMap[key] || key,
-        bubbles: true,
-        cancelable: true
-      });
-    }
-
-    function sendKeyDown(key, source) {
-      if (!pressedKeys.has(key)) {
-        pressedKeys.set(key, new Set());
-      }
-
-      const sources = pressedKeys.get(key);
-
-      if (sources.has(source)) return;
-
-      const wasDown = sources.size > 0;
-      sources.add(source);
-
-      if (!wasDown) {
-        window.dispatchEvent(makeKeyboardEvent("keydown", key));
-        document.dispatchEvent(makeKeyboardEvent("keydown", key));
-      }
-    }
-
-    function sendKeyUp(key, source) {
-      const sources = pressedKeys.get(key);
-
-      if (!sources) return;
-
-      sources.delete(source);
-
-      if (sources.size === 0) {
-        window.dispatchEvent(makeKeyboardEvent("keyup", key));
-        document.dispatchEvent(makeKeyboardEvent("keyup", key));
-        pressedKeys.delete(key);
-      }
-    }
-
-    function releasePointer(pointerId) {
-      const button = activePointers.get(pointerId);
-
-      if (!button) return;
-
-      const key = button.dataset.key;
-
-      activePointers.delete(pointerId);
-      sendKeyUp(key, "pointer-" + pointerId);
-
-      const stillPressed = [...activePointers.values()].includes(button);
-      if (!stillPressed) {
-        button.classList.remove("pressed");
-      }
-    }
-
-    document.querySelectorAll(".control[data-key]").forEach(button => {
-      button.addEventListener("pointerdown", event => {
-        event.preventDefault();
-
-        const pointerId = event.pointerId;
-
-        if (activePointers.has(pointerId)) {
-          releasePointer(pointerId);
+    // Xử lý sự kiện nhấn nút
+    analyzeBtn.addEventListener('click', async () => {
+        const file = fileInput.files[0];
+        if (!file) {
+            resultDiv.innerHTML = '<span class="error">⚠️ Vui lòng chọn một file âm thanh trước.</span>';
+            return;
         }
 
-        activePointers.set(pointerId, button);
+        // Vô hiệu hóa nút để tránh spam
+        analyzeBtn.disabled = true;
+        resultDiv.innerHTML = '<span class="loading">⏳ Đang xử lý file, vui lòng chờ...</span>';
 
         try {
-          button.setPointerCapture(pointerId);
+            // 1. Đọc file thành ArrayBuffer
+            const arrayBuffer = await file.arrayBuffer();
+
+            // 2. Khởi tạo AudioProcessor và giải mã audio
+            const audioProcessor = new AudioProcessor();
+            const audioBuffer = await audioProcessor.decodeAudioFile(arrayBuffer);
+
+            // 3. Trích xuất đặc trưng Chroma (dùng để nhận dạng hợp âm)
+            const chroma = await audioProcessor.extractChroma(audioBuffer);
+
+            // 4. Nhận dạng hợp âm
+            const chordRecognizer = new ChordRecognizer();
+            const chordResult = chordRecognizer.recognizeChords(chroma);
+
+            // 5. Hiển thị kết quả
+            displayChords(chordResult);
+
         } catch (error) {
-          /* Một số Safari có thể không capture, document fallback vẫn xử lý. */
+            console.error(error);
+            resultDiv.innerHTML = `<span class="error">❌ Lỗi: ${error.message || 'Không thể phân tích file. Hãy thử file khác.'}</span>`;
+        } finally {
+            analyzeBtn.disabled = false;
         }
-
-        button.classList.add("pressed");
-        sendKeyDown(button.dataset.key, "pointer-" + pointerId);
-      });
-
-      button.addEventListener("pointerup", event => {
-        event.preventDefault();
-        releasePointer(event.pointerId);
-      });
-
-      button.addEventListener("pointercancel", event => {
-        event.preventDefault();
-        releasePointer(event.pointerId);
-      });
-
-      button.addEventListener("lostpointercapture", event => {
-        releasePointer(event.pointerId);
-      });
-
-      button.addEventListener("contextmenu", event => {
-        event.preventDefault();
-      });
     });
 
-    document.addEventListener("pointerup", event => {
-      releasePointer(event.pointerId);
-    }, true);
+    /**
+     * Hiển thị danh sách hợp âm dạng đẹp
+     * @param {Array} chordResult - Mảng các đối tượng { time, chord }
+     */
+    function displayChords(chordResult) {
+        if (!chordResult || chordResult.length === 0) {
+            resultDiv.innerHTML = '<span class="error">😕 Không phát hiện hợp âm nào. Hãy thử file nhạc rõ ràng hơn.</span>';
+            return;
+        }
 
-    document.addEventListener("pointercancel", event => {
-      releasePointer(event.pointerId);
-    }, true);
+        let html = `<div style="margin-bottom: 0.5rem;">🎸 <strong>${chordResult.length}</strong> hợp âm được phát hiện:</div>`;
+        html += '<div style="display: flex; flex-wrap: wrap; gap: 0.3rem;">';
 
-    function releaseAllControls() {
-      [...activePointers.keys()].forEach(releasePointer);
+        chordResult.forEach(item => {
+            const timeStr = item.time.toFixed(2);
+            const chordName = item.chord || '?';
+            html += `<span class="chord-item">
+                        <span class="time-tag">${timeStr}s</span>
+                        ${chordName}
+                    </span>`;
+        });
 
-      pressedKeys.forEach((sources, key) => {
-        window.dispatchEvent(makeKeyboardEvent("keyup", key));
-        document.dispatchEvent(makeKeyboardEvent("keyup", key));
-      });
-
-      pressedKeys.clear();
-
-      document.querySelectorAll(".control.pressed").forEach(button => {
-        button.classList.remove("pressed");
-      });
+        html += '</div>';
+        resultDiv.innerHTML = html;
     }
 
-    window.addEventListener("blur", releaseAllControls);
-    window.addEventListener("pagehide", releaseAllControls);
-
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) {
-        releaseAllControls();
-      }
+    // Hỗ trợ kéo thả file (tùy chọn)
+    document.querySelector('.upload-area').addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.currentTarget.style.border = '2px dashed #4CAF50';
     });
-
-    /*
-      Nút Pause: EmulatorJS mặc định dùng phím P.
-    */
-    document.getElementById("pauseButton").addEventListener("click", () => {
-      if (!emulatorStarted) return;
-
-      window.dispatchEvent(makeKeyboardEvent("keydown", "p"));
-      window.dispatchEvent(makeKeyboardEvent("keyup", "p"));
-
-      pauseState = !pauseState;
-      document.getElementById("pauseButton").textContent =
-        pauseState ? "▶ Tiếp tục" : "⏸ Tạm dừng";
+    document.querySelector('.upload-area').addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.currentTarget.style.border = 'none';
     });
-
-    /*
-      Escape thường mở giao diện/menu của EmulatorJS.
-    */
-    document.getElementById("menuButton").addEventListener("click", () => {
-      if (!emulatorStarted) return;
-
-      window.dispatchEvent(makeKeyboardEvent("keydown", "Escape"));
-      window.dispatchEvent(makeKeyboardEvent("keyup", "Escape"));
-    });
-
-    document.getElementById("fullscreenButton").addEventListener("click", async () => {
-      try {
-        if (!document.fullscreenElement) {
-          await document.documentElement.requestFullscreen();
-        } else {
-          await document.exitFullscreen();
+    document.querySelector('.upload-area').addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.currentTarget.style.border = 'none';
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
         }
-      } catch (error) {
-        alert("Trình duyệt chưa cho phép toàn màn hình. Hãy thử xoay ngang iPhone để chơi thoải mái hơn.");
-      }
     });
-  </script>
+</script>
+
 </body>
 </html>
