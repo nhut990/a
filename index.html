@@ -1,202 +1,1183 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Phân tích hợp âm từ MP3</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 700px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-            background: #f9f9f9;
-            color: #222;
-        }
-        h1 {
-            font-size: 1.6rem;
-            border-bottom: 2px solid #4CAF50;
-            padding-bottom: 0.4rem;
-        }
-        .upload-area {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin: 1.5rem 0;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            align-items: center;
-        }
-        input[type="file"] {
-            flex: 1;
-            padding: 0.5rem;
-        }
-        button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 0.6rem 1.4rem;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        button:hover {
-            background: #45a049;
-        }
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        #result {
-            background: white;
-            padding: 1.2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            white-space: pre-wrap;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .loading {
-            color: #555;
-            font-style: italic;
-        }
-        .error {
-            color: #d32f2f;
-            background: #ffebee;
-            padding: 0.6rem;
-            border-radius: 4px;
-        }
-        .chord-item {
-            display: inline-block;
-            background: #e8f5e9;
-            padding: 0.2rem 0.6rem;
-            margin: 0.2rem 0.1rem;
-            border-radius: 12px;
-            font-weight: bold;
-            font-size: 0.85rem;
-        }
-        .time-tag {
-            color: #888;
-            font-size: 0.75rem;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kiểm tra Camera & Micro - Test trực tiếp trên Web</title>
+
+<style>
+  :root{
+    --orange:#ff9800;
+    --orange-dark:#e65100;
+    --orange-light:#ffa726;
+    --text:#111;
+    --muted:#444;
+    --border:#cfcfcf;
+  }
+
+  *{box-sizing:border-box}
+
+  body{
+    margin:0;
+    padding:18px;
+    color:var(--text);
+    background:#f7f7f9;
+    font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.4;
+  }
+
+  h1{
+    margin:0 0 10px;
+    font-size:1.2rem;
+  }
+
+  .panel{
+    max-width:760px;
+    margin-top:12px;
+  }
+
+  .row,
+  .controls{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+  }
+
+  .row{margin-bottom:10px}
+  .controls{margin-top:12px}
+
+  select,
+  button,
+  .download-btn{
+    padding:8px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font:inherit;
+  }
+
+  button,
+  .fullscreen-btn{
+    border:1.5px solid var(--orange-dark);
+    color:#fff;
+    background:var(--orange);
+    font-weight:600;
+    cursor:pointer;
+    transition:background .15s,box-shadow .2s,transform .1s;
+  }
+
+  button:hover,
+  .fullscreen-btn:hover{
+    color:#fff;
+    background:var(--orange-light);
+    box-shadow:0 0 0 2px rgba(230,81,0,.35);
+  }
+
+  button:active{
+    transform:scale(.98);
+  }
+
+  button:disabled{
+    opacity:.5;
+    cursor:not-allowed;
+    color:#aaa!important;
+    border-color:#eee!important;
+    background:#f5f5f5!important;
+    box-shadow:none!important;
+  }
+
+  video{
+    display:block;
+    width:100%;
+    max-width:560px;
+    border-radius:8px;
+    background:#000;
+  }
+
+  .video-container{
+    position:relative;
+    width:100%;
+    max-width:560px;
+  }
+
+  .fullscreen-btn{
+    position:absolute;
+    right:10px;
+    bottom:10px;
+    z-index:2;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:8px;
+  }
+
+  .fullscreen-icon{
+    display:block;
+    width:24px;
+    height:24px;
+  }
+
+  .video-container.fullscreen{
+    width:100vw;
+    max-width:none;
+    height:100vh;
+    background:#000;
+  }
+
+  .video-container.fullscreen video{
+    width:100vw;
+    max-width:none;
+    height:100vh;
+    border-radius:0;
+    object-fit:contain;
+  }
+
+  #photoBlock{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+    margin:10px 0;
+  }
+
+  #photoCanvas,
+  #photoImg{
+    max-width:240px;
+    max-height:180px;
+    border:1.5px solid var(--orange-light);
+    border-radius:8px;
+    background:#fff;
+  }
+
+  #photoImg{
+    cursor:pointer;
+  }
+
+  #photoImg:hover{
+    box-shadow:0 0 0 3px rgba(255,152,0,.35);
+  }
+
+  .download-btn{
+    display:inline-block;
+    color:#111;
+    border:1.5px solid var(--orange-light);
+    background:#fff;
+    text-decoration:none;
+    cursor:pointer;
+  }
+
+  .disabled-link{
+    pointer-events:none;
+    opacity:.5;
+    cursor:not-allowed;
+    color:#999!important;
+    border-color:#eee!important;
+    background:#f9f9f9!important;
+    text-decoration:none!important;
+  }
+
+  .note{
+    margin-top:8px;
+    color:var(--muted);
+    font-size:.85rem;
+  }
+
+  .note b{color:#000}
+
+  .small{
+    color:var(--muted);
+    font-size:.9rem;
+  }
+
+  .meter{
+    position:relative;
+    width:200px;
+    height:24px;
+    overflow:hidden;
+    border-radius:6px;
+    background:#e8e8e8;
+  }
+
+  .meter .level{
+    position:absolute;
+    top:0;
+    left:0;
+    width:0%;
+    height:100%;
+    background:linear-gradient(90deg,#43a047 0%,#ffeb3b 70%,#ef5350 100%);
+    transition:width .08s linear;
+  }
+
+  .timer{
+    min-width:72px;
+    padding:6px 8px;
+    border:1px solid #ddd;
+    border-radius:6px;
+    background:#fff;
+    text-align:center;
+  }
+
+  hr{
+    margin:18px 0;
+    border:0;
+    border-top:5px solid var(--orange);
+    border-radius:2px;
+    box-shadow:0 2px 6px rgba(255,152,0,.1);
+  }
+
+  audio{
+    display:block;
+    width:100%;
+    max-width:420px;
+    margin-top:8px;
+  }
+
+  .footer{
+    margin-top:40px;
+    color:#555;
+    font-size:.95rem;
+    text-align:center;
+  }
+
+  .footer a{
+    color:#1976d2;
+    font-weight:500;
+    text-decoration:none;
+  }
+
+  .credit{
+    margin-top:4px;
+    color:#888;
+    font-size:.92rem;
+  }
+
+  @media(max-width:520px){
+    body{padding:14px}
+    .meter{width:100%}
+    .row .small{width:100%}
+  }
+</style>
 </head>
+
 <body>
+  <h1>Trang kiểm tra Camera & Micro</h1>
 
-<h1>🎵 Trích xuất hợp âm từ MP3</h1>
+  <main class="panel">
+    <div class="row">
+      <label>
+        Camera:
+        <select id="cameraSelect"></select>
+      </label>
 
-<div class="upload-area">
-    <input type="file" id="fileInput" accept="audio/*" />
-    <button id="analyzeBtn">▶ Phân tích hợp âm</button>
-</div>
+      <label>
+        Micro:
+        <select id="micSelect"></select>
+      </label>
 
-<div id="result">
-    <span class="loading">Chọn file và nhấn nút để bắt đầu...</span>
-</div>
+      <div class="controls" style="margin-top:0">
+        <button id="startPreviewBtn">Bắt đầu preview</button>
+        <button id="stopPreviewBtn" disabled>Ngưng preview</button>
+        <button id="captureBtn" disabled>Chụp ảnh</button>
+      </div>
+    </div>
 
-<!-- Sử dụng Import Map để load thư viện từ CDN -->
-<script type="importmap">
-{
-    "imports": {
-        "@libraz/libsonare": "https://unpkg.com/@libraz/libsonare@0.4.0/dist/index.mjs"
+    <div class="video-container" id="videoContainer">
+      <video id="videoPreview" autoplay muted playsinline></video>
+
+      <button
+        class="fullscreen-btn"
+        id="fullscreenBtn"
+        type="button"
+        title="Toàn màn hình video"
+        aria-label="Toàn màn hình video"
+      >
+        <svg class="fullscreen-icon" viewBox="0 0 50 50" aria-hidden="true">
+          <polyline points="17,6 6,6 6,17"
+            style="fill:none;stroke:#fff;stroke-width:5"/>
+          <polyline points="33,6 44,6 44,17"
+            style="fill:none;stroke:#fff;stroke-width:5"/>
+          <polyline points="17,44 6,44 6,33"
+            style="fill:none;stroke:#fff;stroke-width:5"/>
+          <polyline points="33,44 44,44 33"
+            style="fill:none;stroke:#fff;stroke-width:5"/>
+        </svg>
+      </button>
+    </div>
+
+    <div id="photoBlock">
+      <canvas id="photoCanvas" style="display:none"></canvas>
+
+      <img
+        id="photoImg"
+        style="display:none"
+        alt="Ảnh vừa chụp"
+        title="Bấm để mở ảnh kích thước lớn trong tab mới"
+      >
+
+      <a
+        id="downloadPhotoBtn"
+        class="download-btn"
+        style="display:none"
+        download="photo.png"
+      >
+        Tải ảnh về
+      </a>
+    </div>
+
+    <div class="note">
+      ⚠️ Camera và micro chỉ hoạt động sau khi bạn chọn <b>Cho phép</b> quyền truy cập trong trình duyệt.
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <div class="small">Mức âm thanh của micro đang preview:</div>
+
+      <div class="meter" title="Mức âm thanh micro">
+        <div class="level" id="meterLevel"></div>
+      </div>
+
+      <div class="timer" id="levelDb">— dB</div>
+    </div>
+
+    <hr>
+
+    <div class="row">
+      <div class="small">Mức âm thanh khi ghi:</div>
+
+      <div class="meter" title="Mức âm thanh khi ghi">
+        <div class="level" id="recMeterLevel"></div>
+      </div>
+
+      <div class="timer" id="recLevelDb">— dB</div>
+    </div>
+
+    <div class="controls">
+      <button id="startRecBtn">Bắt đầu ghi âm</button>
+      <button id="stopRecBtn" disabled>Ngưng ghi</button>
+      <button id="playRecBtn" disabled>Phát lại</button>
+
+      <a
+        id="downloadLink"
+        class="download-btn disabled-link"
+        aria-disabled="true"
+        tabindex="-1"
+        download="recording.wav"
+      >
+        Tải về (.wav)
+      </a>
+
+      <div id="recTimer" class="timer">00:00</div>
+    </div>
+
+    <audio id="playback" controls></audio>
+
+    <div class="note">
+      Bản ghi được tạo dưới dạng <b>WAV mono</b>, phù hợp để kiểm tra micro và giọng nói.
+    </div>
+  </main>
+
+  <footer class="footer">
+    <a href="https://nhut990.github.io/">Trang chủ</a>
+
+    <div class="credit">
+      Created by Minh Nhut<br>
+      © 2025
+    </div>
+  </footer>
+
+<script>
+(async function(){
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+
+  const cameraSelect = $("cameraSelect");
+  const micSelect = $("micSelect");
+  const startPreviewBtn = $("startPreviewBtn");
+  const stopPreviewBtn = $("stopPreviewBtn");
+  const captureBtn = $("captureBtn");
+
+  const videoPreview = $("videoPreview");
+  const videoContainer = $("videoContainer");
+  const fullscreenBtn = $("fullscreenBtn");
+
+  const meterLevel = $("meterLevel");
+  const levelDb = $("levelDb");
+
+  const startRecBtn = $("startRecBtn");
+  const stopRecBtn = $("stopRecBtn");
+  const playRecBtn = $("playRecBtn");
+  const downloadLink = $("downloadLink");
+  const playback = $("playback");
+  const recTimer = $("recTimer");
+  const recMeterLevel = $("recMeterLevel");
+  const recLevelDb = $("recLevelDb");
+
+  const photoCanvas = $("photoCanvas");
+  const photoImg = $("photoImg");
+  const downloadPhotoBtn = $("downloadPhotoBtn");
+
+  let currentStream = null;
+  let previewAudioContext = null;
+  let previewAnalyser = null;
+  let previewSource = null;
+  let previewRafId = null;
+
+  let recordingController = null;
+  let recordingStart = 0;
+  let recordingTimerId = null;
+  let recordingToken = 0;
+  let previewToken = 0;
+
+  let lastPhotoUrl = null;
+  let lastRecordingUrl = null;
+  let isFullscreen = false;
+
+  if(!navigator.mediaDevices?.getUserMedia){
+    alert("Trình duyệt này không hỗ trợ camera hoặc micro. Hãy mở trang bằng HTTPS.");
+    return;
+  }
+
+  function setDownloadDisabled(disabled){
+    downloadLink.classList.toggle("disabled-link", disabled);
+    downloadLink.setAttribute("aria-disabled", String(disabled));
+    downloadLink.tabIndex = disabled ? -1 : 0;
+
+    if(disabled){
+      downloadLink.removeAttribute("href");
     }
-}
-</script>
+  }
 
-<script type="module">
-    import { AudioProcessor, ChordRecognizer } from '@libraz/libsonare';
+  function stopTracks(stream){
+    stream?.getTracks().forEach(track => track.stop());
+  }
 
-    const fileInput = document.getElementById('fileInput');
-    const analyzeBtn = document.getElementById('analyzeBtn');
-    const resultDiv = document.getElementById('result');
+  function safeClose(context){
+    if(context && context.state !== "closed"){
+      context.close().catch(() => {});
+    }
+  }
 
-    // Xử lý sự kiện nhấn nút
-    analyzeBtn.addEventListener('click', async () => {
-        const file = fileInput.files[0];
-        if (!file) {
-            resultDiv.innerHTML = '<span class="error">⚠️ Vui lòng chọn một file âm thanh trước.</span>';
-            return;
-        }
+  function revokePhotoUrl(){
+    if(lastPhotoUrl){
+      URL.revokeObjectURL(lastPhotoUrl);
+      lastPhotoUrl = null;
+    }
+  }
 
-        // Vô hiệu hóa nút để tránh spam
-        analyzeBtn.disabled = true;
-        resultDiv.innerHTML = '<span class="loading">⏳ Đang xử lý file, vui lòng chờ...</span>';
+  function revokeRecordingUrl(){
+    if(lastRecordingUrl){
+      URL.revokeObjectURL(lastRecordingUrl);
+      lastRecordingUrl = null;
+    }
+  }
 
-        try {
-            // 1. Đọc file thành ArrayBuffer
-            const arrayBuffer = await file.arrayBuffer();
+  function fillSelect(select, devices, name){
+    const oldValue = select.value;
+    select.replaceChildren();
 
-            // 2. Khởi tạo AudioProcessor và giải mã audio
-            const audioProcessor = new AudioProcessor();
-            const audioBuffer = await audioProcessor.decodeAudioFile(arrayBuffer);
+    if(!devices.length){
+      select.add(new Option(`(Không có ${name})`, ""));
+      return;
+    }
 
-            // 3. Trích xuất đặc trưng Chroma (dùng để nhận dạng hợp âm)
-            const chroma = await audioProcessor.extractChroma(audioBuffer);
-
-            // 4. Nhận dạng hợp âm
-            const chordRecognizer = new ChordRecognizer();
-            const chordResult = chordRecognizer.recognizeChords(chroma);
-
-            // 5. Hiển thị kết quả
-            displayChords(chordResult);
-
-        } catch (error) {
-            console.error(error);
-            resultDiv.innerHTML = `<span class="error">❌ Lỗi: ${error.message || 'Không thể phân tích file. Hãy thử file khác.'}</span>`;
-        } finally {
-            analyzeBtn.disabled = false;
-        }
+    devices.forEach((device, index) => {
+      select.add(new Option(
+        device.label || `${name} ${index + 1}`,
+        device.deviceId
+      ));
     });
 
-    /**
-     * Hiển thị danh sách hợp âm dạng đẹp
-     * @param {Array} chordResult - Mảng các đối tượng { time, chord }
-     */
-    function displayChords(chordResult) {
-        if (!chordResult || chordResult.length === 0) {
-            resultDiv.innerHTML = '<span class="error">😕 Không phát hiện hợp âm nào. Hãy thử file nhạc rõ ràng hơn.</span>';
-            return;
-        }
+    if([...select.options].some(option => option.value === oldValue)){
+      select.value = oldValue;
+    }
+  }
 
-        let html = `<div style="margin-bottom: 0.5rem;">🎸 <strong>${chordResult.length}</strong> hợp âm được phát hiện:</div>`;
-        html += '<div style="display: flex; flex-wrap: wrap; gap: 0.3rem;">';
+  async function updateDeviceList(){
+    try{
+      const devices = await navigator.mediaDevices.enumerateDevices();
 
-        chordResult.forEach(item => {
-            const timeStr = item.time.toFixed(2);
-            const chordName = item.chord || '?';
-            html += `<span class="chord-item">
-                        <span class="time-tag">${timeStr}s</span>
-                        ${chordName}
-                    </span>`;
+      fillSelect(
+        cameraSelect,
+        devices.filter(device => device.kind === "videoinput"),
+        "Camera"
+      );
+
+      fillSelect(
+        micSelect,
+        devices.filter(device => device.kind === "audioinput"),
+        "Micro"
+      );
+    }catch(error){
+      console.warn("Không thể liệt kê thiết bị:", error);
+    }
+  }
+
+  function getAudioConstraints(){
+    const audio = {
+      channelCount:{ideal:1},
+      echoCancellation:{ideal:true},
+      noiseSuppression:{ideal:true},
+      autoGainControl:{ideal:true}
+    };
+
+    if(micSelect.value){
+      audio.deviceId = {exact:micSelect.value};
+    }
+
+    return audio;
+  }
+
+  function getVideoConstraints(){
+    if(cameraSelect.value){
+      return {
+        deviceId:{exact:cameraSelect.value},
+        width:{ideal:1920},
+        height:{ideal:1080}
+      };
+    }
+
+    return {
+      facingMode:"user",
+      width:{ideal:1920},
+      height:{ideal:1080}
+    };
+  }
+
+  async function resumeContext(context){
+    if(context?.state === "suspended"){
+      await context.resume();
+    }
+  }
+
+  function resetPreviewMeter(){
+    if(previewRafId){
+      cancelAnimationFrame(previewRafId);
+      previewRafId = null;
+    }
+
+    try{ previewSource?.disconnect(); }catch{}
+    try{ previewAnalyser?.disconnect(); }catch{}
+
+    previewSource = null;
+    previewAnalyser = null;
+
+    safeClose(previewAudioContext);
+    previewAudioContext = null;
+
+    meterLevel.style.width = "0%";
+    levelDb.textContent = "— dB";
+  }
+
+  function updateMeter(analyser, levelElement, dbElement){
+    const data = new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(data);
+
+    let sum = 0;
+
+    for(const value of data){
+      const sample = (value - 128) / 128;
+      sum += sample * sample;
+    }
+
+    const rms = Math.sqrt(sum / data.length);
+    const db = 20 * Math.log10(rms || 1e-8);
+
+    const minDb = -60;
+    const percent = Math.max(
+      0,
+      Math.min(100, ((db - minDb) / -minDb) * 100)
+    );
+
+    levelElement.style.width = percent + "%";
+    dbElement.textContent = db <= -60 ? "≤ -60 dB" : db.toFixed(1) + " dB";
+  }
+
+  async function setupPreviewMeter(stream){
+    resetPreviewMeter();
+
+    const audioTracks = stream.getAudioTracks();
+    if(!audioTracks.length) return;
+
+    try{
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      previewAudioContext = new AudioContextClass();
+
+      await resumeContext(previewAudioContext);
+
+      previewSource = previewAudioContext.createMediaStreamSource(
+        new MediaStream(audioTracks)
+      );
+
+      previewAnalyser = previewAudioContext.createAnalyser();
+      previewAnalyser.fftSize = 2048;
+      previewAnalyser.smoothingTimeConstant = 0.8;
+
+      previewSource.connect(previewAnalyser);
+
+      const update = () => {
+        if(!previewAnalyser) return;
+
+        updateMeter(previewAnalyser, meterLevel, levelDb);
+        previewRafId = requestAnimationFrame(update);
+      };
+
+      update();
+    }catch(error){
+      console.warn("Không thể tạo meter preview:", error);
+      resetPreviewMeter();
+    }
+  }
+
+  function updateCaptureButton(){
+    const ready =
+      !!currentStream &&
+      videoPreview.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+      videoPreview.videoWidth > 0 &&
+      videoPreview.videoHeight > 0;
+
+    captureBtn.disabled = !ready;
+  }
+
+  function hidePhoto(){
+    revokePhotoUrl();
+
+    photoCanvas.style.display = "none";
+    photoImg.style.display = "none";
+    downloadPhotoBtn.style.display = "none";
+    photoImg.removeAttribute("src");
+    downloadPhotoBtn.removeAttribute("href");
+  }
+
+  function cleanupPreview(){
+    stopTracks(currentStream);
+    currentStream = null;
+
+    videoPreview.pause();
+    videoPreview.srcObject = null;
+
+    resetPreviewMeter();
+
+    stopPreviewBtn.disabled = true;
+    startPreviewBtn.disabled = false;
+
+    updateCaptureButton();
+  }
+
+  async function startPreview(){
+    const token = ++previewToken;
+
+    cleanupPreview();
+    hidePhoto();
+
+    startPreviewBtn.disabled = true;
+
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video:getVideoConstraints(),
+        audio:getAudioConstraints()
+      });
+
+      if(token !== previewToken){
+        stopTracks(stream);
+        return;
+      }
+
+      currentStream = stream;
+      videoPreview.srcObject = stream;
+      videoPreview.muted = true;
+
+      await videoPreview.play().catch(() => {});
+
+      if(token !== previewToken){
+        cleanupPreview();
+        return;
+      }
+
+      const videoTrack = stream.getVideoTracks()[0];
+      const audioTrack = stream.getAudioTracks()[0];
+
+      if(videoTrack?.getSettings?.().deviceId){
+        cameraSelect.value = videoTrack.getSettings().deviceId;
+      }
+
+      if(audioTrack?.getSettings?.().deviceId){
+        micSelect.value = audioTrack.getSettings().deviceId;
+      }
+
+      stopPreviewBtn.disabled = false;
+      startPreviewBtn.disabled = true;
+
+      await setupPreviewMeter(stream);
+      await updateDeviceList();
+
+      updateCaptureButton();
+    }catch(error){
+      if(token !== previewToken) return;
+
+      console.error(error);
+      cleanupPreview();
+
+      alert(
+        "Không thể bật preview camera và micro: " +
+        (error.message || error.name)
+      );
+    }
+  }
+
+  function stopPreview(){
+    previewToken++;
+    cleanupPreview();
+    hidePhoto();
+  }
+
+  function encodeWAV(samples, sampleRate){
+    const buffer = new ArrayBuffer(44 + samples.length * 2);
+    const view = new DataView(buffer);
+
+    const writeString = (offset, text) => {
+      for(let i = 0; i < text.length; i++){
+        view.setUint8(offset + i, text.charCodeAt(i));
+      }
+    };
+
+    writeString(0, "RIFF");
+    view.setUint32(4, 36 + samples.length * 2, true);
+    writeString(8, "WAVE");
+    writeString(12, "fmt ");
+
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+
+    writeString(36, "data");
+    view.setUint32(40, samples.length * 2, true);
+
+    let offset = 44;
+
+    for(let i = 0; i < samples.length; i++, offset += 2){
+      const sample = Math.max(-1, Math.min(1, samples[i]));
+      view.setInt16(
+        offset,
+        sample < 0 ? sample * 0x8000 : sample * 0x7fff,
+        true
+      );
+    }
+
+    return new Blob([buffer], {type:"audio/wav"});
+  }
+
+  function mergeBuffers(chunks){
+    const length = chunks.reduce((total, chunk) => total + chunk.length, 0);
+    const merged = new Float32Array(length);
+
+    let offset = 0;
+
+    for(const chunk of chunks){
+      merged.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    return merged;
+  }
+
+  function resetRecordingMeter(){
+    recMeterLevel.style.width = "0%";
+    recLevelDb.textContent = "— dB";
+  }
+
+  function updateRecordingTimer(){
+    const seconds = Math.floor((Date.now() - recordingStart) / 1000);
+    const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const remain = String(seconds % 60).padStart(2, "0");
+
+    recTimer.textContent = `${minutes}:${remain}`;
+  }
+
+  function stopRecording(invalidate = true){
+    if(invalidate) recordingToken++;
+
+    if(recordingController?.state === "recording"){
+      recordingController.stop();
+    }
+
+    recordingController = null;
+
+    if(recordingTimerId){
+      clearInterval(recordingTimerId);
+      recordingTimerId = null;
+    }
+
+    startRecBtn.disabled = false;
+    stopRecBtn.disabled = true;
+
+    resetRecordingMeter();
+  }
+
+  async function startRecording(){
+    const token = ++recordingToken;
+
+    stopRecording(false);
+    setDownloadDisabled(true);
+
+    startRecBtn.disabled = true;
+    stopRecBtn.disabled = true;
+    playRecBtn.disabled = true;
+    recTimer.textContent = "00:00";
+
+    let stream = null;
+    let ownsStream = false;
+
+    try{
+      /*
+        Nếu preview đang bật thì dùng luôn audio track hiện có.
+        Nhờ vậy Safari/iPhone không cần mở micro lần thứ hai.
+      */
+      const previewAudioTrack = currentStream?.getAudioTracks()[0];
+
+      if(previewAudioTrack){
+        stream = new MediaStream([previewAudioTrack]);
+      }else{
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio:getAudioConstraints()
         });
 
-        html += '</div>';
-        resultDiv.innerHTML = html;
+        ownsStream = true;
+      }
+
+      if(token !== recordingToken){
+        if(ownsStream) stopTracks(stream);
+        return;
+      }
+
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      const audioContext = new AudioContextClass();
+
+      await resumeContext(audioContext);
+
+      if(token !== recordingToken){
+        safeClose(audioContext);
+        if(ownsStream) stopTracks(stream);
+        return;
+      }
+
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.8;
+
+      /*
+        Ghi mono: nhỏ gọn hơn, phù hợp test micro/giọng nói.
+        ScriptProcessor vẫn được dùng để lấy PCM trực tiếp và xuất WAV.
+      */
+      const processor = audioContext.createScriptProcessor(4096, 1, 1);
+      const silentGain = audioContext.createGain();
+
+      silentGain.gain.value = 0;
+
+      const chunks = [];
+      let meterRafId = null;
+      let stopped = false;
+
+      source.connect(analyser);
+      source.connect(processor);
+      processor.connect(silentGain);
+      silentGain.connect(audioContext.destination);
+
+      processor.onaudioprocess = event => {
+        const input = event.inputBuffer.getChannelData(0);
+        chunks.push(new Float32Array(input));
+      };
+
+      const updateMeterLoop = () => {
+        if(stopped) return;
+
+        updateMeter(analyser, recMeterLevel, recLevelDb);
+        meterRafId = requestAnimationFrame(updateMeterLoop);
+      };
+
+      updateMeterLoop();
+
+      recordingController = {
+        state:"recording",
+
+        stop(){
+          if(stopped) return;
+          stopped = true;
+
+          if(meterRafId) cancelAnimationFrame(meterRafId);
+
+          try{ source.disconnect(); }catch{}
+          try{ analyser.disconnect(); }catch{}
+          try{ processor.disconnect(); }catch{}
+          try{ silentGain.disconnect(); }catch{}
+
+          safeClose(audioContext);
+
+          if(ownsStream) stopTracks(stream);
+
+          const samples = mergeBuffers(chunks);
+
+          if(samples.length > 0){
+            const wavBlob = encodeWAV(samples, audioContext.sampleRate);
+
+            revokeRecordingUrl();
+
+            const url = URL.createObjectURL(wavBlob);
+            lastRecordingUrl = url;
+
+            playback.src = url;
+            downloadLink.href = url;
+            downloadLink.download = "recording.wav";
+
+            playRecBtn.disabled = false;
+            setDownloadDisabled(false);
+          }
+
+          resetRecordingMeter();
+        }
+      };
+
+      recordingStart = Date.now();
+
+      startRecBtn.disabled = true;
+      stopRecBtn.disabled = false;
+
+      recordingTimerId = setInterval(updateRecordingTimer, 250);
+    }catch(error){
+      if(token !== recordingToken) return;
+
+      console.error(error);
+
+      startRecBtn.disabled = false;
+      stopRecBtn.disabled = true;
+      playRecBtn.disabled = !playback.src;
+
+      resetRecordingMeter();
+      setDownloadDisabled(!playback.src);
+
+      alert(
+        "Không thể truy cập micro để ghi âm: " +
+        (error.message || error.name)
+      );
+    }
+  }
+
+  function getCurrentDatetimeString(){
+    const now = new Date();
+    const pad = value => String(value).padStart(2, "0");
+
+    return [
+      pad(now.getHours()) + ":" + pad(now.getMinutes()),
+      pad(now.getDate()) + "-" + pad(now.getMonth() + 1) + "-" + now.getFullYear()
+    ].join(" ");
+  }
+
+  function roundRect(ctx, x, y, width, height, radius){
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
+
+  function capturePhoto(){
+    if(captureBtn.disabled) return;
+
+    const width = videoPreview.videoWidth;
+    const height = videoPreview.videoHeight;
+
+    if(!width || !height){
+      alert("Video chưa sẵn sàng để chụp. Hãy đợi một lát rồi thử lại.");
+      return;
     }
 
-    // Hỗ trợ kéo thả file (tùy chọn)
-    document.querySelector('.upload-area').addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.currentTarget.style.border = '2px dashed #4CAF50';
-    });
-    document.querySelector('.upload-area').addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        e.currentTarget.style.border = 'none';
-    });
-    document.querySelector('.upload-area').addEventListener('drop', (e) => {
-        e.preventDefault();
-        e.currentTarget.style.border = 'none';
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            fileInput.files = files;
-        }
-    });
-</script>
+    photoCanvas.width = width;
+    photoCanvas.height = height;
 
+    const ctx = photoCanvas.getContext("2d");
+    ctx.drawImage(videoPreview, 0, 0, width, height);
+
+    const text1 = "Created by Minh Nhut";
+    const text2 = getCurrentDatetimeString();
+
+    ctx.save();
+    ctx.font = "bold 36px Segoe UI, Arial, sans-serif";
+    ctx.textBaseline = "bottom";
+    ctx.textAlign = "right";
+
+    const padding = 20;
+    const lineGap = 12;
+    const textHeight = 44;
+    const totalHeight = textHeight * 2 + lineGap + 16;
+
+    const textWidth = Math.max(
+      ctx.measureText(text1).width,
+      ctx.measureText(text2).width
+    );
+
+    const boxWidth = textWidth + padding * 2;
+    const boxX = width - boxWidth - 16;
+    const boxY = height - totalHeight - 16;
+
+    ctx.globalAlpha = .5;
+    ctx.fillStyle = "#e65100";
+    roundRect(ctx, boxX, boxY, boxWidth, totalHeight, 20);
+    ctx.fill();
+
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "#e65100";
+    ctx.fillStyle = "#fff";
+
+    ctx.strokeText(text1, width - padding - 16, height - totalHeight / 2 - lineGap / 2);
+    ctx.fillText(text1, width - padding - 16, height - totalHeight / 2 - lineGap / 2);
+
+    ctx.strokeText(text2, width - padding - 16, height - 24);
+    ctx.fillText(text2, width - padding - 16, height - 24);
+
+    ctx.restore();
+
+    photoCanvas.toBlob(blob => {
+      if(!blob){
+        alert("Không thể tạo ảnh. Hãy thử chụp lại.");
+        return;
+      }
+
+      revokePhotoUrl();
+
+      const url = URL.createObjectURL(blob);
+      lastPhotoUrl = url;
+
+      photoImg.src = url;
+      photoImg.style.display = "block";
+
+      downloadPhotoBtn.href = url;
+      downloadPhotoBtn.style.display = "inline-block";
+
+      photoCanvas.style.display = "none";
+
+      setTimeout(() => {
+        $("photoBlock").scrollIntoView({
+          behavior:"smooth",
+          block:"nearest"
+        });
+      }, 100);
+    }, "image/png");
+  }
+
+  function enterFullscreen(){
+    if(videoContainer.requestFullscreen){
+      videoContainer.requestFullscreen().catch(() => {});
+      return;
+    }
+
+    /*
+      Safari iPhone thường hỗ trợ fullscreen tốt nhất
+      trực tiếp trên phần tử video.
+    */
+    if(videoPreview.webkitEnterFullscreen){
+      videoPreview.webkitEnterFullscreen();
+      return;
+    }
+
+    if(videoContainer.webkitRequestFullscreen){
+      videoContainer.webkitRequestFullscreen();
+    }
+  }
+
+  function exitFullscreen(){
+    if(document.exitFullscreen){
+      document.exitFullscreen().catch(() => {});
+      return;
+    }
+
+    if(document.webkitExitFullscreen){
+      document.webkitExitFullscreen();
+    }
+  }
+
+  function handleFullscreenChange(){
+    const full =
+      document.fullscreenElement === videoContainer ||
+      document.webkitFullscreenElement === videoContainer ||
+      document.msFullscreenElement === videoContainer;
+
+    isFullscreen = full;
+    videoContainer.classList.toggle("fullscreen", full);
+    fullscreenBtn.title = full ? "Thoát toàn màn hình" : "Toàn màn hình video";
+  }
+
+  startPreviewBtn.addEventListener("click", startPreview);
+  stopPreviewBtn.addEventListener("click", stopPreview);
+
+  startRecBtn.addEventListener("click", startRecording);
+  stopRecBtn.addEventListener("click", () => stopRecording());
+
+  playRecBtn.addEventListener("click", () => {
+    playback.play().catch(() => {});
+  });
+
+  captureBtn.addEventListener("click", capturePhoto);
+
+  photoImg.addEventListener("click", () => {
+    if(photoImg.src) window.open(photoImg.src, "_blank", "noopener");
+  });
+
+  cameraSelect.addEventListener("change", () => {
+    hidePhoto();
+    if(currentStream) startPreview();
+  });
+
+  micSelect.addEventListener("change", () => {
+    if(recordingController?.state === "recording"){
+      stopRecording();
+    }
+
+    if(currentStream) startPreview();
+  });
+
+  videoPreview.addEventListener("loadeddata", updateCaptureButton);
+  videoPreview.addEventListener("canplay", updateCaptureButton);
+  videoPreview.addEventListener("emptied", updateCaptureButton);
+
+  fullscreenBtn.addEventListener("click", () => {
+    if(isFullscreen) exitFullscreen();
+    else enterFullscreen();
+  });
+
+  document.addEventListener("fullscreenchange", handleFullscreenChange);
+  document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+  document.addEventListener("msfullscreenchange", handleFullscreenChange);
+
+  navigator.mediaDevices.addEventListener?.("devicechange", updateDeviceList);
+
+  window.addEventListener("pagehide", () => {
+    stopPreview();
+    stopRecording();
+    revokePhotoUrl();
+    revokeRecordingUrl();
+  });
+
+  window.addEventListener("beforeunload", () => {
+    stopPreview();
+    stopRecording();
+  });
+
+  setDownloadDisabled(true);
+  updateCaptureButton();
+  await updateDeviceList();
+})();
+</script>
 </body>
 </html>
