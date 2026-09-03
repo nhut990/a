@@ -2,10 +2,8 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"
-  >
+  <meta name="viewport"
+    content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <title>Trình phát MIDI</title>
 
   <style>
@@ -17,9 +15,8 @@
       --text:#edf3fb;
       --muted:#9baabd;
       --blue:#86b9ed;
-      --blue-dark:#294867;
       --green:#8ce0ab;
-      --red:#f49aa5;
+      --red:#ffb1ba;
     }
 
     *{
@@ -34,7 +31,7 @@
       padding:22px 14px 40px;
       color:var(--text);
       background:
-        radial-gradient(circle at top, #223b5a 0%, #111a27 38%, var(--bg) 75%);
+        radial-gradient(circle at top,#223b5a 0%,#111a27 38%,var(--bg) 75%);
       font-family:Arial,Helvetica,sans-serif;
     }
 
@@ -91,7 +88,6 @@
       font-size:15px;
       font-weight:700;
       text-align:center;
-      box-shadow:inset 0 1px rgba(255,255,255,.18);
     }
 
     .file-label:active,
@@ -123,7 +119,7 @@
 
     .status.error{
       border-color:#7c4650;
-      color:#ffb9c1;
+      color:var(--red);
       background:#29191e;
     }
 
@@ -175,12 +171,11 @@
       background:#263547;
       font-size:14px;
       font-weight:700;
-      box-shadow:inset 0 1px rgba(255,255,255,.1);
     }
 
     #playButton{
       border-color:#78a9da;
-      color:white;
+      color:#fff;
       background:linear-gradient(145deg,#548ac0,#315b87);
     }
 
@@ -227,7 +222,7 @@
     .notice{
       color:var(--muted);
       font-size:12px;
-      line-height:1.6;
+      line-height:1.65;
     }
 
     .notice b{
@@ -246,9 +241,7 @@
   <main class="app">
     <header>
       <h1>🎹 Trình phát MIDI</h1>
-      <p class="subtitle">
-        Mở và phát file MIDI ngay trong trình duyệt.
-      </p>
+      <p class="subtitle">Mở và phát file MIDI ngay trong trình duyệt.</p>
     </header>
 
     <section class="card">
@@ -256,28 +249,17 @@
         🎵 Chọn file MIDI (.mid / .midi)
       </label>
 
-      <input
-        id="midiFile"
-        type="file"
-        accept=".mid,.midi,audio/midi,audio/x-midi"
-      >
+      <input id="midiFile" type="file"
+        accept=".mid,.midi,audio/midi,audio/x-midi">
 
-      <div class="status" id="status">
-        Chưa chọn file MIDI.
-      </div>
+      <div class="status" id="status">Chưa chọn file MIDI.</div>
     </section>
 
     <section class="card hidden" id="playerPanel">
       <div class="song-name" id="songName">Tên bài MIDI</div>
       <div class="song-info" id="songInfo">0 track • 0:00</div>
 
-      <input
-        id="seekBar"
-        type="range"
-        min="0"
-        max="1000"
-        value="0"
-      >
+      <input id="seekBar" type="range" min="0" max="1000" value="0">
 
       <div class="time" id="timeText">0:00 / 0:00</div>
 
@@ -295,17 +277,19 @@
 
     <section class="card">
       <div class="notice">
-        <b>Lưu ý:</b> MIDI chỉ là dữ liệu nốt nhạc, không phải bản ghi âm gốc.
-        Trang dùng SoundFont General MIDI để tạo tiếng piano, guitar, bass,
-        strings, trống… theo nhạc cụ được lưu trong file.
-        Lần phát đầu có thể mất vài giây để tải tiếng nhạc cụ cần thiết.
+        <b>Lưu ý:</b> MIDI là dữ liệu nốt nhạc, không phải âm thanh gốc.
+        Bản này tải SoundFont General MIDI để phát tiếng nhạc cụ. Cần có mạng
+        ở lần phát đầu để tải tiếng piano, bass, banjo, brass, trống…
       </div>
     </section>
   </main>
 
   <script type="module">
-    import { Midi } from "https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.28/+esm";
-    import Soundfont from "https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/+esm";
+    import { Midi } from
+      "https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.28/+esm";
+
+    import Soundfont from
+      "https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/+esm";
 
     const $ = id => document.getElementById(id);
 
@@ -324,13 +308,19 @@
 
     let audioContext = null;
     let midi = null;
-    let loadedInstruments = new Map();
+    let events = [];
+    let players = new Map();
 
     let playing = false;
-    let startedAt = 0;
     let pausedAt = 0;
+    let startedAt = 0;
+    let eventIndex = 0;
+    let timer = null;
     let animationFrame = null;
-    let loadId = 0;
+    let loadVersion = 0;
+
+    const LOOK_AHEAD = 0.35;
+    const TICK_MS = 80;
 
     function setStatus(text, type = "") {
       status.textContent = text;
@@ -339,10 +329,8 @@
 
     function formatTime(seconds) {
       const total = Math.max(0, Math.floor(seconds || 0));
-      const minutes = Math.floor(total / 60);
-      const remain = total % 60;
-
-      return minutes + ":" + String(remain).padStart(2, "0");
+      return Math.floor(total / 60) + ":" +
+        String(total % 60).padStart(2, "0");
     }
 
     function cleanName(name) {
@@ -352,62 +340,61 @@
         .replace(/^_+|_+$/g, "");
     }
 
-    function getTrackInstrument(track) {
+    function instrumentName(track) {
       if (track.channel === 9 || track.instrument?.percussion) {
         return "percussion";
       }
 
-      const name = cleanName(track.instrument?.name);
-
-      return name || "acoustic_grand_piano";
+      return cleanName(track.instrument?.name) ||
+        "acoustic_grand_piano";
     }
 
-    async function ensureAudioContext() {
+    async function ensureAudio() {
       const AudioContextClass =
         window.AudioContext || window.webkitAudioContext;
 
       if (!AudioContextClass) {
-        throw new Error("Trình duyệt này không hỗ trợ Web Audio.");
+        throw new Error("Trình duyệt không hỗ trợ Web Audio.");
       }
 
       if (!audioContext) {
         audioContext = new AudioContextClass();
       }
 
-      if (audioContext.state === "suspended") {
+      if (audioContext.state !== "running") {
         await audioContext.resume();
       }
     }
 
-    async function loadInstrument(name) {
-      if (loadedInstruments.has(name)) {
-        return loadedInstruments.get(name);
-      }
+    async function getPlayer(name) {
+      if (players.has(name)) return players.get(name);
 
       const promise = Soundfont.instrument(audioContext, name, {
         soundfont: "MusyngKite"
       }).catch(async () => {
         if (name !== "acoustic_grand_piano") {
-          return Soundfont.instrument(audioContext, "acoustic_grand_piano", {
-            soundfont: "MusyngKite"
-          });
+          return Soundfont.instrument(
+            audioContext,
+            "acoustic_grand_piano",
+            { soundfont: "MusyngKite" }
+          );
         }
 
-        throw new Error("Không thể tải tiếng nhạc cụ.");
+        throw new Error("Không thể tải SoundFont.");
       });
 
-      loadedInstruments.set(name, promise);
+      players.set(name, promise);
       return promise;
     }
 
-    function stopAllSounds() {
-      for (const instrument of loadedInstruments.values()) {
-        instrument.then(player => {
+    function stopSounds() {
+      players.forEach(promise => {
+        promise.then(player => {
           try {
             player.stop();
           } catch {}
         });
-      }
+      });
     }
 
     function getCurrentTime() {
@@ -423,92 +410,118 @@
       );
     }
 
-    function updatePlayer() {
+    function updateUI() {
       if (!midi) return;
 
-      const current = getCurrentTime();
+      const now = getCurrentTime();
       const duration = midi.duration || 0;
 
       seekBar.value = duration
-        ? Math.round(current / duration * 1000)
+        ? Math.round(now / duration * 1000)
         : 0;
 
       timeText.textContent =
-        formatTime(current) + " / " + formatTime(duration);
+        formatTime(now) + " / " + formatTime(duration);
 
       if (playing) {
-        animationFrame = requestAnimationFrame(updatePlayer);
+        animationFrame = requestAnimationFrame(updateUI);
       }
     }
 
-    async function play() {
-      if (!midi) return;
+    function findEventIndex(time) {
+      return events.findIndex(note =>
+        note.time + note.duration > time
+      );
+    }
 
-      await ensureAudioContext();
+    function scheduleNotes() {
+      if (!playing || !midi || !audioContext) return;
+
+      const current = getCurrentTime();
+      const until = current + LOOK_AHEAD;
+
+      while (
+        eventIndex < events.length &&
+        events[eventIndex].time <= until
+      ) {
+        const note = events[eventIndex++];
+        const noteEnd = note.time + note.duration;
+
+        if (noteEnd <= current) continue;
+
+        const delay = Math.max(0, note.time - current);
+        const remaining = Math.max(
+          0.03,
+          noteEnd - Math.max(current, note.time)
+        );
+
+        getPlayer(note.instrument).then(player => {
+          if (!playing) return;
+
+          try {
+            player.start(
+              audioContext.currentTime + delay,
+              note.midi,
+              {
+                duration: remaining,
+                gain: Math.max(0.03, note.velocity || 0.7)
+              }
+            );
+          } catch (error) {
+            console.warn("Không phát được note MIDI:", error);
+          }
+        });
+      }
+
+      if (current >= midi.duration) {
+        finishPlayback();
+      }
+    }
+
+    function finishPlayback() {
+      playing = false;
+      pausedAt = 0;
+
+      clearInterval(timer);
+      cancelAnimationFrame(animationFrame);
+
+      playButton.textContent = "▶ Phát";
+      updateUI();
+      setStatus("Phát xong.", "good");
+    }
+
+    async function play() {
+      if (!midi || !events.length) return;
+
+      const version = ++loadVersion;
+
+      await ensureAudio();
 
       if (pausedAt >= midi.duration - 0.05) {
         pausedAt = 0;
       }
 
-      stopAllSounds();
+      setStatus("Đang tải tiếng nhạc cụ…");
 
-      const currentPosition = pausedAt;
-      startedAt = audioContext.currentTime - currentPosition;
+      const instruments = [...new Set(events.map(note => note.instrument))];
+      await Promise.all(instruments.map(getPlayer));
+
+      if (version !== loadVersion) return;
+
+      stopSounds();
+
+      eventIndex = findEventIndex(pausedAt);
+      if (eventIndex < 0) eventIndex = events.length;
+
+      startedAt = audioContext.currentTime - pausedAt;
       playing = true;
 
       playButton.textContent = "❚❚ Dừng";
-
-      const tracks = midi.tracks.filter(track => track.notes.length);
-
-      setStatus("Đang chuẩn bị tiếng nhạc cụ…");
-
-      const players = await Promise.all(
-        tracks.map(track => loadInstrument(getTrackInstrument(track)))
-      );
-
-      if (!playing) return;
-
-      const now = audioContext.currentTime;
-
-      tracks.forEach((track, trackIndex) => {
-        const player = players[trackIndex];
-        const isDrum = getTrackInstrument(track) === "percussion";
-
-        track.notes.forEach(note => {
-          if (note.time + note.duration <= currentPosition) return;
-
-          const startOffset = Math.max(0, note.time - currentPosition);
-          const remainingDuration =
-            note.duration - Math.max(0, currentPosition - note.time);
-
-          if (remainingDuration <= 0) return;
-
-          player.start(
-            now + startOffset,
-            note.midi,
-            remainingDuration,
-            {
-              gain: Math.max(0.02, note.velocity || 0.7),
-              percussion: isDrum
-            }
-          );
-        });
-      });
-
       setStatus("Đang phát MIDI.", "good");
-      updatePlayer();
 
-      const remaining = Math.max(0, midi.duration - currentPosition);
-
-      setTimeout(() => {
-        if (!playing) return;
-
-        playing = false;
-        pausedAt = 0;
-        playButton.textContent = "▶ Phát";
-        updatePlayer();
-        setStatus("Phát xong.", "good");
-      }, remaining * 1000 + 120);
+      scheduleNotes();
+      timer = setInterval(scheduleNotes, TICK_MS);
+      updateUI();
     }
 
     function pause() {
@@ -516,72 +529,93 @@
 
       pausedAt = getCurrentTime();
       playing = false;
+      ++loadVersion;
 
-      stopAllSounds();
+      clearInterval(timer);
       cancelAnimationFrame(animationFrame);
+      stopSounds();
 
       playButton.textContent = "▶ Phát";
-      updatePlayer();
-
+      updateUI();
       setStatus("Đã tạm dừng.");
     }
 
-    function seekTo(time) {
+    async function seekTo(time) {
       if (!midi) return;
 
-      pausedAt = Math.max(0, Math.min(time, midi.duration));
+      const wasPlaying = playing;
 
-      if (playing) {
-        pause();
-        play();
-      } else {
-        updatePlayer();
+      if (wasPlaying) pause();
+
+      pausedAt = Math.max(0, Math.min(time, midi.duration));
+      updateUI();
+
+      if (wasPlaying) {
+        await play();
       }
     }
 
     function renderTracks() {
       trackList.innerHTML = "";
 
-      const activeTracks = midi.tracks.filter(track => track.notes.length);
+      const tracks = midi.tracks.filter(track => track.notes.length);
 
-      activeTracks.forEach((track, index) => {
+      tracks.forEach((track, index) => {
         const row = document.createElement("div");
         row.className = "track";
 
-        const name = document.createElement("div");
-        name.className = "track-name";
-        name.textContent =
-          track.name ||
-          "Track " + (index + 1);
+        const title = document.createElement("div");
+        title.className = "track-name";
+        title.textContent = track.name || "Track " + (index + 1);
 
-        const instrument = document.createElement("div");
-        instrument.className = "instrument";
+        const sound = document.createElement("div");
+        sound.className = "instrument";
 
-        const isDrum =
-          track.channel === 9 ||
-          track.instrument?.percussion;
+        const drum =
+          track.channel === 9 || track.instrument?.percussion;
 
-        instrument.textContent = isDrum
+        sound.textContent = drum
           ? "🥁 Trống"
           : "🎹 " + (track.instrument?.name || "Piano");
 
-        row.append(name, instrument);
+        row.append(title, sound);
         trackList.appendChild(row);
       });
+    }
+
+    function buildEvents() {
+      events = [];
+
+      midi.tracks.forEach(track => {
+        if (!track.notes.length) return;
+
+        const instrument = instrumentName(track);
+
+        track.notes.forEach(note => {
+          events.push({
+            time: note.time,
+            duration: note.duration,
+            midi: note.midi,
+            velocity: note.velocity,
+            instrument
+          });
+        });
+      });
+
+      events.sort((a, b) => a.time - b.time);
     }
 
     midiFile.addEventListener("change", async () => {
       const file = midiFile.files[0];
       if (!file) return;
 
-      const id = ++loadId;
-
       pause();
-      stopAllSounds();
+      stopSounds();
 
       midi = null;
+      events = [];
+      players.clear();
       pausedAt = 0;
-      loadedInstruments.clear();
 
       playerPanel.classList.add("hidden");
       trackPanel.classList.add("hidden");
@@ -590,19 +624,21 @@
 
       try {
         const data = await file.arrayBuffer();
-
-        if (id !== loadId) return;
-
         midi = new Midi(data);
 
-        const trackCount = midi.tracks.filter(track => track.notes.length).length;
-        const title =
-          midi.header.name ||
+        buildEvents();
+
+        if (!events.length) {
+          throw new Error("File không có note MIDI.");
+        }
+
+        const tracks = midi.tracks.filter(track => track.notes.length);
+        const title = midi.header.name ||
           file.name.replace(/\.(mid|midi)$/i, "");
 
         songName.textContent = title;
         songInfo.textContent =
-          trackCount + " track • " + formatTime(midi.duration);
+          tracks.length + " track • " + formatTime(midi.duration);
 
         seekBar.value = 0;
         timeText.textContent =
@@ -614,14 +650,14 @@
         trackPanel.classList.remove("hidden");
 
         setStatus(
-          "Đã tải MIDI. Nhấn Phát để bắt đầu và cho phép âm thanh trên thiết bị.",
+          "Đã tải MIDI. Nhấn Phát để tải tiếng nhạc cụ và bắt đầu.",
           "good"
         );
       } catch (error) {
         console.error(error);
 
         setStatus(
-          "Không thể đọc file này. Hãy thử một file .mid hoặc .midi khác.",
+          "Không thể đọc file này hoặc file không có dữ liệu MIDI hợp lệ.",
           "error"
         );
       }
@@ -643,7 +679,7 @@
         playButton.textContent = "▶ Phát";
 
         setStatus(
-          "Không thể phát âm thanh. Hãy thử chạm lại nút Phát hoặc mở bằng Safari/Chrome mới hơn.",
+          "Không tải được tiếng nhạc cụ. Hãy kiểm tra mạng rồi thử lại.",
           "error"
         );
       }
@@ -661,7 +697,7 @@
       if (!midi) return;
 
       pausedAt = Number(seekBar.value) / 1000 * midi.duration;
-      updatePlayer();
+      updateUI();
     });
 
     seekBar.addEventListener("change", () => {
@@ -672,7 +708,7 @@
 
     window.addEventListener("pagehide", () => {
       pause();
-      stopAllSounds();
+      stopSounds();
     });
   </script>
 </body>
