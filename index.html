@@ -1,1183 +1,679 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kiểm tra Camera & Micro - Test trực tiếp trên Web</title>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"
+  >
+  <title>Trình phát MIDI</title>
 
-<style>
-  :root{
-    --orange:#ff9800;
-    --orange-dark:#e65100;
-    --orange-light:#ffa726;
-    --text:#111;
-    --muted:#444;
-    --border:#cfcfcf;
-  }
+  <style>
+    :root{
+      --bg:#0c1119;
+      --surface:#151d29;
+      --card:#1c2635;
+      --line:#334154;
+      --text:#edf3fb;
+      --muted:#9baabd;
+      --blue:#86b9ed;
+      --blue-dark:#294867;
+      --green:#8ce0ab;
+      --red:#f49aa5;
+    }
 
-  *{box-sizing:border-box}
+    *{
+      box-sizing:border-box;
+      -webkit-tap-highlight-color:transparent;
+    }
 
-  body{
-    margin:0;
-    padding:18px;
-    color:var(--text);
-    background:#f7f7f9;
-    font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-    line-height:1.4;
-  }
+    body{
+      min-height:100vh;
+      min-height:100dvh;
+      margin:0;
+      padding:22px 14px 40px;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top, #223b5a 0%, #111a27 38%, var(--bg) 75%);
+      font-family:Arial,Helvetica,sans-serif;
+    }
 
-  h1{
-    margin:0 0 10px;
-    font-size:1.2rem;
-  }
+    .app{
+      width:100%;
+      max-width:680px;
+      margin:auto;
+    }
 
-  .panel{
-    max-width:760px;
-    margin-top:12px;
-  }
+    header{
+      margin-bottom:19px;
+      text-align:center;
+    }
 
-  .row,
-  .controls{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    align-items:center;
-  }
+    h1{
+      margin:0;
+      font-size:25px;
+    }
 
-  .row{margin-bottom:10px}
-  .controls{margin-top:12px}
+    .subtitle{
+      margin:8px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.55;
+    }
 
-  select,
-  button,
-  .download-btn{
-    padding:8px;
-    border:1px solid var(--border);
-    border-radius:6px;
-    font:inherit;
-  }
+    .card{
+      margin-top:14px;
+      padding:15px;
+      border:1px solid var(--line);
+      border-radius:17px;
+      background:rgba(21,29,41,.94);
+      box-shadow:0 12px 30px rgba(0,0,0,.22);
+    }
 
-  button,
-  .fullscreen-btn{
-    border:1.5px solid var(--orange-dark);
-    color:#fff;
-    background:var(--orange);
-    font-weight:600;
-    cursor:pointer;
-    transition:background .15s,box-shadow .2s,transform .1s;
-  }
+    .file-label,
+    button{
+      border:none;
+      font:inherit;
+      cursor:pointer;
+      touch-action:manipulation;
+    }
 
-  button:hover,
-  .fullscreen-btn:hover{
-    color:#fff;
-    background:var(--orange-light);
-    box-shadow:0 0 0 2px rgba(230,81,0,.35);
-  }
+    .file-label{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:64px;
+      padding:12px;
+      border:1px solid #729dcb;
+      border-radius:14px;
+      color:#f5f9ff;
+      background:linear-gradient(145deg,#4d7eaf,#294c72);
+      font-size:15px;
+      font-weight:700;
+      text-align:center;
+      box-shadow:inset 0 1px rgba(255,255,255,.18);
+    }
 
-  button:active{
-    transform:scale(.98);
-  }
+    .file-label:active,
+    button:active{
+      transform:translateY(2px);
+      filter:brightness(.92);
+    }
 
-  button:disabled{
-    opacity:.5;
-    cursor:not-allowed;
-    color:#aaa!important;
-    border-color:#eee!important;
-    background:#f5f5f5!important;
-    box-shadow:none!important;
-  }
+    input[type=file]{
+      display:none;
+    }
 
-  video{
-    display:block;
-    width:100%;
-    max-width:560px;
-    border-radius:8px;
-    background:#000;
-  }
+    .status{
+      margin-top:12px;
+      padding:12px;
+      border:1px solid #344456;
+      border-radius:11px;
+      color:var(--muted);
+      background:#101722;
+      font-size:13px;
+      line-height:1.55;
+    }
 
-  .video-container{
-    position:relative;
-    width:100%;
-    max-width:560px;
-  }
+    .status.good{
+      border-color:#3c7250;
+      color:var(--green);
+      background:#12251b;
+    }
 
-  .fullscreen-btn{
-    position:absolute;
-    right:10px;
-    bottom:10px;
-    z-index:2;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:8px;
-  }
+    .status.error{
+      border-color:#7c4650;
+      color:#ffb9c1;
+      background:#29191e;
+    }
 
-  .fullscreen-icon{
-    display:block;
-    width:24px;
-    height:24px;
-  }
+    .hidden{
+      display:none!important;
+    }
 
-  .video-container.fullscreen{
-    width:100vw;
-    max-width:none;
-    height:100vh;
-    background:#000;
-  }
+    .song-name{
+      overflow:hidden;
+      color:#fff;
+      font-size:19px;
+      font-weight:700;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
 
-  .video-container.fullscreen video{
-    width:100vw;
-    max-width:none;
-    height:100vh;
-    border-radius:0;
-    object-fit:contain;
-  }
+    .song-info{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:12px;
+    }
 
-  #photoBlock{
-    display:flex;
-    flex-wrap:wrap;
-    align-items:center;
-    gap:10px;
-    margin:10px 0;
-  }
+    .time{
+      margin-top:13px;
+      color:#d8e6f4;
+      text-align:center;
+      font-size:13px;
+      font-weight:700;
+    }
 
-  #photoCanvas,
-  #photoImg{
-    max-width:240px;
-    max-height:180px;
-    border:1.5px solid var(--orange-light);
-    border-radius:8px;
-    background:#fff;
-  }
+    input[type=range]{
+      width:100%;
+      margin-top:14px;
+      accent-color:var(--blue);
+    }
 
-  #photoImg{
-    cursor:pointer;
-  }
+    .controls{
+      display:grid;
+      grid-template-columns:72px 1fr 72px;
+      gap:10px;
+      margin-top:16px;
+    }
 
-  #photoImg:hover{
-    box-shadow:0 0 0 3px rgba(255,152,0,.35);
-  }
+    button{
+      min-height:48px;
+      border:1px solid #41546c;
+      border-radius:12px;
+      color:#deebf9;
+      background:#263547;
+      font-size:14px;
+      font-weight:700;
+      box-shadow:inset 0 1px rgba(255,255,255,.1);
+    }
 
-  .download-btn{
-    display:inline-block;
-    color:#111;
-    border:1.5px solid var(--orange-light);
-    background:#fff;
-    text-decoration:none;
-    cursor:pointer;
-  }
+    #playButton{
+      border-color:#78a9da;
+      color:white;
+      background:linear-gradient(145deg,#548ac0,#315b87);
+    }
 
-  .disabled-link{
-    pointer-events:none;
-    opacity:.5;
-    cursor:not-allowed;
-    color:#999!important;
-    border-color:#eee!important;
-    background:#f9f9f9!important;
-    text-decoration:none!important;
-  }
+    .section-title{
+      margin:0 0 10px;
+      color:#c5d1df;
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
 
-  .note{
-    margin-top:8px;
-    color:var(--muted);
-    font-size:.85rem;
-  }
+    .track-list{
+      display:grid;
+      gap:8px;
+    }
 
-  .note b{color:#000}
+    .track{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:11px 12px;
+      border:1px solid #344253;
+      border-radius:11px;
+      background:var(--card);
+      font-size:13px;
+    }
 
-  .small{
-    color:var(--muted);
-    font-size:.9rem;
-  }
+    .track-name{
+      overflow:hidden;
+      font-weight:700;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
 
-  .meter{
-    position:relative;
-    width:200px;
-    height:24px;
-    overflow:hidden;
-    border-radius:6px;
-    background:#e8e8e8;
-  }
+    .instrument{
+      flex:none;
+      color:var(--blue);
+      font-size:11px;
+      text-align:right;
+    }
 
-  .meter .level{
-    position:absolute;
-    top:0;
-    left:0;
-    width:0%;
-    height:100%;
-    background:linear-gradient(90deg,#43a047 0%,#ffeb3b 70%,#ef5350 100%);
-    transition:width .08s linear;
-  }
+    .notice{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.6;
+    }
 
-  .timer{
-    min-width:72px;
-    padding:6px 8px;
-    border:1px solid #ddd;
-    border-radius:6px;
-    background:#fff;
-    text-align:center;
-  }
+    .notice b{
+      color:#dce9f7;
+    }
 
-  hr{
-    margin:18px 0;
-    border:0;
-    border-top:5px solid var(--orange);
-    border-radius:2px;
-    box-shadow:0 2px 6px rgba(255,152,0,.1);
-  }
-
-  audio{
-    display:block;
-    width:100%;
-    max-width:420px;
-    margin-top:8px;
-  }
-
-  .footer{
-    margin-top:40px;
-    color:#555;
-    font-size:.95rem;
-    text-align:center;
-  }
-
-  .footer a{
-    color:#1976d2;
-    font-weight:500;
-    text-decoration:none;
-  }
-
-  .credit{
-    margin-top:4px;
-    color:#888;
-    font-size:.92rem;
-  }
-
-  @media(max-width:520px){
-    body{padding:14px}
-    .meter{width:100%}
-    .row .small{width:100%}
-  }
-</style>
+    @media(max-width:420px){
+      .controls{
+        grid-template-columns:62px 1fr 62px;
+      }
+    }
+  </style>
 </head>
 
 <body>
-  <h1>Trang kiểm tra Camera & Micro</h1>
+  <main class="app">
+    <header>
+      <h1>🎹 Trình phát MIDI</h1>
+      <p class="subtitle">
+        Mở và phát file MIDI ngay trong trình duyệt.
+      </p>
+    </header>
 
-  <main class="panel">
-    <div class="row">
-      <label>
-        Camera:
-        <select id="cameraSelect"></select>
+    <section class="card">
+      <label class="file-label" for="midiFile">
+        🎵 Chọn file MIDI (.mid / .midi)
       </label>
 
-      <label>
-        Micro:
-        <select id="micSelect"></select>
-      </label>
+      <input
+        id="midiFile"
+        type="file"
+        accept=".mid,.midi,audio/midi,audio/x-midi"
+      >
 
-      <div class="controls" style="margin-top:0">
-        <button id="startPreviewBtn">Bắt đầu preview</button>
-        <button id="stopPreviewBtn" disabled>Ngưng preview</button>
-        <button id="captureBtn" disabled>Chụp ảnh</button>
+      <div class="status" id="status">
+        Chưa chọn file MIDI.
       </div>
-    </div>
+    </section>
 
-    <div class="video-container" id="videoContainer">
-      <video id="videoPreview" autoplay muted playsinline></video>
+    <section class="card hidden" id="playerPanel">
+      <div class="song-name" id="songName">Tên bài MIDI</div>
+      <div class="song-info" id="songInfo">0 track • 0:00</div>
 
-      <button
-        class="fullscreen-btn"
-        id="fullscreenBtn"
-        type="button"
-        title="Toàn màn hình video"
-        aria-label="Toàn màn hình video"
-      >
-        <svg class="fullscreen-icon" viewBox="0 0 50 50" aria-hidden="true">
-          <polyline points="17,6 6,6 6,17"
-            style="fill:none;stroke:#fff;stroke-width:5"/>
-          <polyline points="33,6 44,6 44,17"
-            style="fill:none;stroke:#fff;stroke-width:5"/>
-          <polyline points="17,44 6,44 6,33"
-            style="fill:none;stroke:#fff;stroke-width:5"/>
-          <polyline points="33,44 44,44 33"
-            style="fill:none;stroke:#fff;stroke-width:5"/>
-        </svg>
-      </button>
-    </div>
-
-    <div id="photoBlock">
-      <canvas id="photoCanvas" style="display:none"></canvas>
-
-      <img
-        id="photoImg"
-        style="display:none"
-        alt="Ảnh vừa chụp"
-        title="Bấm để mở ảnh kích thước lớn trong tab mới"
+      <input
+        id="seekBar"
+        type="range"
+        min="0"
+        max="1000"
+        value="0"
       >
 
-      <a
-        id="downloadPhotoBtn"
-        class="download-btn"
-        style="display:none"
-        download="photo.png"
-      >
-        Tải ảnh về
-      </a>
-    </div>
+      <div class="time" id="timeText">0:00 / 0:00</div>
 
-    <div class="note">
-      ⚠️ Camera và micro chỉ hoạt động sau khi bạn chọn <b>Cho phép</b> quyền truy cập trong trình duyệt.
-    </div>
-
-    <div class="row" style="margin-top:12px">
-      <div class="small">Mức âm thanh của micro đang preview:</div>
-
-      <div class="meter" title="Mức âm thanh micro">
-        <div class="level" id="meterLevel"></div>
+      <div class="controls">
+        <button id="backBtn" type="button">−5 giây</button>
+        <button id="playButton" type="button">▶ Phát</button>
+        <button id="forwardBtn" type="button">+5 giây</button>
       </div>
+    </section>
 
-      <div class="timer" id="levelDb">— dB</div>
-    </div>
+    <section class="card hidden" id="trackPanel">
+      <div class="section-title">Các track trong file</div>
+      <div class="track-list" id="trackList"></div>
+    </section>
 
-    <hr>
-
-    <div class="row">
-      <div class="small">Mức âm thanh khi ghi:</div>
-
-      <div class="meter" title="Mức âm thanh khi ghi">
-        <div class="level" id="recMeterLevel"></div>
+    <section class="card">
+      <div class="notice">
+        <b>Lưu ý:</b> MIDI chỉ là dữ liệu nốt nhạc, không phải bản ghi âm gốc.
+        Trang dùng SoundFont General MIDI để tạo tiếng piano, guitar, bass,
+        strings, trống… theo nhạc cụ được lưu trong file.
+        Lần phát đầu có thể mất vài giây để tải tiếng nhạc cụ cần thiết.
       </div>
-
-      <div class="timer" id="recLevelDb">— dB</div>
-    </div>
-
-    <div class="controls">
-      <button id="startRecBtn">Bắt đầu ghi âm</button>
-      <button id="stopRecBtn" disabled>Ngưng ghi</button>
-      <button id="playRecBtn" disabled>Phát lại</button>
-
-      <a
-        id="downloadLink"
-        class="download-btn disabled-link"
-        aria-disabled="true"
-        tabindex="-1"
-        download="recording.wav"
-      >
-        Tải về (.wav)
-      </a>
-
-      <div id="recTimer" class="timer">00:00</div>
-    </div>
-
-    <audio id="playback" controls></audio>
-
-    <div class="note">
-      Bản ghi được tạo dưới dạng <b>WAV mono</b>, phù hợp để kiểm tra micro và giọng nói.
-    </div>
+    </section>
   </main>
 
-  <footer class="footer">
-    <a href="https://nhut990.github.io/">Trang chủ</a>
+  <script type="module">
+    import { Midi } from "https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.28/+esm";
+    import Soundfont from "https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/+esm";
 
-    <div class="credit">
-      Created by Minh Nhut<br>
-      © 2025
-    </div>
-  </footer>
+    const $ = id => document.getElementById(id);
 
-<script>
-(async function(){
-  "use strict";
+    const midiFile = $("midiFile");
+    const status = $("status");
+    const playerPanel = $("playerPanel");
+    const trackPanel = $("trackPanel");
+    const songName = $("songName");
+    const songInfo = $("songInfo");
+    const seekBar = $("seekBar");
+    const timeText = $("timeText");
+    const playButton = $("playButton");
+    const backBtn = $("backBtn");
+    const forwardBtn = $("forwardBtn");
+    const trackList = $("trackList");
 
-  const $ = id => document.getElementById(id);
+    let audioContext = null;
+    let midi = null;
+    let loadedInstruments = new Map();
 
-  const cameraSelect = $("cameraSelect");
-  const micSelect = $("micSelect");
-  const startPreviewBtn = $("startPreviewBtn");
-  const stopPreviewBtn = $("stopPreviewBtn");
-  const captureBtn = $("captureBtn");
+    let playing = false;
+    let startedAt = 0;
+    let pausedAt = 0;
+    let animationFrame = null;
+    let loadId = 0;
 
-  const videoPreview = $("videoPreview");
-  const videoContainer = $("videoContainer");
-  const fullscreenBtn = $("fullscreenBtn");
-
-  const meterLevel = $("meterLevel");
-  const levelDb = $("levelDb");
-
-  const startRecBtn = $("startRecBtn");
-  const stopRecBtn = $("stopRecBtn");
-  const playRecBtn = $("playRecBtn");
-  const downloadLink = $("downloadLink");
-  const playback = $("playback");
-  const recTimer = $("recTimer");
-  const recMeterLevel = $("recMeterLevel");
-  const recLevelDb = $("recLevelDb");
-
-  const photoCanvas = $("photoCanvas");
-  const photoImg = $("photoImg");
-  const downloadPhotoBtn = $("downloadPhotoBtn");
-
-  let currentStream = null;
-  let previewAudioContext = null;
-  let previewAnalyser = null;
-  let previewSource = null;
-  let previewRafId = null;
-
-  let recordingController = null;
-  let recordingStart = 0;
-  let recordingTimerId = null;
-  let recordingToken = 0;
-  let previewToken = 0;
-
-  let lastPhotoUrl = null;
-  let lastRecordingUrl = null;
-  let isFullscreen = false;
-
-  if(!navigator.mediaDevices?.getUserMedia){
-    alert("Trình duyệt này không hỗ trợ camera hoặc micro. Hãy mở trang bằng HTTPS.");
-    return;
-  }
-
-  function setDownloadDisabled(disabled){
-    downloadLink.classList.toggle("disabled-link", disabled);
-    downloadLink.setAttribute("aria-disabled", String(disabled));
-    downloadLink.tabIndex = disabled ? -1 : 0;
-
-    if(disabled){
-      downloadLink.removeAttribute("href");
-    }
-  }
-
-  function stopTracks(stream){
-    stream?.getTracks().forEach(track => track.stop());
-  }
-
-  function safeClose(context){
-    if(context && context.state !== "closed"){
-      context.close().catch(() => {});
-    }
-  }
-
-  function revokePhotoUrl(){
-    if(lastPhotoUrl){
-      URL.revokeObjectURL(lastPhotoUrl);
-      lastPhotoUrl = null;
-    }
-  }
-
-  function revokeRecordingUrl(){
-    if(lastRecordingUrl){
-      URL.revokeObjectURL(lastRecordingUrl);
-      lastRecordingUrl = null;
-    }
-  }
-
-  function fillSelect(select, devices, name){
-    const oldValue = select.value;
-    select.replaceChildren();
-
-    if(!devices.length){
-      select.add(new Option(`(Không có ${name})`, ""));
-      return;
+    function setStatus(text, type = "") {
+      status.textContent = text;
+      status.className = "status " + type;
     }
 
-    devices.forEach((device, index) => {
-      select.add(new Option(
-        device.label || `${name} ${index + 1}`,
-        device.deviceId
-      ));
-    });
+    function formatTime(seconds) {
+      const total = Math.max(0, Math.floor(seconds || 0));
+      const minutes = Math.floor(total / 60);
+      const remain = total % 60;
 
-    if([...select.options].some(option => option.value === oldValue)){
-      select.value = oldValue;
-    }
-  }
-
-  async function updateDeviceList(){
-    try{
-      const devices = await navigator.mediaDevices.enumerateDevices();
-
-      fillSelect(
-        cameraSelect,
-        devices.filter(device => device.kind === "videoinput"),
-        "Camera"
-      );
-
-      fillSelect(
-        micSelect,
-        devices.filter(device => device.kind === "audioinput"),
-        "Micro"
-      );
-    }catch(error){
-      console.warn("Không thể liệt kê thiết bị:", error);
-    }
-  }
-
-  function getAudioConstraints(){
-    const audio = {
-      channelCount:{ideal:1},
-      echoCancellation:{ideal:true},
-      noiseSuppression:{ideal:true},
-      autoGainControl:{ideal:true}
-    };
-
-    if(micSelect.value){
-      audio.deviceId = {exact:micSelect.value};
+      return minutes + ":" + String(remain).padStart(2, "0");
     }
 
-    return audio;
-  }
-
-  function getVideoConstraints(){
-    if(cameraSelect.value){
-      return {
-        deviceId:{exact:cameraSelect.value},
-        width:{ideal:1920},
-        height:{ideal:1080}
-      };
+    function cleanName(name) {
+      return String(name || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "");
     }
 
-    return {
-      facingMode:"user",
-      width:{ideal:1920},
-      height:{ideal:1080}
-    };
-  }
+    function getTrackInstrument(track) {
+      if (track.channel === 9 || track.instrument?.percussion) {
+        return "percussion";
+      }
 
-  async function resumeContext(context){
-    if(context?.state === "suspended"){
-      await context.resume();
-    }
-  }
+      const name = cleanName(track.instrument?.name);
 
-  function resetPreviewMeter(){
-    if(previewRafId){
-      cancelAnimationFrame(previewRafId);
-      previewRafId = null;
+      return name || "acoustic_grand_piano";
     }
 
-    try{ previewSource?.disconnect(); }catch{}
-    try{ previewAnalyser?.disconnect(); }catch{}
+    async function ensureAudioContext() {
+      const AudioContextClass =
+        window.AudioContext || window.webkitAudioContext;
 
-    previewSource = null;
-    previewAnalyser = null;
+      if (!AudioContextClass) {
+        throw new Error("Trình duyệt này không hỗ trợ Web Audio.");
+      }
 
-    safeClose(previewAudioContext);
-    previewAudioContext = null;
+      if (!audioContext) {
+        audioContext = new AudioContextClass();
+      }
 
-    meterLevel.style.width = "0%";
-    levelDb.textContent = "— dB";
-  }
-
-  function updateMeter(analyser, levelElement, dbElement){
-    const data = new Uint8Array(analyser.fftSize);
-    analyser.getByteTimeDomainData(data);
-
-    let sum = 0;
-
-    for(const value of data){
-      const sample = (value - 128) / 128;
-      sum += sample * sample;
+      if (audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
     }
 
-    const rms = Math.sqrt(sum / data.length);
-    const db = 20 * Math.log10(rms || 1e-8);
+    async function loadInstrument(name) {
+      if (loadedInstruments.has(name)) {
+        return loadedInstruments.get(name);
+      }
 
-    const minDb = -60;
-    const percent = Math.max(
-      0,
-      Math.min(100, ((db - minDb) / -minDb) * 100)
-    );
+      const promise = Soundfont.instrument(audioContext, name, {
+        soundfont: "MusyngKite"
+      }).catch(async () => {
+        if (name !== "acoustic_grand_piano") {
+          return Soundfont.instrument(audioContext, "acoustic_grand_piano", {
+            soundfont: "MusyngKite"
+          });
+        }
 
-    levelElement.style.width = percent + "%";
-    dbElement.textContent = db <= -60 ? "≤ -60 dB" : db.toFixed(1) + " dB";
-  }
-
-  async function setupPreviewMeter(stream){
-    resetPreviewMeter();
-
-    const audioTracks = stream.getAudioTracks();
-    if(!audioTracks.length) return;
-
-    try{
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      previewAudioContext = new AudioContextClass();
-
-      await resumeContext(previewAudioContext);
-
-      previewSource = previewAudioContext.createMediaStreamSource(
-        new MediaStream(audioTracks)
-      );
-
-      previewAnalyser = previewAudioContext.createAnalyser();
-      previewAnalyser.fftSize = 2048;
-      previewAnalyser.smoothingTimeConstant = 0.8;
-
-      previewSource.connect(previewAnalyser);
-
-      const update = () => {
-        if(!previewAnalyser) return;
-
-        updateMeter(previewAnalyser, meterLevel, levelDb);
-        previewRafId = requestAnimationFrame(update);
-      };
-
-      update();
-    }catch(error){
-      console.warn("Không thể tạo meter preview:", error);
-      resetPreviewMeter();
-    }
-  }
-
-  function updateCaptureButton(){
-    const ready =
-      !!currentStream &&
-      videoPreview.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
-      videoPreview.videoWidth > 0 &&
-      videoPreview.videoHeight > 0;
-
-    captureBtn.disabled = !ready;
-  }
-
-  function hidePhoto(){
-    revokePhotoUrl();
-
-    photoCanvas.style.display = "none";
-    photoImg.style.display = "none";
-    downloadPhotoBtn.style.display = "none";
-    photoImg.removeAttribute("src");
-    downloadPhotoBtn.removeAttribute("href");
-  }
-
-  function cleanupPreview(){
-    stopTracks(currentStream);
-    currentStream = null;
-
-    videoPreview.pause();
-    videoPreview.srcObject = null;
-
-    resetPreviewMeter();
-
-    stopPreviewBtn.disabled = true;
-    startPreviewBtn.disabled = false;
-
-    updateCaptureButton();
-  }
-
-  async function startPreview(){
-    const token = ++previewToken;
-
-    cleanupPreview();
-    hidePhoto();
-
-    startPreviewBtn.disabled = true;
-
-    try{
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video:getVideoConstraints(),
-        audio:getAudioConstraints()
+        throw new Error("Không thể tải tiếng nhạc cụ.");
       });
 
-      if(token !== previewToken){
-        stopTracks(stream);
-        return;
-      }
-
-      currentStream = stream;
-      videoPreview.srcObject = stream;
-      videoPreview.muted = true;
-
-      await videoPreview.play().catch(() => {});
-
-      if(token !== previewToken){
-        cleanupPreview();
-        return;
-      }
-
-      const videoTrack = stream.getVideoTracks()[0];
-      const audioTrack = stream.getAudioTracks()[0];
-
-      if(videoTrack?.getSettings?.().deviceId){
-        cameraSelect.value = videoTrack.getSettings().deviceId;
-      }
-
-      if(audioTrack?.getSettings?.().deviceId){
-        micSelect.value = audioTrack.getSettings().deviceId;
-      }
-
-      stopPreviewBtn.disabled = false;
-      startPreviewBtn.disabled = true;
-
-      await setupPreviewMeter(stream);
-      await updateDeviceList();
-
-      updateCaptureButton();
-    }catch(error){
-      if(token !== previewToken) return;
-
-      console.error(error);
-      cleanupPreview();
-
-      alert(
-        "Không thể bật preview camera và micro: " +
-        (error.message || error.name)
-      );
-    }
-  }
-
-  function stopPreview(){
-    previewToken++;
-    cleanupPreview();
-    hidePhoto();
-  }
-
-  function encodeWAV(samples, sampleRate){
-    const buffer = new ArrayBuffer(44 + samples.length * 2);
-    const view = new DataView(buffer);
-
-    const writeString = (offset, text) => {
-      for(let i = 0; i < text.length; i++){
-        view.setUint8(offset + i, text.charCodeAt(i));
-      }
-    };
-
-    writeString(0, "RIFF");
-    view.setUint32(4, 36 + samples.length * 2, true);
-    writeString(8, "WAVE");
-    writeString(12, "fmt ");
-
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, 1, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * 2, true);
-    view.setUint16(32, 2, true);
-    view.setUint16(34, 16, true);
-
-    writeString(36, "data");
-    view.setUint32(40, samples.length * 2, true);
-
-    let offset = 44;
-
-    for(let i = 0; i < samples.length; i++, offset += 2){
-      const sample = Math.max(-1, Math.min(1, samples[i]));
-      view.setInt16(
-        offset,
-        sample < 0 ? sample * 0x8000 : sample * 0x7fff,
-        true
-      );
+      loadedInstruments.set(name, promise);
+      return promise;
     }
 
-    return new Blob([buffer], {type:"audio/wav"});
-  }
-
-  function mergeBuffers(chunks){
-    const length = chunks.reduce((total, chunk) => total + chunk.length, 0);
-    const merged = new Float32Array(length);
-
-    let offset = 0;
-
-    for(const chunk of chunks){
-      merged.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    return merged;
-  }
-
-  function resetRecordingMeter(){
-    recMeterLevel.style.width = "0%";
-    recLevelDb.textContent = "— dB";
-  }
-
-  function updateRecordingTimer(){
-    const seconds = Math.floor((Date.now() - recordingStart) / 1000);
-    const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
-    const remain = String(seconds % 60).padStart(2, "0");
-
-    recTimer.textContent = `${minutes}:${remain}`;
-  }
-
-  function stopRecording(invalidate = true){
-    if(invalidate) recordingToken++;
-
-    if(recordingController?.state === "recording"){
-      recordingController.stop();
-    }
-
-    recordingController = null;
-
-    if(recordingTimerId){
-      clearInterval(recordingTimerId);
-      recordingTimerId = null;
-    }
-
-    startRecBtn.disabled = false;
-    stopRecBtn.disabled = true;
-
-    resetRecordingMeter();
-  }
-
-  async function startRecording(){
-    const token = ++recordingToken;
-
-    stopRecording(false);
-    setDownloadDisabled(true);
-
-    startRecBtn.disabled = true;
-    stopRecBtn.disabled = true;
-    playRecBtn.disabled = true;
-    recTimer.textContent = "00:00";
-
-    let stream = null;
-    let ownsStream = false;
-
-    try{
-      /*
-        Nếu preview đang bật thì dùng luôn audio track hiện có.
-        Nhờ vậy Safari/iPhone không cần mở micro lần thứ hai.
-      */
-      const previewAudioTrack = currentStream?.getAudioTracks()[0];
-
-      if(previewAudioTrack){
-        stream = new MediaStream([previewAudioTrack]);
-      }else{
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio:getAudioConstraints()
+    function stopAllSounds() {
+      for (const instrument of loadedInstruments.values()) {
+        instrument.then(player => {
+          try {
+            player.stop();
+          } catch {}
         });
+      }
+    }
 
-        ownsStream = true;
+    function getCurrentTime() {
+      if (!midi) return 0;
+
+      if (!playing || !audioContext) {
+        return Math.min(pausedAt, midi.duration);
       }
 
-      if(token !== recordingToken){
-        if(ownsStream) stopTracks(stream);
-        return;
-      }
-
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      const audioContext = new AudioContextClass();
-
-      await resumeContext(audioContext);
-
-      if(token !== recordingToken){
-        safeClose(audioContext);
-        if(ownsStream) stopTracks(stream);
-        return;
-      }
-
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-
-      analyser.fftSize = 2048;
-      analyser.smoothingTimeConstant = 0.8;
-
-      /*
-        Ghi mono: nhỏ gọn hơn, phù hợp test micro/giọng nói.
-        ScriptProcessor vẫn được dùng để lấy PCM trực tiếp và xuất WAV.
-      */
-      const processor = audioContext.createScriptProcessor(4096, 1, 1);
-      const silentGain = audioContext.createGain();
-
-      silentGain.gain.value = 0;
-
-      const chunks = [];
-      let meterRafId = null;
-      let stopped = false;
-
-      source.connect(analyser);
-      source.connect(processor);
-      processor.connect(silentGain);
-      silentGain.connect(audioContext.destination);
-
-      processor.onaudioprocess = event => {
-        const input = event.inputBuffer.getChannelData(0);
-        chunks.push(new Float32Array(input));
-      };
-
-      const updateMeterLoop = () => {
-        if(stopped) return;
-
-        updateMeter(analyser, recMeterLevel, recLevelDb);
-        meterRafId = requestAnimationFrame(updateMeterLoop);
-      };
-
-      updateMeterLoop();
-
-      recordingController = {
-        state:"recording",
-
-        stop(){
-          if(stopped) return;
-          stopped = true;
-
-          if(meterRafId) cancelAnimationFrame(meterRafId);
-
-          try{ source.disconnect(); }catch{}
-          try{ analyser.disconnect(); }catch{}
-          try{ processor.disconnect(); }catch{}
-          try{ silentGain.disconnect(); }catch{}
-
-          safeClose(audioContext);
-
-          if(ownsStream) stopTracks(stream);
-
-          const samples = mergeBuffers(chunks);
-
-          if(samples.length > 0){
-            const wavBlob = encodeWAV(samples, audioContext.sampleRate);
-
-            revokeRecordingUrl();
-
-            const url = URL.createObjectURL(wavBlob);
-            lastRecordingUrl = url;
-
-            playback.src = url;
-            downloadLink.href = url;
-            downloadLink.download = "recording.wav";
-
-            playRecBtn.disabled = false;
-            setDownloadDisabled(false);
-          }
-
-          resetRecordingMeter();
-        }
-      };
-
-      recordingStart = Date.now();
-
-      startRecBtn.disabled = true;
-      stopRecBtn.disabled = false;
-
-      recordingTimerId = setInterval(updateRecordingTimer, 250);
-    }catch(error){
-      if(token !== recordingToken) return;
-
-      console.error(error);
-
-      startRecBtn.disabled = false;
-      stopRecBtn.disabled = true;
-      playRecBtn.disabled = !playback.src;
-
-      resetRecordingMeter();
-      setDownloadDisabled(!playback.src);
-
-      alert(
-        "Không thể truy cập micro để ghi âm: " +
-        (error.message || error.name)
+      return Math.min(
+        audioContext.currentTime - startedAt,
+        midi.duration
       );
     }
-  }
 
-  function getCurrentDatetimeString(){
-    const now = new Date();
-    const pad = value => String(value).padStart(2, "0");
+    function updatePlayer() {
+      if (!midi) return;
 
-    return [
-      pad(now.getHours()) + ":" + pad(now.getMinutes()),
-      pad(now.getDate()) + "-" + pad(now.getMonth() + 1) + "-" + now.getFullYear()
-    ].join(" ");
-  }
+      const current = getCurrentTime();
+      const duration = midi.duration || 0;
 
-  function roundRect(ctx, x, y, width, height, radius){
-    ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + width - radius, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-    ctx.lineTo(x + width, y + height - radius);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-    ctx.lineTo(x + radius, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-    ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
-    ctx.closePath();
-  }
+      seekBar.value = duration
+        ? Math.round(current / duration * 1000)
+        : 0;
 
-  function capturePhoto(){
-    if(captureBtn.disabled) return;
+      timeText.textContent =
+        formatTime(current) + " / " + formatTime(duration);
 
-    const width = videoPreview.videoWidth;
-    const height = videoPreview.videoHeight;
-
-    if(!width || !height){
-      alert("Video chưa sẵn sàng để chụp. Hãy đợi một lát rồi thử lại.");
-      return;
+      if (playing) {
+        animationFrame = requestAnimationFrame(updatePlayer);
+      }
     }
 
-    photoCanvas.width = width;
-    photoCanvas.height = height;
+    async function play() {
+      if (!midi) return;
 
-    const ctx = photoCanvas.getContext("2d");
-    ctx.drawImage(videoPreview, 0, 0, width, height);
+      await ensureAudioContext();
 
-    const text1 = "Created by Minh Nhut";
-    const text2 = getCurrentDatetimeString();
-
-    ctx.save();
-    ctx.font = "bold 36px Segoe UI, Arial, sans-serif";
-    ctx.textBaseline = "bottom";
-    ctx.textAlign = "right";
-
-    const padding = 20;
-    const lineGap = 12;
-    const textHeight = 44;
-    const totalHeight = textHeight * 2 + lineGap + 16;
-
-    const textWidth = Math.max(
-      ctx.measureText(text1).width,
-      ctx.measureText(text2).width
-    );
-
-    const boxWidth = textWidth + padding * 2;
-    const boxX = width - boxWidth - 16;
-    const boxY = height - totalHeight - 16;
-
-    ctx.globalAlpha = .5;
-    ctx.fillStyle = "#e65100";
-    roundRect(ctx, boxX, boxY, boxWidth, totalHeight, 20);
-    ctx.fill();
-
-    ctx.globalAlpha = 1;
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = "#e65100";
-    ctx.fillStyle = "#fff";
-
-    ctx.strokeText(text1, width - padding - 16, height - totalHeight / 2 - lineGap / 2);
-    ctx.fillText(text1, width - padding - 16, height - totalHeight / 2 - lineGap / 2);
-
-    ctx.strokeText(text2, width - padding - 16, height - 24);
-    ctx.fillText(text2, width - padding - 16, height - 24);
-
-    ctx.restore();
-
-    photoCanvas.toBlob(blob => {
-      if(!blob){
-        alert("Không thể tạo ảnh. Hãy thử chụp lại.");
-        return;
+      if (pausedAt >= midi.duration - 0.05) {
+        pausedAt = 0;
       }
 
-      revokePhotoUrl();
+      stopAllSounds();
 
-      const url = URL.createObjectURL(blob);
-      lastPhotoUrl = url;
+      const currentPosition = pausedAt;
+      startedAt = audioContext.currentTime - currentPosition;
+      playing = true;
 
-      photoImg.src = url;
-      photoImg.style.display = "block";
+      playButton.textContent = "❚❚ Dừng";
 
-      downloadPhotoBtn.href = url;
-      downloadPhotoBtn.style.display = "inline-block";
+      const tracks = midi.tracks.filter(track => track.notes.length);
 
-      photoCanvas.style.display = "none";
+      setStatus("Đang chuẩn bị tiếng nhạc cụ…");
+
+      const players = await Promise.all(
+        tracks.map(track => loadInstrument(getTrackInstrument(track)))
+      );
+
+      if (!playing) return;
+
+      const now = audioContext.currentTime;
+
+      tracks.forEach((track, trackIndex) => {
+        const player = players[trackIndex];
+        const isDrum = getTrackInstrument(track) === "percussion";
+
+        track.notes.forEach(note => {
+          if (note.time + note.duration <= currentPosition) return;
+
+          const startOffset = Math.max(0, note.time - currentPosition);
+          const remainingDuration =
+            note.duration - Math.max(0, currentPosition - note.time);
+
+          if (remainingDuration <= 0) return;
+
+          player.start(
+            now + startOffset,
+            note.midi,
+            remainingDuration,
+            {
+              gain: Math.max(0.02, note.velocity || 0.7),
+              percussion: isDrum
+            }
+          );
+        });
+      });
+
+      setStatus("Đang phát MIDI.", "good");
+      updatePlayer();
+
+      const remaining = Math.max(0, midi.duration - currentPosition);
 
       setTimeout(() => {
-        $("photoBlock").scrollIntoView({
-          behavior:"smooth",
-          block:"nearest"
-        });
-      }, 100);
-    }, "image/png");
-  }
+        if (!playing) return;
 
-  function enterFullscreen(){
-    if(videoContainer.requestFullscreen){
-      videoContainer.requestFullscreen().catch(() => {});
-      return;
+        playing = false;
+        pausedAt = 0;
+        playButton.textContent = "▶ Phát";
+        updatePlayer();
+        setStatus("Phát xong.", "good");
+      }, remaining * 1000 + 120);
     }
 
-    /*
-      Safari iPhone thường hỗ trợ fullscreen tốt nhất
-      trực tiếp trên phần tử video.
-    */
-    if(videoPreview.webkitEnterFullscreen){
-      videoPreview.webkitEnterFullscreen();
-      return;
+    function pause() {
+      if (!playing) return;
+
+      pausedAt = getCurrentTime();
+      playing = false;
+
+      stopAllSounds();
+      cancelAnimationFrame(animationFrame);
+
+      playButton.textContent = "▶ Phát";
+      updatePlayer();
+
+      setStatus("Đã tạm dừng.");
     }
 
-    if(videoContainer.webkitRequestFullscreen){
-      videoContainer.webkitRequestFullscreen();
-    }
-  }
+    function seekTo(time) {
+      if (!midi) return;
 
-  function exitFullscreen(){
-    if(document.exitFullscreen){
-      document.exitFullscreen().catch(() => {});
-      return;
-    }
+      pausedAt = Math.max(0, Math.min(time, midi.duration));
 
-    if(document.webkitExitFullscreen){
-      document.webkitExitFullscreen();
-    }
-  }
-
-  function handleFullscreenChange(){
-    const full =
-      document.fullscreenElement === videoContainer ||
-      document.webkitFullscreenElement === videoContainer ||
-      document.msFullscreenElement === videoContainer;
-
-    isFullscreen = full;
-    videoContainer.classList.toggle("fullscreen", full);
-    fullscreenBtn.title = full ? "Thoát toàn màn hình" : "Toàn màn hình video";
-  }
-
-  startPreviewBtn.addEventListener("click", startPreview);
-  stopPreviewBtn.addEventListener("click", stopPreview);
-
-  startRecBtn.addEventListener("click", startRecording);
-  stopRecBtn.addEventListener("click", () => stopRecording());
-
-  playRecBtn.addEventListener("click", () => {
-    playback.play().catch(() => {});
-  });
-
-  captureBtn.addEventListener("click", capturePhoto);
-
-  photoImg.addEventListener("click", () => {
-    if(photoImg.src) window.open(photoImg.src, "_blank", "noopener");
-  });
-
-  cameraSelect.addEventListener("change", () => {
-    hidePhoto();
-    if(currentStream) startPreview();
-  });
-
-  micSelect.addEventListener("change", () => {
-    if(recordingController?.state === "recording"){
-      stopRecording();
+      if (playing) {
+        pause();
+        play();
+      } else {
+        updatePlayer();
+      }
     }
 
-    if(currentStream) startPreview();
-  });
+    function renderTracks() {
+      trackList.innerHTML = "";
 
-  videoPreview.addEventListener("loadeddata", updateCaptureButton);
-  videoPreview.addEventListener("canplay", updateCaptureButton);
-  videoPreview.addEventListener("emptied", updateCaptureButton);
+      const activeTracks = midi.tracks.filter(track => track.notes.length);
 
-  fullscreenBtn.addEventListener("click", () => {
-    if(isFullscreen) exitFullscreen();
-    else enterFullscreen();
-  });
+      activeTracks.forEach((track, index) => {
+        const row = document.createElement("div");
+        row.className = "track";
 
-  document.addEventListener("fullscreenchange", handleFullscreenChange);
-  document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
-  document.addEventListener("msfullscreenchange", handleFullscreenChange);
+        const name = document.createElement("div");
+        name.className = "track-name";
+        name.textContent =
+          track.name ||
+          "Track " + (index + 1);
 
-  navigator.mediaDevices.addEventListener?.("devicechange", updateDeviceList);
+        const instrument = document.createElement("div");
+        instrument.className = "instrument";
 
-  window.addEventListener("pagehide", () => {
-    stopPreview();
-    stopRecording();
-    revokePhotoUrl();
-    revokeRecordingUrl();
-  });
+        const isDrum =
+          track.channel === 9 ||
+          track.instrument?.percussion;
 
-  window.addEventListener("beforeunload", () => {
-    stopPreview();
-    stopRecording();
-  });
+        instrument.textContent = isDrum
+          ? "🥁 Trống"
+          : "🎹 " + (track.instrument?.name || "Piano");
 
-  setDownloadDisabled(true);
-  updateCaptureButton();
-  await updateDeviceList();
-})();
-</script>
+        row.append(name, instrument);
+        trackList.appendChild(row);
+      });
+    }
+
+    midiFile.addEventListener("change", async () => {
+      const file = midiFile.files[0];
+      if (!file) return;
+
+      const id = ++loadId;
+
+      pause();
+      stopAllSounds();
+
+      midi = null;
+      pausedAt = 0;
+      loadedInstruments.clear();
+
+      playerPanel.classList.add("hidden");
+      trackPanel.classList.add("hidden");
+
+      setStatus("Đang đọc file MIDI…");
+
+      try {
+        const data = await file.arrayBuffer();
+
+        if (id !== loadId) return;
+
+        midi = new Midi(data);
+
+        const trackCount = midi.tracks.filter(track => track.notes.length).length;
+        const title =
+          midi.header.name ||
+          file.name.replace(/\.(mid|midi)$/i, "");
+
+        songName.textContent = title;
+        songInfo.textContent =
+          trackCount + " track • " + formatTime(midi.duration);
+
+        seekBar.value = 0;
+        timeText.textContent =
+          "0:00 / " + formatTime(midi.duration);
+
+        renderTracks();
+
+        playerPanel.classList.remove("hidden");
+        trackPanel.classList.remove("hidden");
+
+        setStatus(
+          "Đã tải MIDI. Nhấn Phát để bắt đầu và cho phép âm thanh trên thiết bị.",
+          "good"
+        );
+      } catch (error) {
+        console.error(error);
+
+        setStatus(
+          "Không thể đọc file này. Hãy thử một file .mid hoặc .midi khác.",
+          "error"
+        );
+      }
+
+      midiFile.value = "";
+    });
+
+    playButton.addEventListener("click", async () => {
+      try {
+        if (playing) {
+          pause();
+        } else {
+          await play();
+        }
+      } catch (error) {
+        console.error(error);
+
+        playing = false;
+        playButton.textContent = "▶ Phát";
+
+        setStatus(
+          "Không thể phát âm thanh. Hãy thử chạm lại nút Phát hoặc mở bằng Safari/Chrome mới hơn.",
+          "error"
+        );
+      }
+    });
+
+    backBtn.addEventListener("click", () => {
+      seekTo(getCurrentTime() - 5);
+    });
+
+    forwardBtn.addEventListener("click", () => {
+      seekTo(getCurrentTime() + 5);
+    });
+
+    seekBar.addEventListener("input", () => {
+      if (!midi) return;
+
+      pausedAt = Number(seekBar.value) / 1000 * midi.duration;
+      updatePlayer();
+    });
+
+    seekBar.addEventListener("change", () => {
+      if (!midi) return;
+
+      seekTo(Number(seekBar.value) / 1000 * midi.duration);
+    });
+
+    window.addEventListener("pagehide", () => {
+      pause();
+      stopAllSounds();
+    });
+  </script>
 </body>
 </html>
