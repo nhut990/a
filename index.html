@@ -2,714 +2,418 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport"
-    content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-  <title>Trình phát MIDI</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+  <title>HTML Tester</title>
+
+  <!-- CodeMirror: giao diện và tô màu cú pháp -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"
+  >
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css"
+  >
 
   <style>
-    :root{
-      --bg:#0c1119;
-      --surface:#151d29;
-      --card:#1c2635;
-      --line:#334154;
-      --text:#edf3fb;
-      --muted:#9baabd;
-      --blue:#86b9ed;
-      --green:#8ce0ab;
-      --red:#ffb1ba;
+    :root {
+      --bg: #171717;
+      --panel: #202020;
+      --toolbar: #252525;
+      --line: #363636;
+      --text: #e6e6e6;
+      --muted: #9b9b9b;
+      --blue: #1684ff;
+      --green: #16b55d;
+      --red: #e45454;
     }
 
-    *{
-      box-sizing:border-box;
-      -webkit-tap-highlight-color:transparent;
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    body{
-      min-height:100vh;
-      min-height:100dvh;
-      margin:0;
-      padding:22px 14px 40px;
-      color:var(--text);
-      background:
-        radial-gradient(circle at top,#223b5a 0%,#111a27 38%,var(--bg) 75%);
-      font-family:Arial,Helvetica,sans-serif;
+    body {
+      margin: 0;
+      overflow: hidden;
+      color: var(--text);
+      background: var(--bg);
+      font-family: Arial, Helvetica, sans-serif;
     }
 
-    .app{
-      width:100%;
-      max-width:680px;
-      margin:auto;
+    .container {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
     }
 
-    header{
-      margin-bottom:19px;
-      text-align:center;
+    .pane {
+      display: flex;
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      flex-direction: column;
+      background: var(--panel);
     }
 
-    h1{
-      margin:0;
-      font-size:25px;
+    .pane-left {
+      border-right: 1px solid #444;
     }
 
-    .subtitle{
-      margin:8px 0 0;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.55;
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 56px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line);
+      background: var(--toolbar);
     }
 
-    .card{
-      margin-top:14px;
-      padding:15px;
-      border:1px solid var(--line);
-      border-radius:17px;
-      background:rgba(21,29,41,.94);
-      box-shadow:0 12px 30px rgba(0,0,0,.22);
+    .toolbar h1 {
+      flex: 1;
+      margin: 0;
+      overflow: hidden;
+      color: #ddd;
+      font-size: 17px;
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .file-label,
-    button{
-      border:none;
-      font:inherit;
-      cursor:pointer;
-      touch-action:manipulation;
+    .shortcut {
+      color: #888;
+      font-size: 11px;
+      white-space: nowrap;
     }
 
-    .file-label{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      min-height:64px;
-      padding:12px;
-      border:1px solid #729dcb;
-      border-radius:14px;
-      color:#f5f9ff;
-      background:linear-gradient(145deg,#4d7eaf,#294c72);
-      font-size:15px;
-      font-weight:700;
-      text-align:center;
+    button {
+      min-height: 36px;
+      padding: 8px 12px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: white;
+      font: inherit;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      touch-action: manipulation;
     }
 
-    .file-label:active,
-    button:active{
-      transform:translateY(2px);
-      filter:brightness(.92);
+    button:active {
+      transform: scale(.97);
     }
 
-    input[type=file]{
-      display:none;
+    .btn-run {
+      border-color: #1671d1;
+      background: #1679dc;
     }
 
-    .status{
-      margin-top:12px;
-      padding:12px;
-      border:1px solid #344456;
-      border-radius:11px;
-      color:var(--muted);
-      background:#101722;
-      font-size:13px;
-      line-height:1.55;
+    .btn-run:hover {
+      background: #0d68c2;
     }
 
-    .status.good{
-      border-color:#3c7250;
-      color:var(--green);
-      background:#12251b;
+    .btn-sample {
+      border-color: #535353;
+      background: #3a3a3a;
     }
 
-    .status.error{
-      border-color:#7c4650;
-      color:var(--red);
-      background:#29191e;
+    .btn-sample:hover {
+      background: #4a4a4a;
     }
 
-    .hidden{
-      display:none!important;
+    .btn-clear {
+      border-color: #b64040;
+      background: #c94646;
     }
 
-    .song-name{
-      overflow:hidden;
-      color:#fff;
-      font-size:19px;
-      font-weight:700;
-      text-overflow:ellipsis;
-      white-space:nowrap;
+    .btn-clear:hover {
+      background: #b33737;
     }
 
-    .song-info{
-      margin-top:6px;
-      color:var(--muted);
-      font-size:12px;
+    /* Vùng CodeMirror thay cho textarea */
+    .CodeMirror {
+      flex: 1;
+      width: 100%;
+      height: auto;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 16px;
+      line-height: 1.55;
     }
 
-    .time{
-      margin-top:13px;
-      color:#d8e6f4;
-      text-align:center;
-      font-size:13px;
-      font-weight:700;
+    .cm-s-material-darker.CodeMirror {
+      background: #202020;
     }
 
-    input[type=range]{
-      width:100%;
-      margin-top:14px;
-      accent-color:var(--blue);
+    .cm-s-material-darker .CodeMirror-gutters {
+      border-right: 1px solid #303030;
+      background: #1a1a1a;
     }
 
-    .controls{
-      display:grid;
-      grid-template-columns:72px 1fr 72px;
-      gap:10px;
-      margin-top:16px;
+    .cm-s-material-darker .CodeMirror-linenumber {
+      padding: 0 10px 0 5px;
+      color: #777;
     }
 
-    button{
-      min-height:48px;
-      border:1px solid #41546c;
-      border-radius:12px;
-      color:#deebf9;
-      background:#263547;
-      font-size:14px;
-      font-weight:700;
+    .cm-s-material-darker .CodeMirror-cursor {
+      border-left-color: #f0f0f0;
     }
 
-    #playButton{
-      border-color:#78a9da;
-      color:#fff;
-      background:linear-gradient(145deg,#548ac0,#315b87);
+    .cm-s-material-darker .CodeMirror-activeline-background {
+      background: rgba(255, 255, 255, .045);
     }
 
-    .section-title{
-      margin:0 0 10px;
-      color:#c5d1df;
-      font-size:12px;
-      font-weight:700;
-      letter-spacing:.08em;
-      text-transform:uppercase;
+    #preview {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: white;
     }
 
-    .track-list{
-      display:grid;
-      gap:8px;
+    .preview-title {
+      display: flex;
+      align-items: center;
+      min-height: 56px;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--line);
+      color: #d8d8d8;
+      background: var(--toolbar);
+      font-size: 15px;
+      font-weight: bold;
     }
 
-    .track{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding:11px 12px;
-      border:1px solid #344253;
-      border-radius:11px;
-      background:var(--card);
-      font-size:13px;
+    .preview-title span {
+      margin-left: 8px;
+      color: #888;
+      font-size: 12px;
+      font-weight: normal;
     }
 
-    .track-name{
-      overflow:hidden;
-      font-weight:700;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-    }
+    @media (max-width: 720px) {
+      body {
+        overflow: auto;
+      }
 
-    .instrument{
-      flex:none;
-      color:var(--blue);
-      font-size:11px;
-      text-align:right;
-    }
+      .container {
+        min-height: 100vh;
+        min-height: 100dvh;
+        flex-direction: column;
+      }
 
-    .notice{
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.65;
-    }
+      .pane {
+        flex: none;
+      }
 
-    .notice b{
-      color:#dce9f7;
-    }
+      .pane-left {
+        height: 58dvh;
+        min-height: 360px;
+        border-right: 0;
+        border-bottom: 2px solid #3a3a3a;
+      }
 
-    @media(max-width:420px){
-      .controls{
-        grid-template-columns:62px 1fr 62px;
+      .pane:not(.pane-left) {
+        height: 42dvh;
+        min-height: 280px;
+      }
+
+      .toolbar {
+        gap: 6px;
+        padding: 8px;
+      }
+
+      .toolbar h1 {
+        display: none;
+      }
+
+      .shortcut {
+        display: none;
+      }
+
+      button {
+        flex: 1;
+        min-height: 38px;
+        padding: 8px 7px;
+        font-size: 12px;
+      }
+
+      .CodeMirror {
+        font-size: 15px;
       }
     }
   </style>
 </head>
 
 <body>
-  <main class="app">
-    <header>
-      <h1>🎹 Trình phát MIDI</h1>
-      <p class="subtitle">Mở và phát file MIDI ngay trong trình duyệt.</p>
-    </header>
+  <main class="container">
 
-    <section class="card">
-      <label class="file-label" for="midiFile">
-        🎵 Chọn file MIDI (.mid / .midi)
-      </label>
+    <section class="pane pane-left">
+      <header class="toolbar">
+        <h1>HTML Tester</h1>
+        <span class="shortcut">Ctrl / Cmd + Enter để chạy</span>
 
-      <input id="midiFile" type="file"
-        accept=".mid,.midi,audio/midi,audio/x-midi">
+        <button class="btn-run" id="runButton" type="button">
+          ▶ Run
+        </button>
 
-      <div class="status" id="status">Chưa chọn file MIDI.</div>
+        <button class="btn-sample" id="sampleButton" type="button">
+          ↺ Mẫu
+        </button>
+
+        <button class="btn-clear" id="clearButton" type="button">
+          🗑 Xóa
+        </button>
+      </header>
+
+      <!-- Code mẫu sẽ được CodeMirror biến thành trình soạn thảo có màu -->
+      <textarea id="editor" spellcheck="false"><!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Trang thử nghiệm</title>
+
+  <style>
+    body {
+      display: grid;
+      min-height: 100vh;
+      margin: 0;
+      place-items: center;
+      color: white;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #1677ff, #7b35d8);
+    }
+
+    .card {
+      width: min(85%, 420px);
+      padding: 28px;
+      border-radius: 18px;
+      text-align: center;
+      background: rgba(255, 255, 255, .16);
+      box-shadow: 0 14px 35px rgba(0, 0, 0, .25);
+    }
+
+    button {
+      padding: 11px 16px;
+      border: 0;
+      border-radius: 9px;
+      color: #184b9a;
+      background: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card">
+    <h1>HTML Tester Online</h1>
+    <p>Viết code bên trái và bấm Run để xem kết quả.</p>
+    <button onclick="alert('Chào bạn!')">Bấm thử</button>
+  </main>
+</body>
+</html></textarea>
     </section>
 
-    <section class="card hidden" id="playerPanel">
-      <div class="song-name" id="songName">Tên bài MIDI</div>
-      <div class="song-info" id="songInfo">0 track • 0:00</div>
-
-      <input id="seekBar" type="range" min="0" max="1000" value="0">
-
-      <div class="time" id="timeText">0:00 / 0:00</div>
-
-      <div class="controls">
-        <button id="backBtn" type="button">−5 giây</button>
-        <button id="playButton" type="button">▶ Phát</button>
-        <button id="forwardBtn" type="button">+5 giây</button>
+    <section class="pane">
+      <div class="preview-title">
+        Xem trước
+        <span>Preview</span>
       </div>
+
+      <iframe
+        id="preview"
+        title="Khung xem trước HTML"
+        sandbox="allow-scripts"
+      ></iframe>
     </section>
 
-    <section class="card hidden" id="trackPanel">
-      <div class="section-title">Các track trong file</div>
-      <div class="track-list" id="trackList"></div>
-    </section>
-
-    <section class="card">
-      <div class="notice">
-        <b>Lưu ý:</b> MIDI là dữ liệu nốt nhạc, không phải âm thanh gốc.
-        Bản này tải SoundFont General MIDI để phát tiếng nhạc cụ. Cần có mạng
-        ở lần phát đầu để tải tiếng piano, bass, banjo, brass, trống…
-      </div>
-    </section>
   </main>
 
-  <script type="module">
-    import { Midi } from
-      "https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.28/+esm";
-
-    import Soundfont from
-      "https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/+esm";
-
-    const $ = id => document.getElementById(id);
-
-    const midiFile = $("midiFile");
-    const status = $("status");
-    const playerPanel = $("playerPanel");
-    const trackPanel = $("trackPanel");
-    const songName = $("songName");
-    const songInfo = $("songInfo");
-    const seekBar = $("seekBar");
-    const timeText = $("timeText");
-    const playButton = $("playButton");
-    const backBtn = $("backBtn");
-    const forwardBtn = $("forwardBtn");
-    const trackList = $("trackList");
-
-    let audioContext = null;
-    let midi = null;
-    let events = [];
-    let players = new Map();
-
-    let playing = false;
-    let pausedAt = 0;
-    let startedAt = 0;
-    let eventIndex = 0;
-    let timer = null;
-    let animationFrame = null;
-    let loadVersion = 0;
-
-    const LOOK_AHEAD = 0.35;
-    const TICK_MS = 80;
-
-    function setStatus(text, type = "") {
-      status.textContent = text;
-      status.className = "status " + type;
-    }
-
-    function formatTime(seconds) {
-      const total = Math.max(0, Math.floor(seconds || 0));
-      return Math.floor(total / 60) + ":" +
-        String(total % 60).padStart(2, "0");
-    }
-
-    function cleanName(name) {
-      return String(name || "")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "_")
-        .replace(/^_+|_+$/g, "");
-    }
-
-    function instrumentName(track) {
-      if (track.channel === 9 || track.instrument?.percussion) {
-        return "percussion";
-      }
-
-      return cleanName(track.instrument?.name) ||
-        "acoustic_grand_piano";
-    }
-
-    async function ensureAudio() {
-      const AudioContextClass =
-        window.AudioContext || window.webkitAudioContext;
-
-      if (!AudioContextClass) {
-        throw new Error("Trình duyệt không hỗ trợ Web Audio.");
-      }
-
-      if (!audioContext) {
-        audioContext = new AudioContextClass();
-      }
-
-      if (audioContext.state !== "running") {
-        await audioContext.resume();
-      }
-    }
-
-    async function getPlayer(name) {
-      if (players.has(name)) return players.get(name);
-
-      const promise = Soundfont.instrument(audioContext, name, {
-        soundfont: "MusyngKite"
-      }).catch(async () => {
-        if (name !== "acoustic_grand_piano") {
-          return Soundfont.instrument(
-            audioContext,
-            "acoustic_grand_piano",
-            { soundfont: "MusyngKite" }
-          );
-        }
-
-        throw new Error("Không thể tải SoundFont.");
-      });
-
-      players.set(name, promise);
-      return promise;
-    }
-
-    function stopSounds() {
-      players.forEach(promise => {
-        promise.then(player => {
-          try {
-            player.stop();
-          } catch {}
-        });
-      });
-    }
-
-    function getCurrentTime() {
-      if (!midi) return 0;
-
-      if (!playing || !audioContext) {
-        return Math.min(pausedAt, midi.duration);
-      }
-
-      return Math.min(
-        audioContext.currentTime - startedAt,
-        midi.duration
-      );
-    }
-
-    function updateUI() {
-      if (!midi) return;
-
-      const now = getCurrentTime();
-      const duration = midi.duration || 0;
-
-      seekBar.value = duration
-        ? Math.round(now / duration * 1000)
-        : 0;
-
-      timeText.textContent =
-        formatTime(now) + " / " + formatTime(duration);
-
-      if (playing) {
-        animationFrame = requestAnimationFrame(updateUI);
-      }
-    }
-
-    function findEventIndex(time) {
-      return events.findIndex(note =>
-        note.time + note.duration > time
-      );
-    }
-
-    function scheduleNotes() {
-      if (!playing || !midi || !audioContext) return;
-
-      const current = getCurrentTime();
-      const until = current + LOOK_AHEAD;
-
-      while (
-        eventIndex < events.length &&
-        events[eventIndex].time <= until
-      ) {
-        const note = events[eventIndex++];
-        const noteEnd = note.time + note.duration;
-
-        if (noteEnd <= current) continue;
-
-        const delay = Math.max(0, note.time - current);
-        const remaining = Math.max(
-          0.03,
-          noteEnd - Math.max(current, note.time)
-        );
-
-        getPlayer(note.instrument).then(player => {
-          if (!playing) return;
-
-          try {
-            player.start(
-              audioContext.currentTime + delay,
-              note.midi,
-              {
-                duration: remaining,
-                gain: Math.max(0.03, note.velocity || 0.7)
-              }
-            );
-          } catch (error) {
-            console.warn("Không phát được note MIDI:", error);
-          }
-        });
-      }
-
-      if (current >= midi.duration) {
-        finishPlayback();
-      }
-    }
-
-    function finishPlayback() {
-      playing = false;
-      pausedAt = 0;
-
-      clearInterval(timer);
-      cancelAnimationFrame(animationFrame);
-
-      playButton.textContent = "▶ Phát";
-      updateUI();
-      setStatus("Phát xong.", "good");
-    }
-
-    async function play() {
-      if (!midi || !events.length) return;
-
-      const version = ++loadVersion;
-
-      await ensureAudio();
-
-      if (pausedAt >= midi.duration - 0.05) {
-        pausedAt = 0;
-      }
-
-      setStatus("Đang tải tiếng nhạc cụ…");
-
-      const instruments = [...new Set(events.map(note => note.instrument))];
-      await Promise.all(instruments.map(getPlayer));
-
-      if (version !== loadVersion) return;
-
-      stopSounds();
-
-      eventIndex = findEventIndex(pausedAt);
-      if (eventIndex < 0) eventIndex = events.length;
-
-      startedAt = audioContext.currentTime - pausedAt;
-      playing = true;
-
-      playButton.textContent = "❚❚ Dừng";
-      setStatus("Đang phát MIDI.", "good");
-
-      scheduleNotes();
-      timer = setInterval(scheduleNotes, TICK_MS);
-      updateUI();
-    }
-
-    function pause() {
-      if (!playing) return;
-
-      pausedAt = getCurrentTime();
-      playing = false;
-      ++loadVersion;
-
-      clearInterval(timer);
-      cancelAnimationFrame(animationFrame);
-      stopSounds();
-
-      playButton.textContent = "▶ Phát";
-      updateUI();
-      setStatus("Đã tạm dừng.");
-    }
-
-    async function seekTo(time) {
-      if (!midi) return;
-
-      const wasPlaying = playing;
-
-      if (wasPlaying) pause();
-
-      pausedAt = Math.max(0, Math.min(time, midi.duration));
-      updateUI();
-
-      if (wasPlaying) {
-        await play();
-      }
-    }
-
-    function renderTracks() {
-      trackList.innerHTML = "";
-
-      const tracks = midi.tracks.filter(track => track.notes.length);
-
-      tracks.forEach((track, index) => {
-        const row = document.createElement("div");
-        row.className = "track";
-
-        const title = document.createElement("div");
-        title.className = "track-name";
-        title.textContent = track.name || "Track " + (index + 1);
-
-        const sound = document.createElement("div");
-        sound.className = "instrument";
-
-        const drum =
-          track.channel === 9 || track.instrument?.percussion;
-
-        sound.textContent = drum
-          ? "🥁 Trống"
-          : "🎹 " + (track.instrument?.name || "Piano");
-
-        row.append(title, sound);
-        trackList.appendChild(row);
-      });
-    }
-
-    function buildEvents() {
-      events = [];
-
-      midi.tracks.forEach(track => {
-        if (!track.notes.length) return;
-
-        const instrument = instrumentName(track);
-
-        track.notes.forEach(note => {
-          events.push({
-            time: note.time,
-            duration: note.duration,
-            midi: note.midi,
-            velocity: note.velocity,
-            instrument
-          });
-        });
-      });
-
-      events.sort((a, b) => a.time - b.time);
-    }
-
-    midiFile.addEventListener("change", async () => {
-      const file = midiFile.files[0];
-      if (!file) return;
-
-      pause();
-      stopSounds();
-
-      midi = null;
-      events = [];
-      players.clear();
-      pausedAt = 0;
-
-      playerPanel.classList.add("hidden");
-      trackPanel.classList.add("hidden");
-
-      setStatus("Đang đọc file MIDI…");
-
-      try {
-        const data = await file.arrayBuffer();
-        midi = new Midi(data);
-
-        buildEvents();
-
-        if (!events.length) {
-          throw new Error("File không có note MIDI.");
-        }
-
-        const tracks = midi.tracks.filter(track => track.notes.length);
-        const title = midi.header.name ||
-          file.name.replace(/\.(mid|midi)$/i, "");
-
-        songName.textContent = title;
-        songInfo.textContent =
-          tracks.length + " track • " + formatTime(midi.duration);
-
-        seekBar.value = 0;
-        timeText.textContent =
-          "0:00 / " + formatTime(midi.duration);
-
-        renderTracks();
-
-        playerPanel.classList.remove("hidden");
-        trackPanel.classList.remove("hidden");
-
-        setStatus(
-          "Đã tải MIDI. Nhấn Phát để tải tiếng nhạc cụ và bắt đầu.",
-          "good"
-        );
-      } catch (error) {
-        console.error(error);
-
-        setStatus(
-          "Không thể đọc file này hoặc file không có dữ liệu MIDI hợp lệ.",
-          "error"
-        );
-      }
-
-      midiFile.value = "";
+  <!-- CodeMirror và các mode để nhận diện HTML / CSS / JavaScript -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+
+  <script>
+    "use strict";
+
+    const STORAGE_KEY = "html-tester-code";
+    const textarea = document.getElementById("editor");
+    const preview = document.getElementById("preview");
+    const runButton = document.getElementById("runButton");
+    const clearButton = document.getElementById("clearButton");
+    const sampleButton = document.getElementById("sampleButton");
+
+    const sampleCode = textarea.value;
+
+    const editor = CodeMirror.fromTextArea(textarea, {
+      mode: "htmlmixed",
+      theme: "material-darker",
+      lineNumbers: true,
+      lineWrapping: true,
+      styleActiveLine: true,
+      indentUnit: 2,
+      tabSize: 2,
+      indentWithTabs: false,
+      autofocus: false
     });
 
-    playButton.addEventListener("click", async () => {
+    function runCode() {
+      preview.srcdoc = editor.getValue();
+    }
+
+    function clearCode() {
+      editor.setValue("");
+      preview.srcdoc = "";
+      editor.focus();
+    }
+
+    function restoreSample() {
+      editor.setValue(sampleCode);
+      runCode();
+      editor.focus();
+    }
+
+    function saveCode() {
       try {
-        if (playing) {
-          pause();
-        } else {
-          await play();
+        localStorage.setItem(STORAGE_KEY, editor.getValue());
+      } catch (error) {
+        console.warn("Không thể lưu code trên thiết bị.", error);
+      }
+    }
+
+    function loadSavedCode() {
+      try {
+        const savedCode = localStorage.getItem(STORAGE_KEY);
+
+        if (savedCode !== null) {
+          editor.setValue(savedCode);
         }
       } catch (error) {
-        console.error(error);
+        console.warn("Không thể đọc code đã lưu.", error);
+      }
+    }
 
-        playing = false;
-        playButton.textContent = "▶ Phát";
+    runButton.addEventListener("click", runCode);
+    clearButton.addEventListener("click", clearCode);
+    sampleButton.addEventListener("click", restoreSample);
 
-        setStatus(
-          "Không tải được tiếng nhạc cụ. Hãy kiểm tra mạng rồi thử lại.",
-          "error"
-        );
+    editor.on("change", saveCode);
+
+    editor.on("keydown", (instance, event) => {
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        runCode();
       }
     });
 
-    backBtn.addEventListener("click", () => {
-      seekTo(getCurrentTime() - 5);
-    });
-
-    forwardBtn.addEventListener("click", () => {
-      seekTo(getCurrentTime() + 5);
-    });
-
-    seekBar.addEventListener("input", () => {
-      if (!midi) return;
-
-      pausedAt = Number(seekBar.value) / 1000 * midi.duration;
-      updateUI();
-    });
-
-    seekBar.addEventListener("change", () => {
-      if (!midi) return;
-
-      seekTo(Number(seekBar.value) / 1000 * midi.duration);
-    });
-
-    window.addEventListener("pagehide", () => {
-      pause();
-      stopSounds();
-    });
+    loadSavedCode();
+    runCode();
   </script>
 </body>
 </html>
