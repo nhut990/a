@@ -2,418 +2,1259 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  >
-  <title>HTML Tester</title>
+  <meta name="viewport"
+    content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <title>NES Emulator</title>
 
-  <!-- CodeMirror: giao diện và tô màu cú pháp -->
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"
-  >
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css"
-  >
+  <script src="https://cdn.jsdelivr.net/npm/jsnes@1.2.1/dist/jsnes.js"></script>
 
   <style>
-    :root {
-      --bg: #171717;
-      --panel: #202020;
-      --toolbar: #252525;
-      --line: #363636;
-      --text: #e6e6e6;
-      --muted: #9b9b9b;
-      --blue: #1684ff;
-      --green: #16b55d;
-      --red: #e45454;
+    *{
+      box-sizing:border-box;
+      -webkit-tap-highlight-color:transparent;
+      -webkit-touch-callout:none;
+      -webkit-user-select:none;
+      user-select:none;
     }
 
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
+    :root{
+      --text:#eef3ff;
+      --muted:#9ba9ca;
+      --border:#3b4c73;
     }
 
-    body {
-      margin: 0;
-      overflow: hidden;
-      color: var(--text);
-      background: var(--bg);
-      font-family: Arial, Helvetica, sans-serif;
+    html,body{
+      overscroll-behavior:none;
     }
 
-    .container {
-      display: flex;
-      width: 100%;
-      height: 100vh;
-      height: 100dvh;
+    body{
+      margin:0;
+      width:100%;
+      height:100vh;
+      height:100dvh;
+      overflow:hidden;
+      color:var(--text);
+      font-family:Arial,Helvetica,sans-serif;
+      background:radial-gradient(circle at top,#293965 0%,#11192f 44%,#070b15 100%);
+      touch-action:none;
     }
 
-    .pane {
-      display: flex;
-      flex: 1;
-      min-width: 0;
-      min-height: 0;
-      flex-direction: column;
-      background: var(--panel);
+    .app{
+      position:relative;
+      width:min(100%,760px);
+      height:100vh;
+      height:100dvh;
+      margin:auto;
+      padding:12px 14px 20px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
     }
 
-    .pane-left {
-      border-right: 1px solid #444;
+    .header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex:none;
     }
 
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-height: 56px;
-      padding: 8px 12px;
-      border-bottom: 1px solid var(--line);
-      background: var(--toolbar);
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+      font-size:clamp(14px,3vw,18px);
+      font-weight:800;
+      letter-spacing:.5px;
     }
 
-    .toolbar h1 {
-      flex: 1;
-      margin: 0;
-      overflow: hidden;
-      color: #ddd;
-      font-size: 17px;
-      font-weight: 600;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .brand-icon{
+      display:grid;
+      place-items:center;
+      width:clamp(34px,7vw,40px);
+      height:clamp(23px,5vw,27px);
+      flex:none;
+      border:2px solid #fff;
+      border-radius:8px;
+      background:linear-gradient(145deg,#ff6578,#bc2447);
+      box-shadow:0 4px 10px rgba(0,0,0,.3);
+      font-size:clamp(10px,2vw,12px);
     }
 
-    .shortcut {
-      color: #888;
-      font-size: 11px;
-      white-space: nowrap;
+    .brand-name,.status{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
     }
 
-    button {
-      min-height: 36px;
-      padding: 8px 12px;
-      border: 1px solid transparent;
-      border-radius: 6px;
-      color: white;
-      font: inherit;
-      font-size: 13px;
-      font-weight: bold;
-      cursor: pointer;
-      touch-action: manipulation;
+    .status{
+      max-width:52%;
+      color:var(--muted);
+      font-size:clamp(10px,2vw,12px);
+      text-align:right;
     }
 
-    button:active {
-      transform: scale(.97);
+    .screen-box{
+      position:relative;
+      width:100%;
+      min-height:0;
+      max-height:42vh;
+      flex:1 1 auto;
+      overflow:hidden;
+      border:5px solid #394866;
+      border-radius:16px;
+      background:#000;
+      aspect-ratio:4 / 3;
+      box-shadow:0 15px 35px rgba(0,0,0,.4),inset 0 0 0 2px rgba(255,255,255,.05);
     }
 
-    .btn-run {
-      border-color: #1671d1;
-      background: #1679dc;
+    canvas{
+      display:block;
+      width:100%;
+      height:100%;
+      background:#000;
+      image-rendering:pixelated;
+      image-rendering:crisp-edges;
     }
 
-    .btn-run:hover {
-      background: #0d68c2;
+    .screen-message{
+      position:absolute;
+      inset:0;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding:24px;
+      text-align:center;
+      background:radial-gradient(circle,rgba(35,49,84,.92),rgba(5,8,16,.97));
     }
 
-    .btn-sample {
-      border-color: #535353;
-      background: #3a3a3a;
+    .screen-message strong{font-size:clamp(16px,4vw,20px)}
+    .screen-message span{
+      color:#b0bddc;
+      font-size:clamp(11px,2.5vw,13px);
+      line-height:1.5;
     }
 
-    .btn-sample:hover {
-      background: #4a4a4a;
+    .top-actions{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:8px;
+      flex:none;
     }
 
-    .btn-clear {
-      border-color: #b64040;
-      background: #c94646;
+    button{
+      min-height:clamp(38px,8vh,46px);
+      padding:0 8px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      color:var(--text);
+      background:linear-gradient(145deg,#293756,#151d31);
+      box-shadow:0 4px 0 #080c16,0 7px 14px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.12);
+      font:inherit;
+      font-size:clamp(11px,2.5vw,14px);
+      font-weight:700;
+      cursor:pointer;
+      white-space:nowrap;
+      touch-action:none;
     }
 
-    .btn-clear:hover {
-      background: #b33737;
+    button:active,.control.pressed,.middle.pressed{
+      transform:translateY(3px) scale(.98);
+      box-shadow:0 1px 0 #080c16,inset 0 2px 8px rgba(0,0,0,.42);
+      filter:brightness(.88);
     }
 
-    /* Vùng CodeMirror thay cho textarea */
-    .CodeMirror {
-      flex: 1;
-      width: 100%;
-      height: auto;
-      font-family: Consolas, "Courier New", monospace;
-      font-size: 16px;
-      line-height: 1.55;
+    .controls{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      min-height:0;
+      flex:1 1 auto;
+      padding:4px 2px 0;
     }
 
-    .cm-s-material-darker.CodeMirror {
-      background: #202020;
+    .dpad{
+      position:relative;
+      width:clamp(135px,29vw,150px);
+      height:clamp(135px,29vw,150px);
+      flex:none;
+      filter:drop-shadow(0 10px 12px rgba(0,0,0,.34));
     }
 
-    .cm-s-material-darker .CodeMirror-gutters {
-      border-right: 1px solid #303030;
-      background: #1a1a1a;
+    .control{
+      position:absolute;
+      display:grid;
+      place-items:center;
+      border:2px solid #566783;
+      color:#fff;
+      background:linear-gradient(145deg,#465875,#202b42);
+      box-shadow:0 5px 0 #0a0f1d,0 8px 14px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.16);
+      font-weight:900;
+      cursor:pointer;
+      touch-action:none;
     }
 
-    .cm-s-material-darker .CodeMirror-linenumber {
-      padding: 0 10px 0 5px;
-      color: #777;
+    .dpad .control{
+      z-index:2;
+      width:38%;
+      height:38%;
+      min-height:0;
+      padding:0;
+      border:2px solid #6f82a6;
+      border-radius:11px;
+      background:linear-gradient(145deg,#4e6387,#293954 46%,#18243b);
+      box-shadow:0 5px 0 #070d19,0 9px 15px rgba(0,0,0,.34),inset 0 2px 1px rgba(255,255,255,.2),inset 0 -3px 5px rgba(0,0,0,.25);
     }
 
-    .cm-s-material-darker .CodeMirror-cursor {
-      border-left-color: #f0f0f0;
+    .dpad .up{top:0;left:31%;border-radius:12px 12px 5px 5px}
+    .dpad .down{bottom:0;left:31%;border-radius:5px 5px 12px 12px}
+    .dpad .left{top:31%;left:0;border-radius:12px 5px 5px 12px}
+    .dpad .right{top:31%;right:0;border-radius:5px 12px 12px 5px}
+
+    .dpad-center{
+      position:absolute;
+      z-index:3;
+      top:31%;
+      left:31%;
+      width:38%;
+      height:38%;
+      border:2px solid #627695;
+      border-radius:5px;
+      pointer-events:none;
+      background:radial-gradient(circle at 35% 28%,#526786,#34445f 42%,#1a263c);
     }
 
-    .cm-s-material-darker .CodeMirror-activeline-background {
-      background: rgba(255, 255, 255, .045);
+    .dpad-arrow{
+      width:48%;
+      height:48%;
+      fill:#f5f8ff;
+      filter:drop-shadow(0 2px 1px rgba(0,0,0,.55));
     }
 
-    #preview {
-      width: 100%;
-      height: 100%;
-      border: 0;
-      background: white;
+    .dpad .control.pressed{
+      z-index:4;
+      border-color:#a9c7ff;
+      background:linear-gradient(145deg,#293b59,#172238);
+      box-shadow:0 2px 0 #070d19,inset 0 3px 8px rgba(0,0,0,.48),0 0 12px rgba(112,164,255,.3);
     }
 
-    .preview-title {
-      display: flex;
-      align-items: center;
-      min-height: 56px;
-      padding: 8px 14px;
-      border-bottom: 1px solid var(--line);
-      color: #d8d8d8;
-      background: var(--toolbar);
-      font-size: 15px;
-      font-weight: bold;
+    .right-controls{
+      display:flex;
+      align-items:center;
+      gap:clamp(10px,2.5vw,14px);
+      flex:none;
+      padding-right:2px;
     }
 
-    .preview-title span {
-      margin-left: 8px;
-      color: #888;
-      font-size: 12px;
-      font-weight: normal;
+    .round{
+      position:relative;
+      width:clamp(58px,14vw,68px);
+      height:clamp(58px,14vw,68px);
+      min-height:0;
+      padding:0;
+      border-radius:50%;
+      font-size:clamp(17px,5vw,24px);
+      background:linear-gradient(145deg,#ff7180,#bd2548);
+      border-color:#ff9eaa;
     }
 
-    @media (max-width: 720px) {
-      body {
-        overflow: auto;
+    .round.b{
+      margin-top:clamp(23px,5vw,31px);
+      background:linear-gradient(145deg,#6e9bff,#375fd7);
+      border-color:#a6bfff;
+    }
+
+    .round::after{
+      content:attr(data-label);
+      position:absolute;
+      top:calc(100% + 5px);
+      left:50%;
+      transform:translateX(-50%);
+      color:#c7d2ed;
+      font-size:clamp(9px,2.3vw,11px);
+      font-weight:800;
+    }
+
+    .middle-controls{
+      display:flex;
+      justify-content:center;
+      gap:12px;
+      flex:none;
+      margin-top:4px;
+    }
+
+    .middle{
+      position:relative;
+      min-width:clamp(70px,20vw,90px);
+      min-height:clamp(32px,7vh,38px);
+      padding:0 12px;
+      border-radius:20px;
+      color:#d5def5;
+      font-size:clamp(11px,2.5vw,13px);
+    }
+
+    .landscape-menu-button{
+      display:none;
+      position:fixed;
+      z-index:20;
+      top:max(10px,env(safe-area-inset-top));
+      right:max(12px,env(safe-area-inset-right));
+      width:38px;
+      min-height:38px;
+      padding:0;
+      border-radius:50%;
+      font-size:18px;
+    }
+
+    .game-modal{
+      position:fixed;
+      z-index:100;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      background:rgba(2,5,13,.75);
+      backdrop-filter:blur(7px);
+    }
+
+    .game-modal.show{display:flex}
+
+    .game-modal-card{
+      width:min(100%,455px);
+      max-height:calc(100dvh - 36px);
+      overflow:auto;
+      border:1px solid rgba(142,172,240,.42);
+      border-radius:19px;
+      background:linear-gradient(145deg,#26385f,#111a2e);
+    }
+
+    .game-modal-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:17px;
+      border-bottom:1px solid rgba(153,183,245,.2);
+    }
+
+    .game-modal-header strong{font-size:16px}
+    .game-modal-header span{
+      display:block;
+      margin-top:5px;
+      color:#aab9d8;
+      font-size:11px;
+    }
+
+    .close-game-modal{
+      width:36px;
+      min-height:36px;
+      padding:0;
+      border-radius:50%;
+      font-size:17px;
+    }
+
+    .game-list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding:14px;
+    }
+
+    .game-item{
+      display:flex;
+      align-items:center;
+      gap:13px;
+      width:100%;
+      min-height:70px;
+      padding:10px 12px;
+      border:1px solid rgba(143,178,248,.3);
+      border-radius:13px;
+      color:#eff4ff;
+      text-align:left;
+      background:linear-gradient(145deg,#334b78,#1a2742);
+    }
+
+    .local-game{background:linear-gradient(145deg,#576183,#2b3450)}
+
+    .game-icon,.game-cover{
+      width:43px;
+      height:43px;
+      flex:none;
+      border-radius:11px;
+    }
+
+    .game-icon{
+      display:grid;
+      place-items:center;
+      background:rgba(8,14,29,.42);
+      font-size:23px;
+    }
+
+    .game-cover{
+      object-fit:cover;
+      border:1px solid rgba(255,255,255,.18);
+      background:#0b1222;
+    }
+
+    .game-info{min-width:0}
+    .game-info strong,.game-info small{
+      display:block;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .game-info strong{font-size:14px}
+    .game-info small{
+      margin-top:5px;
+      color:#b5c4e1;
+      font-size:11px;
+    }
+
+    .game-ready{color:#8ff3b7!important}
+
+    @media (orientation:landscape) and (max-height:600px){
+      .app{
+        width:100%;
+        max-width:none;
+        height:100dvh;
+        padding:max(8px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));
+        display:grid;
+        grid-template-columns:minmax(105px,23vw) minmax(210px,4fr) minmax(105px,23vw);
+        grid-template-rows:minmax(0,1fr) auto;
+        align-items:center;
+        column-gap:clamp(10px,3vw,32px);
       }
 
-      .container {
-        min-height: 100vh;
-        min-height: 100dvh;
-        flex-direction: column;
+      .header,.top-actions{display:none}
+      .landscape-menu-button{display:grid;place-items:center}
+
+      .screen-box{
+        grid-column:2;
+        grid-row:1;
+        width:100%;
+        height:auto;
+        max-width:min(66vw,calc((100dvh - 65px) * 4 / 3));
+        max-height:calc(100dvh - 65px);
+        margin:auto;
+        border-width:4px;
       }
 
-      .pane {
-        flex: none;
+      .controls{display:contents}
+
+      .dpad{
+        grid-column:1;
+        grid-row:1;
+        justify-self:center;
+        width:clamp(105px,20vw,160px);
+        height:clamp(105px,20vw,160px);
+        transform:translateY(clamp(44px,10vh,62px));
       }
 
-      .pane-left {
-        height: 58dvh;
-        min-height: 360px;
-        border-right: 0;
-        border-bottom: 2px solid #3a3a3a;
+      .right-controls{
+        grid-column:3;
+        grid-row:1;
+        justify-self:center;
+        gap:clamp(7px,1.8vw,15px);
+        transform:translateY(clamp(44px,10vh,62px));
       }
 
-      .pane:not(.pane-left) {
-        height: 42dvh;
-        min-height: 280px;
+      .round{
+        width:clamp(55px,11vw,82px);
+        height:clamp(55px,11vw,82px);
       }
 
-      .toolbar {
-        gap: 6px;
-        padding: 8px;
+      .middle-controls{
+        grid-column:2;
+        grid-row:2;
+        margin:0;
+        transform:translateY(8px);
       }
 
-      .toolbar h1 {
-        display: none;
-      }
-
-      .shortcut {
-        display: none;
-      }
-
-      button {
-        flex: 1;
-        min-height: 38px;
-        padding: 8px 7px;
-        font-size: 12px;
-      }
-
-      .CodeMirror {
-        font-size: 15px;
+      .middle{
+        min-width:68px;
+        min-height:30px;
       }
     }
   </style>
 </head>
 
 <body>
-  <main class="container">
+  <div class="app">
+    <div class="header">
+      <div class="brand">
+        <div class="brand-icon">NES</div>
+        <span class="brand-name" id="gameTitle">SUPER MARIO BROS</span>
+      </div>
+      <div class="status" id="status">Đang chuẩn bị...</div>
+    </div>
 
-    <section class="pane pane-left">
-      <header class="toolbar">
-        <h1>HTML Tester</h1>
-        <span class="shortcut">Ctrl / Cmd + Enter để chạy</span>
+    <div class="screen-box">
+      <canvas id="screen" width="256" height="240"></canvas>
+      <div class="screen-message" id="screenMessage">
+        <strong>Đang tải Super Mario Bros</strong>
+        <span>Vui lòng chờ trong giây lát...</span>
+      </div>
+    </div>
 
-        <button class="btn-run" id="runButton" type="button">
-          ▶ Run
+    <div class="top-actions">
+      <button id="pauseButton">Tạm dừng</button>
+      <button id="soundButton">Âm thanh: Bật</button>
+      <button id="gameButton">Game khác</button>
+    </div>
+
+    <div class="controls">
+      <div class="dpad">
+        <button class="control up" data-key="UP" aria-label="Lên">
+          <svg class="dpad-arrow" viewBox="0 0 24 24"><path d="M12 4L4.5 12H9v8h6v-8h4.5L12 4z"/></svg>
         </button>
-
-        <button class="btn-sample" id="sampleButton" type="button">
-          ↺ Mẫu
+        <button class="control down" data-key="DOWN" aria-label="Xuống">
+          <svg class="dpad-arrow" viewBox="0 0 24 24"><path d="M12 20l7.5-8H15V4H9v8H4.5l7.5 8z"/></svg>
         </button>
-
-        <button class="btn-clear" id="clearButton" type="button">
-          🗑 Xóa
+        <button class="control left" data-key="LEFT" aria-label="Trái">
+          <svg class="dpad-arrow" viewBox="0 0 24 24"><path d="M4 12l8-7.5V9h8v6h-8v4.5L4 12z"/></svg>
         </button>
-      </header>
-
-      <!-- Code mẫu sẽ được CodeMirror biến thành trình soạn thảo có màu -->
-      <textarea id="editor" spellcheck="false"><!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <title>Trang thử nghiệm</title>
-
-  <style>
-    body {
-      display: grid;
-      min-height: 100vh;
-      margin: 0;
-      place-items: center;
-      color: white;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #1677ff, #7b35d8);
-    }
-
-    .card {
-      width: min(85%, 420px);
-      padding: 28px;
-      border-radius: 18px;
-      text-align: center;
-      background: rgba(255, 255, 255, .16);
-      box-shadow: 0 14px 35px rgba(0, 0, 0, .25);
-    }
-
-    button {
-      padding: 11px 16px;
-      border: 0;
-      border-radius: 9px;
-      color: #184b9a;
-      background: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-  </style>
-</head>
-
-<body>
-  <main class="card">
-    <h1>HTML Tester Online</h1>
-    <p>Viết code bên trái và bấm Run để xem kết quả.</p>
-    <button onclick="alert('Chào bạn!')">Bấm thử</button>
-  </main>
-</body>
-</html></textarea>
-    </section>
-
-    <section class="pane">
-      <div class="preview-title">
-        Xem trước
-        <span>Preview</span>
+        <button class="control right" data-key="RIGHT" aria-label="Phải">
+          <svg class="dpad-arrow" viewBox="0 0 24 24"><path d="M20 12l-8 7.5V15H4V9h8V4.5l8 7.5z"/></svg>
+        </button>
+        <div class="dpad-center"></div>
       </div>
 
-      <iframe
-        id="preview"
-        title="Khung xem trước HTML"
-        sandbox="allow-scripts"
-      ></iframe>
-    </section>
+      <div class="right-controls">
+        <button class="control round b" data-key="B" data-label="B">B</button>
+        <button class="control round a" data-key="A" data-label="A">A</button>
+      </div>
+    </div>
 
-  </main>
+    <div class="middle-controls">
+      <button class="middle" data-key="SELECT">SELECT</button>
+      <button class="middle" data-key="START">START</button>
+    </div>
+  </div>
 
-  <!-- CodeMirror và các mode để nhận diện HTML / CSS / JavaScript -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+  <button id="landscapeMenuButton" class="landscape-menu-button" aria-label="Mở menu game">☰</button>
+  <input type="file" id="fileInput" accept=".nes" hidden>
+
+  <div class="game-modal" id="gameModal">
+    <div class="game-modal-card">
+      <div class="game-modal-header">
+        <div>
+          <strong>GAME KHÁC</strong>
+          <span>Mở ROM từ máy hoặc chọn game có sẵn</span>
+        </div>
+        <button id="closeGameModal" class="close-game-modal">✕</button>
+      </div>
+
+      <div class="game-list">
+        <button class="game-item local-game" id="openFileButton">
+          <span class="game-icon">📁</span>
+          <span class="game-info">
+            <strong>Mở file .nes từ máy</strong>
+            <small>Chọn ROM NES trong điện thoại hoặc máy tính</small>
+          </span>
+        </button>
+
+        <button class="game-item" id="adventureButton">
+          <img class="game-cover" src="https://raw.githubusercontent.com/nhut990/files/refs/heads/main/hinh/Adventure%20Island.jpg" alt="Adventure Island">
+          <span class="game-info">
+            <strong>Adventure Island</strong>
+            <small id="adventureStatus">Đang tải sẵn game...</small>
+          </span>
+        </button>
+
+        <button class="game-item" id="contra2Button">
+          <img class="game-cover" src="https://raw.githubusercontent.com/nhut990/files/refs/heads/main/hinh/Contra2.jpg" alt="Contra 2">
+          <span class="game-info">
+            <strong>Contra 2</strong>
+            <small id="contra2Status">Đang tải sẵn game...</small>
+          </span>
+        </button>
+
+        <button class="game-item" id="chessButton">
+          <img class="game-cover" src="https://raw.githubusercontent.com/nhut990/files/refs/heads/main/hinh/Chinese%20Chess.jpg" alt="Chinese Chess">
+          <span class="game-info">
+            <strong>Zhong Guo Xiang Qi (Chinese Chess)</strong>
+            <small id="chessStatus">Đang tải sẵn game...</small>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script>
-    "use strict";
-
-    const STORAGE_KEY = "html-tester-code";
-    const textarea = document.getElementById("editor");
-    const preview = document.getElementById("preview");
-    const runButton = document.getElementById("runButton");
-    const clearButton = document.getElementById("clearButton");
-    const sampleButton = document.getElementById("sampleButton");
-
-    const sampleCode = textarea.value;
-
-    const editor = CodeMirror.fromTextArea(textarea, {
-      mode: "htmlmixed",
-      theme: "material-darker",
-      lineNumbers: true,
-      lineWrapping: true,
-      styleActiveLine: true,
-      indentUnit: 2,
-      tabSize: 2,
-      indentWithTabs: false,
-      autofocus: false
-    });
-
-    function runCode() {
-      preview.srcdoc = editor.getValue();
-    }
-
-    function clearCode() {
-      editor.setValue("");
-      preview.srcdoc = "";
-      editor.focus();
-    }
-
-    function restoreSample() {
-      editor.setValue(sampleCode);
-      runCode();
-      editor.focus();
-    }
-
-    function saveCode() {
-      try {
-        localStorage.setItem(STORAGE_KEY, editor.getValue());
-      } catch (error) {
-        console.warn("Không thể lưu code trên thiết bị.", error);
+    const GAMES = {
+      mario:{
+        name:"Super Mario Bros",
+        url:"https://raw.githubusercontent.com/nhut990/files/main/hinh/SuperMarioBros.nes"
+      },
+      adventure:{
+        name:"Adventure Island",
+        url:"https://raw.githubusercontent.com/nhut990/files/main/music/Adventure%20Island%20(USA).nes"
+      },
+      contra2:{
+        name:"Contra 2",
+        url:"https://raw.githubusercontent.com/nhut990/files/main/music/Contra%202.nes"
+      },
+      chess:{
+        name:"Zhong Guo Xiang Qi (Chinese Chess)",
+        url:"https://raw.githubusercontent.com/nhut990/files/main/music/Zhong%20Guo%20Xiang%20Qi%20(Chinese%20Chess).nes"
       }
+    };
+
+    const NES_SAMPLE_RATE=44100;
+    const NES_FPS=60.0988;
+    const AUDIO_BUFFER_FRAMES=32768;
+    const AUDIO_PREROLL_FRAMES=4096;
+
+    const audioLeft=new Float32Array(AUDIO_BUFFER_FRAMES);
+    const audioRight=new Float32Array(AUDIO_BUFFER_FRAMES);
+
+    let audioReadIndex=0;
+    let audioWriteIndex=0;
+    let audioFrameCount=0;
+    let audioPrimed=false;
+    let resampleFraction=0;
+    let audioContext=null;
+    let audioNode=null;
+    let soundEnabled=true;
+
+    const canvas=document.getElementById("screen");
+    const ctx=canvas.getContext("2d",{alpha:false});
+    const imageData=ctx.createImageData(256,240);
+    const pixels=imageData.data;
+
+    const status=document.getElementById("status");
+    const gameTitle=document.getElementById("gameTitle");
+    const screenMessage=document.getElementById("screenMessage");
+    const pauseButton=document.getElementById("pauseButton");
+    const soundButton=document.getElementById("soundButton");
+    const gameButton=document.getElementById("gameButton");
+    const landscapeMenuButton=document.getElementById("landscapeMenuButton");
+    const gameModal=document.getElementById("gameModal");
+    const closeGameModal=document.getElementById("closeGameModal");
+    const openFileButton=document.getElementById("openFileButton");
+    const fileInput=document.getElementById("fileInput");
+
+    const preloadStatus={
+      adventure:document.getElementById("adventureStatus"),
+      contra2:document.getElementById("contra2Status"),
+      chess:document.getElementById("chessStatus")
+    };
+
+    const keys={
+      UP:jsnes.Controller.BUTTON_UP,
+      DOWN:jsnes.Controller.BUTTON_DOWN,
+      LEFT:jsnes.Controller.BUTTON_LEFT,
+      RIGHT:jsnes.Controller.BUTTON_RIGHT,
+      A:jsnes.Controller.BUTTON_A,
+      B:jsnes.Controller.BUTTON_B,
+      SELECT:jsnes.Controller.BUTTON_SELECT,
+      START:jsnes.Controller.BUTTON_START
+    };
+
+    let nes=null;
+    let gameLoaded=false;
+    let paused=false;
+    let loadToken=0;
+    let gameClock=0;
+    let frameAccumulator=0;
+
+    const romCache={};
+    const romPromises={};
+
+    const activeSources={};
+    Object.keys(keys).forEach(key=>activeSources[key]=new Set());
+
+    function showMessage(title,text){
+      screenMessage.style.display="flex";
+      screenMessage.innerHTML="";
+      const strong=document.createElement("strong");
+      const span=document.createElement("span");
+      strong.textContent=title;
+      span.textContent=text;
+      screenMessage.append(strong,span);
     }
 
-    function loadSavedCode() {
-      try {
-        const savedCode = localStorage.getItem(STORAGE_KEY);
+    function hideMessage(){
+      screenMessage.style.display="none";
+    }
 
-        if (savedCode !== null) {
-          editor.setValue(savedCode);
+    function clearAudioBuffer(){
+      audioReadIndex=0;
+      audioWriteIndex=0;
+      audioFrameCount=0;
+      audioPrimed=false;
+      resampleFraction=0;
+    }
+
+    function writeAudioFrame(left,right){
+      if(!soundEnabled || audioFrameCount>=AUDIO_BUFFER_FRAMES) return;
+      audioLeft[audioWriteIndex]=left;
+      audioRight[audioWriteIndex]=right;
+      audioWriteIndex=(audioWriteIndex+1)%AUDIO_BUFFER_FRAMES;
+      audioFrameCount++;
+    }
+
+    function discardAudioFrames(count){
+      const amount=Math.min(count,audioFrameCount);
+      audioReadIndex=(audioReadIndex+amount)%AUDIO_BUFFER_FRAMES;
+      audioFrameCount-=amount;
+    }
+
+    async function ensureAudio(){
+      const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+      if(!AudioContextClass) return false;
+
+      if(!audioContext){
+        audioContext=new AudioContextClass();
+        audioNode=audioContext.createScriptProcessor(2048,0,2);
+
+        audioNode.onaudioprocess=function(event){
+          const leftOutput=event.outputBuffer.getChannelData(0);
+          const rightOutput=event.outputBuffer.getChannelData(1);
+
+          if(!soundEnabled || audioContext.state!=="running"){
+            leftOutput.fill(0);
+            rightOutput.fill(0);
+            return;
+          }
+
+          if(!audioPrimed){
+            if(audioFrameCount>=AUDIO_PREROLL_FRAMES){
+              audioPrimed=true;
+            }else{
+              leftOutput.fill(0);
+              rightOutput.fill(0);
+              return;
+            }
+          }
+
+          const inputPerOutput=NES_SAMPLE_RATE/audioContext.sampleRate;
+
+          for(let i=0;i<leftOutput.length;i++){
+            if(audioFrameCount<2){
+              leftOutput[i]=0;
+              rightOutput[i]=0;
+              audioPrimed=false;
+              continue;
+            }
+
+            const indexA=audioReadIndex;
+            const indexB=(audioReadIndex+1)%AUDIO_BUFFER_FRAMES;
+
+            leftOutput[i]=audioLeft[indexA]+(audioLeft[indexB]-audioLeft[indexA])*resampleFraction;
+            rightOutput[i]=audioRight[indexA]+(audioRight[indexB]-audioRight[indexA])*resampleFraction;
+
+            resampleFraction+=inputPerOutput;
+            const discard=Math.floor(resampleFraction);
+
+            if(discard>0){
+              discardAudioFrames(discard);
+              resampleFraction-=discard;
+            }
+          }
+        };
+
+        audioNode.connect(audioContext.destination);
+      }
+
+      try{
+        if(audioContext.state!=="running"){
+          clearAudioBuffer();
+          await audioContext.resume();
+          clearAudioBuffer();
         }
-      } catch (error) {
-        console.warn("Không thể đọc code đã lưu.", error);
+        return true;
+      }catch(error){
+        console.warn("Không thể mở AudioContext:",error);
+        return false;
       }
     }
 
-    runButton.addEventListener("click", runCode);
-    clearButton.addEventListener("click", clearCode);
-    sampleButton.addEventListener("click", restoreSample);
+    function validRom(buffer){
+      const b=new Uint8Array(buffer);
+      return b.length>=16 && b[0]===0x4e && b[1]===0x45 && b[2]===0x53 && b[3]===0x1a;
+    }
 
-    editor.on("change", saveCode);
+    function toBinary(buffer){
+      const bytes=new Uint8Array(buffer);
+      let result="";
+      for(let i=0;i<bytes.length;i+=8192){
+        result+=String.fromCharCode(...bytes.subarray(i,i+8192));
+      }
+      return result;
+    }
 
-    editor.on("keydown", (instance, event) => {
-      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
-        event.preventDefault();
-        runCode();
+    function createNes(){
+      clearAudioBuffer();
+
+      nes=new jsnes.NES({
+        sampleRate:NES_SAMPLE_RATE,
+        preferredFrameRate:NES_FPS,
+
+        onFrame(frame){
+          for(let i=0,p=0;i<frame.length;i++,p+=4){
+            const color=frame[i];
+            pixels[p]=color&255;
+            pixels[p+1]=(color>>8)&255;
+            pixels[p+2]=(color>>16)&255;
+            pixels[p+3]=255;
+          }
+          ctx.putImageData(imageData,0,0);
+        },
+
+        onAudioSample(left,right){
+          writeAudioFrame(left,right);
+        }
+      });
+    }
+
+    function updateKeyVisual(key){
+      const pressed=activeSources[key].size>0;
+      document.querySelectorAll(`[data-key="${key}"]`).forEach(button=>{
+        button.classList.toggle("pressed",pressed);
+      });
+    }
+
+    function setVirtualKey(key,sourceId,isDown){
+      if(!(key in keys)) return;
+
+      const sources=activeSources[key];
+      const wasPressed=sources.size>0;
+
+      if(isDown) sources.add(sourceId);
+      else sources.delete(sourceId);
+
+      const isPressed=sources.size>0;
+
+      if(!wasPressed && isPressed && gameLoaded && nes){
+        ensureAudio();
+        nes.buttonDown(1,keys[key]);
+      }
+
+      if(wasPressed && !isPressed && nes){
+        nes.buttonUp(1,keys[key]);
+      }
+
+      updateKeyVisual(key);
+    }
+
+    // ===================================================
+    // PHẦN ĐIỀU KHIỂN ĐƯỢC TỐI ƯU CHO IPHONE / SAFARI
+    // ===================================================
+    const activeTouches = new Map(); // touchId → { button, key }
+    const activePointers = new Map(); // pointerId → { button, key }
+
+    // Chặn hành vi mặc định toàn cục trên các nút điều khiển
+    document.addEventListener('touchstart', e => {
+      if (e.target.closest('[data-key]')) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, { passive: false, capture: true });
+
+    document.addEventListener('touchmove', e => {
+      if (e.target.closest('[data-key]') || activeTouches.has(e.touches)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, { passive: false, capture: true });
+
+    function hasOwnedTouch(touchList) {
+      for (let i = 0; i < touchList.length; i++) {
+        if (activeTouches.has(touchList[i].identifier)) return true;
+      }
+      return false;
+    }
+
+    function releaseAllControls() {
+      activeTouches.clear();
+      activePointers.clear();
+
+      Object.keys(activeSources).forEach(key => {
+        if (activeSources[key].size > 0) {
+          activeSources[key].clear();
+          nes?.buttonUp(1, keys[key]);
+          updateKeyVisual(key);
+        }
+      });
+
+      document.querySelectorAll('[data-key]').forEach(btn => {
+        btn.classList.remove('pressed');
+      });
+    }
+
+    // Gắn sự kiện cho từng nút
+    document.querySelectorAll('[data-key]').forEach(button => {
+      const key = button.dataset.key;
+
+      // === Touch Events (chính trên iPhone) ===
+      button.addEventListener('touchstart', e => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          const t = e.changedTouches[i];
+          activeTouches.set(t.identifier, { button, key });
+          setVirtualKey(key, `touch:${t.identifier}`, true);
+          button.classList.add('pressed');
+        }
+      }, { passive: false, capture: true });
+
+      button.addEventListener('touchend', e => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          const t = e.changedTouches[i];
+          const data = activeTouches.get(t.identifier);
+          if (!data) continue;
+
+          activeTouches.delete(t.identifier);
+          setVirtualKey(data.key, `touch:${t.identifier}`, false);
+          data.button.classList.remove('pressed');
+        }
+      }, { passive: false, capture: true });
+
+      button.addEventListener('touchcancel', e => {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          const t = e.changedTouches[i];
+          const data = activeTouches.get(t.identifier);
+          if (!data) continue;
+
+          activeTouches.delete(t.identifier);
+          setVirtualKey(data.key, `touch:${t.identifier}`, false);
+          data.button.classList.remove('pressed');
+        }
+      }, { passive: false, capture: true });
+
+      // === Pointer Events (chỉ chuột/bút — BỎ touch ra) ===
+      button.addEventListener('pointerdown', e => {
+        if (e.pointerType === 'touch') return;
+
+        e.preventDefault();
+        activePointers.set(e.pointerId, { button, key });
+        setVirtualKey(key, `pointer:${e.pointerId}`, true);
+        button.classList.add('pressed');
+
+        try { button.setPointerCapture(e.pointerId); } catch {}
+      });
+
+      button.addEventListener('pointerup', e => {
+        if (e.pointerType === 'touch') return;
+
+        const data = activePointers.get(e.pointerId);
+        if (!data) return;
+
+        activePointers.delete(e.pointerId);
+        setVirtualKey(data.key, `pointer:${e.pointerId}`, false);
+        data.button.classList.remove('pressed');
+      });
+
+      button.addEventListener('pointercancel', e => {
+        if (e.pointerType === 'touch') return;
+
+        const data = activePointers.get(e.pointerId);
+        if (!data) return;
+
+        activePointers.delete(e.pointerId);
+        setVirtualKey(data.key, `pointer:${e.pointerId}`, false);
+        data.button.classList.remove('pressed');
+      });
+
+      button.addEventListener('contextmenu', e => e.preventDefault());
+    });
+
+    // === Bảo vệ: nhả tất cả khi trang mất trọng tâm ===
+    window.addEventListener('blur', releaseAllControls);
+    window.addEventListener('pagehide', releaseAllControls);
+    window.addEventListener('orientationchange', releaseAllControls);
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        releaseAllControls();
+        clearAudioBuffer();
+        if (gameLoaded && !paused) {
+          paused = true;
+          pauseButton.textContent = 'Tiếp tục';
+          status.textContent = 'Game đang tạm dừng';
+        }
       }
     });
 
-    loadSavedCode();
-    runCode();
+    // === Bàn phím ===
+    const keyboardMap={
+      ArrowUp:"UP",
+      ArrowDown:"DOWN",
+      ArrowLeft:"LEFT",
+      ArrowRight:"RIGHT",
+      z:"A",Z:"A",
+      x:"B",X:"B",
+      Enter:"START",
+      Shift:"SELECT"
+    };
+
+    window.addEventListener("keydown",function(event){
+      const key=keyboardMap[event.key];
+      if(!key || event.repeat) return;
+      event.preventDefault();
+      setVirtualKey(key,"keyboard:"+event.code,true);
+    });
+
+    window.addEventListener("keyup",function(event){
+      const key=keyboardMap[event.key];
+      if(!key) return;
+      event.preventDefault();
+      setVirtualKey(key,"keyboard:"+event.code,false);
+    });
+
+    // === Nút chức năng ===
+    pauseButton.addEventListener("click",function(){
+      if(!gameLoaded) return;
+
+      paused=!paused;
+      clearAudioBuffer();
+      releaseAllControls();
+
+      pauseButton.textContent=paused?"Tiếp tục":"Tạm dừng";
+      status.textContent=paused?"Game đang tạm dừng":"Đang chơi";
+      gameClock=performance.now();
+      frameAccumulator=0;
+    });
+
+    soundButton.addEventListener("click",async function(){
+      soundEnabled=!soundEnabled;
+      clearAudioBuffer();
+
+      soundButton.textContent="Âm thanh: "+(soundEnabled?"Bật":"Tắt");
+
+      if(soundEnabled) await ensureAudio();
+    });
+
+    function openMenu(){
+      releaseAllControls();
+      gameModal.classList.add("show");
+    }
+
+    gameButton.addEventListener("click",openMenu);
+    landscapeMenuButton.addEventListener("click",openMenu);
+
+    closeGameModal.addEventListener("click",function(){
+      gameModal.classList.remove("show");
+    });
+
+    gameModal.addEventListener("click",function(event){
+      if(event.target===gameModal) gameModal.classList.remove("show");
+    });
+
+    openFileButton.addEventListener("click",function(){
+      gameModal.classList.remove("show");
+      fileInput.click();
+    });
+
+    document.getElementById("adventureButton").addEventListener("click",function(){
+      gameModal.classList.remove("show");
+      loadGame("adventure");
+    });
+
+    document.getElementById("contra2Button").addEventListener("click",function(){
+      gameModal.classList.remove("show");
+      loadGame("contra2");
+    });
+
+    document.getElementById("chessButton").addEventListener("click",function(){
+      gameModal.classList.remove("show");
+      loadGame("chess");
+    });
+
+    fileInput.addEventListener("change",function(event){
+      const file=event.target.files[0];
+      if(!file) return;
+
+      loadLocalRom(file);
+      fileInput.value="";
+    });
+
+    window.addEventListener("blur",function(){
+      releaseAllControls();
+      clearAudioBuffer();
+    });
+
+    window.addEventListener("pagehide",function(){
+      releaseAllControls();
+      clearAudioBuffer();
+    });
+
+    window.addEventListener("orientationchange",function(){
+      releaseAllControls();
+      clearAudioBuffer();
+    });
+
+    // === Tải và khởi động game ===
+    async function downloadRom(url){
+      const response=await fetch(url,{cache:"force-cache"});
+      if(!response.ok) throw new Error("Không thể tải ROM. HTTP "+response.status);
+
+      const buffer=await response.arrayBuffer();
+      if(!validRom(buffer)) throw new Error("Link không trả về ROM NES hợp lệ.");
+
+      return buffer;
+    }
+
+    async function preloadGame(id){
+      if(romCache[id]) return romCache[id];
+      if(romPromises[id]) return romPromises[id];
+
+      const game=GAMES[id];
+      const statusElement=preloadStatus[id];
+
+      if(statusElement){
+        statusElement.textContent="Đang tải sẵn game...";
+        statusElement.classList.remove("game-ready");
+      }
+
+      romPromises[id]=downloadRom(game.url)
+        .then(buffer=>{
+          romCache[id]=buffer;
+          if(statusElement){
+            statusElement.textContent="Đã sẵn sàng";
+            statusElement.classList.add("game-ready");
+          }
+          return buffer;
+        })
+        .catch(error=>{
+          romPromises[id]=null;
+          if(statusElement){
+            statusElement.textContent="Chưa tải được — chạm để thử lại";
+            statusElement.classList.remove("game-ready");
+          }
+          throw error;
+        });
+
+      return romPromises[id];
+    }
+
+    function loadBuffer(buffer,name){
+      if(!validRom(buffer)) throw new Error("ROM NES không hợp lệ.");
+
+      releaseAllControls();
+      clearAudioBuffer();
+
+      gameLoaded=false;
+      paused=false;
+
+      createNes();
+      nes.loadROM(toBinary(buffer));
+
+      gameLoaded=true;
+      gameClock=performance.now();
+      frameAccumulator=0;
+
+      pauseButton.textContent="Tạm dừng";
+      gameTitle.textContent=name.toUpperCase();
+      status.textContent="Đang chơi: "+name;
+      hideMessage();
+    }
+
+    async function loadGame(id){
+      const currentToken=++loadToken;
+      const game=GAMES[id];
+
+      try{
+        releaseAllControls();
+        clearAudioBuffer();
+        gameLoaded=false;
+        paused=false;
+
+        gameTitle.textContent=game.name.toUpperCase();
+        status.textContent="Đang tải "+game.name+"...";
+        showMessage("Đang tải "+game.name,"Vui lòng chờ trong giây lát...");
+
+        const buffer=romCache[id]||await preloadGame(id);
+        if(currentToken!==loadToken) return;
+
+        loadBuffer(buffer,game.name);
+      }catch(error){
+        if(currentToken!==loadToken) return;
+        gameLoaded=false;
+        clearAudioBuffer();
+        status.textContent="Không thể tải game";
+        showMessage("Không thể tải game",error.message||"Hãy kiểm tra mạng rồi thử lại.");
+      }
+    }
+
+    function loadLocalRom(file){
+      const currentToken=++loadToken;
+      const name=file.name.replace(/\.nes$/i,"");
+      const reader=new FileReader();
+
+      releaseAllControls();
+      clearAudioBuffer();
+      gameLoaded=false;
+      paused=false;
+
+      gameTitle.textContent=name.toUpperCase();
+      status.textContent="Đang đọc ROM từ máy...";
+      showMessage("Đang mở game","Đang đọc ROM từ thiết bị...");
+
+      reader.onload=function(){
+        if(currentToken!==loadToken) return;
+        try{
+          loadBuffer(reader.result,name);
+        }catch(error){
+          status.textContent="Không thể mở file";
+          showMessage("Không thể mở game",error.message||"File ROM này không hợp lệ.");
+        }
+      };
+
+      reader.onerror=function(){
+        if(currentToken!==loadToken) return;
+        status.textContent="Không thể đọc file";
+        showMessage("Không thể đọc file","Hãy thử lại bằng một file .nes khác.");
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    function gameLoop(now){
+      if(!gameClock) gameClock=now;
+
+      const elapsed=Math.min(now-gameClock,100);
+      gameClock=now;
+
+      if(gameLoaded && !paused && nes){
+        frameAccumulator+=elapsed;
+        const frameDuration=1000/NES_FPS;
+        let frames=0;
+
+        while(frameAccumulator>=frameDuration && frames<4){
+          nes.frame();
+          frameAccumulator-=frameDuration;
+          frames++;
+        }
+
+        if(frames===4) frameAccumulator=0;
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    if(typeof jsnes==="undefined"){
+      status.textContent="Không tải được thư viện jsnes";
+      showMessage("Lỗi thư viện","Không thể tải jsnes. Hãy kiểm tra mạng rồi tải lại trang.");
+    }else{
+      requestAnimationFrame(gameLoop);
+
+      loadGame("mario");
+      preloadGame("adventure").catch(()=>{});
+      preloadGame("contra2").catch(()=>{});
+      preloadGame("chess").catch(()=>{});
+    }
   </script>
 </body>
 </html>
