@@ -6,159 +6,373 @@
   <title>Chia sẻ vị trí thời gian thực</title>
 
   <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Firebase SDK -->
+  <!-- Firebase Realtime Database -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <style>
-    body { font-family: sans-serif; text-align: center; background: #f2f2f2; }
-    #map { height: 70vh; }
-    input, button { padding: 10px; font-size: 16px; margin: 5px; }
-    button { background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; }
-    #info, #guide { padding: 10px; }
-    #guide {
-      display: none;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      margin: 10px auto;
-      text-align: left;
-      max-width: 600px;
+    :root {
+      --bg: #edf0ee;
+      --card: rgba(255, 255, 255, 0.92);
+      --text: #26352d;
+      --muted: #66736b;
+      --green: #47775b;
+      --green-hover: #386449;
+      --red: #bd4b4b;
+      --red-hover: #a43c3c;
+      --line: #d5ddd7;
+      --blue: #4d7192;
     }
-    #guide h3 { margin-top: 0; }
-    #guide ul { padding-left: 20px; }
-    .notice {
-      color: #e53935;
-      font-weight: bold;
-      margin-bottom: 8px;
+
+    * {
+      box-sizing: border-box;
     }
-    .error-highlight {
-      color: #e53935;
-      font-weight: bold;
-      font-size: 15px;
-      display: inline-block;
-      margin: 8px 0;
+
+    body {
+      margin: 0;
+      padding: 18px 12px 24px;
+      font-family: Arial, sans-serif;
+      color: var(--text);
+      text-align: center;
+      background:
+        radial-gradient(circle at top, #f8faf8 0%, #edf0ee 48%, #e4e9e5 100%);
     }
-    .gps-error {
-      color: #fff;
-      background: #e53935;
-      font-weight: bold;
-      font-size: 18px;
-      display: inline-block;
-      padding: 8px 16px;
+
+    .app {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h1 {
+      margin: 5px 0 8px;
+      font-size: clamp(22px, 5vw, 29px);
+    }
+
+    .subtitle {
+      margin: 0 auto 16px;
+      max-width: 650px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 5px 20px rgba(42, 58, 48, 0.08);
+    }
+
+    .input-row,
+    .button-row {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    input,
+    button {
+      min-height: 44px;
+      font: inherit;
       border-radius: 8px;
-      margin: 12px 0;
-      box-shadow: 0 2px 8px rgba(229,57,53,0.2);
     }
-    /* Nút vị trí của tôi */
+
+    input {
+      flex: 1 1 240px;
+      max-width: 390px;
+      padding: 10px 12px;
+      border: 1px solid #bfc9c1;
+      color: var(--text);
+      outline: none;
+      background: #fff;
+    }
+
+    input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(71, 119, 91, 0.13);
+    }
+
+    button {
+      padding: 10px 14px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      color: #fff;
+      background: var(--green);
+      transition: background 0.18s ease, transform 0.18s ease;
+    }
+
+    button:hover {
+      background: var(--green-hover);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .secondary-btn {
+      background: #718078;
+    }
+
+    .secondary-btn:hover {
+      background: #5e6d65;
+    }
+
+    #stopShareBtn {
+      display: none;
+      background: var(--red);
+    }
+
+    #stopShareBtn:hover {
+      background: var(--red-hover);
+    }
+
+    .input-note {
+      margin: 9px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    #info {
+      min-height: 46px;
+      margin: 14px 0;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      line-height: 1.55;
+      color: var(--text);
+    }
+
+    .error {
+      color: #a73737;
+      font-weight: bold;
+    }
+
+    .warning {
+      display: inline-block;
+      margin-top: 5px;
+      color: #9b5c16;
+      font-weight: bold;
+    }
+
+    .map-wrap {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 5px 20px rgba(42, 58, 48, 0.1);
+    }
+
+    #map {
+      height: min(68vh, 620px);
+      min-height: 390px;
+      background: #d6ddd9;
+    }
+
     #locateMeBtn {
       position: absolute;
-      bottom: 20px;
-      left: 20px;
       z-index: 1000;
+      bottom: 20px;
+      left: 12px;
       width: 46px;
       height: 46px;
-      background: #fff;
-      border: 2px solid #2196F3;
+      min-height: 46px;
+      padding: 0;
+      border: 2px solid #fff;
       border-radius: 50%;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
     }
-    #locateMeBtn:hover {
-      background: #e3f2fd;
-    }
-    #locateMeBtn svg {
-      width: 28px;
-      height: 28px;
-      fill: #2196F3;
-    }
-    .leaflet-control-container { position: relative; }
 
-    /* Nền nút dừng chia sẻ nổi bật khi đang chia sẻ */
-    #stopShareBtn.sharing {
-      background: #e53935 !important;
-      color: #fff !important;
-      border: none;
-      box-shadow: 0 2px 8px rgba(229,57,53,0.2);
-      font-weight: bold;
+    #locateMeBtn:hover {
+      background: #eaf0ec;
     }
-    /* Hiện thông báo đã tìm thấy người dùng */
+
+    #locateMeBtn svg {
+      width: 26px;
+      height: 26px;
+      fill: var(--blue);
+    }
+
+    #guide {
+      display: none;
+      margin-top: 14px;
+      padding: 16px;
+      text-align: left;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      line-height: 1.6;
+    }
+
+    #guide h2 {
+      margin: 0 0 8px;
+      font-size: 19px;
+    }
+
+    #guide p,
+    #guide ul {
+      margin: 9px 0;
+    }
+
+    #guide ul {
+      padding-left: 21px;
+    }
+
+    .privacy-notice {
+      padding: 11px;
+      color: #754f1b;
+      background: #fff8e9;
+      border: 1px solid #ead6a8;
+      border-radius: 9px;
+      font-size: 14px;
+    }
+
+    .route-buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 7px;
+      margin-top: 9px;
+    }
+
+    .route-btn {
+      display: inline-block;
+      padding: 7px 10px;
+      border-radius: 7px;
+      color: #fff;
+      background: #58758d;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .route-btn:hover {
+      background: #415e75;
+    }
+
     #foundUserMsg {
       display: none;
       position: fixed;
-      left: 50%;
+      z-index: 3000;
       top: 16px;
-      transform: translateX(-50%);
-      background: #2196F3;
+      left: 50%;
+      max-width: calc(100vw - 28px);
+      padding: 11px 18px;
       color: #fff;
-      font-size: 18px;
-      padding: 12px 24px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(33,150,243,0.18);
+      background: #47775b;
+      border-radius: 9px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
       font-weight: bold;
-      opacity: 1;
-      z-index: 2000;
-      transition: opacity 1.2s;
+      transform: translateX(-50%);
+      transition: opacity 0.8s ease;
+    }
+
+    @media (max-width: 520px) {
+      body {
+        padding: 12px 8px 18px;
+      }
+
+      .panel {
+        padding: 12px;
+      }
+
+      .input-row button,
+      .button-row button {
+        flex: 1 1 100%;
+      }
+
+      #map {
+        min-height: 360px;
+      }
     }
   </style>
 </head>
+
 <body>
+  <main class="app">
+    <h1>📍 Chia sẻ vị trí thời gian thực</h1>
+    <p class="subtitle">
+      Chia sẻ vị trí bằng một mã riêng, sau đó gửi mã đó cho người bạn muốn xem vị trí.
+    </p>
 
-  <h2>📍 Chia sẻ & xem vị trí thời gian thực</h2>
-  <input id="username" placeholder="Tên người dùng">
-  <span style="color:#e53935; font-size:13px; display:block; margin-bottom:8px;">
-    Lưu ý: Tên người dùng phân biệt chữ hoa và chữ thường (VD: <b>abc</b> khác <b>ABC</b>).
-  </span>
-  <button onclick="startShare()">Tôi muốn chia sẻ vị trí</button>
-  <button onclick="startView()">Tôi muốn xem vị trí người khác</button>
-  <button onclick="toggleGuide()">📘 Hướng dẫn sử dụng</button>
-  <button id="stopShareBtn" onclick="stopShare()" style="display:none;">Dừng chia sẻ</button>
+    <section class="panel">
+      <div class="input-row">
+        <input
+          id="shareCode"
+          type="text"
+          maxlength="40"
+          autocomplete="off"
+          placeholder="Nhập mã chia sẻ, ví dụ: Nhat-7xK9pQ2mL8"
+        >
+      </div>
 
-  <div id="guide">
-    <span class="notice">
-      ⚠️ Web chỉ hỗ trợ bạn bè, người thân dễ dàng tìm thấy vị trí của nhau bằng thời gian thực khi một trong hai bên chia sẻ.<br>
-      Không thu thập, lưu trữ hay sử dụng bất cứ thông tin cá nhân nào từ người dùng.
-    </span>
-    <h3>📘 Cách sử dụng</h3>
-    <ul>
-      <li>A nhập một tên bất kỳ (ví dụ: <em>abc</em>) và nhấn “Tôi muốn chia sẻ vị trí”.</li>
-      <li>B ở thiết bị khác nhập đúng tên đó (<em>abc</em>) và nhấn “Tôi muốn xem vị trí người khác”.</li>
-      <li>B sẽ thấy vị trí của A thay đổi theo thời gian thực và cả đường đi của A trên bản đồ.</li>
-    </ul>
-    <p><strong>Lưu ý:</strong></p>
-    <ul>
-      <li>Tên người dùng phân biệt chữ hoa/thường.</li>
-      <li>A cần cấp quyền truy cập vị trí chính xác cho trình duyệt.</li>
-      <li>
-        A phải giữ trang web luôn mở. Nếu tắt màn hình hoặc chuyển tab, việc chia sẻ sẽ tạm dừng, (người xem vẫn xem được vị trí cuối cùng.)
-      </li>
-      <li>Bất cứ lúc nào, có thể bấm nút tròn góc dưới bản đồ để xem vị trí của chính mình.</li>
-      <li>Khi muốn dừng chia sẻ và xoá toàn bộ dữ liệu, hãy bấm nút "Dừng chia sẻ". Nếu mất mạng hoặc reload, nhập lại đúng tên rồi chia sẻ lại để tiếp tục.</li>
-    </ul>
-    <button onclick="closeGuide()">Đóng hướng dẫn</button>
-  </div>
+      <div class="button-row" style="margin-top: 8px;">
+        <button id="shareBtn">Tôi muốn chia sẻ vị trí</button>
+        <button id="viewBtn">Tôi muốn xem vị trí người khác</button>
+        <button id="guideBtn" class="secondary-btn">📘 Hướng dẫn</button>
+        <button id="stopShareBtn">Dừng chia sẻ</button>
+      </div>
+
+      <p class="input-note">
+        Mã chia sẻ phân biệt chữ hoa và chữ thường. Không dùng tên thật hoặc mã quá dễ đoán.
+      </p>
+    </section>
+
+    <section id="guide">
+      <h2>📘 Cách sử dụng</h2>
+
+      <div class="privacy-notice">
+        ⚠️ Khi bạn bắt đầu chia sẻ, vị trí GPS, thời gian cập nhật và lịch sử đường đi sẽ được
+        <strong>lưu tạm trên Firebase Realtime Database của Google</strong> để người có mã chia sẻ
+        có thể xem vị trí trên bản đồ theo thời gian thực.
+        <br><br>
+        Dữ liệu được xóa khi bạn bấm <strong>“Dừng chia sẻ”</strong>. Hệ thống cũng yêu cầu Firebase
+        xóa dữ liệu khi phát hiện thiết bị mất kết nối, nhưng để chắc chắn nhất, bạn nên luôn bấm
+        “Dừng chia sẻ” sau khi dùng xong.
+      </div>
+
+      <ul>
+        <li>Người A nhập một mã khó đoán, ví dụ: <strong>Nhat-7xK9pQ2mL8</strong>.</li>
+        <li>Người A bấm <strong>“Tôi muốn chia sẻ vị trí”</strong> và cấp quyền vị trí cho trình duyệt.</li>
+        <li>Người B nhập chính xác mã đó trên thiết bị khác, rồi bấm <strong>“Tôi muốn xem vị trí người khác”</strong>.</li>
+        <li>Người B có thể xem vị trí gần nhất, lịch sử đường đi và khoảng cách ước tính đến người A.</li>
+        <li>Nút tròn ở góc dưới bên trái bản đồ dùng để xem vị trí của chính bạn.</li>
+      </ul>
+
+      <p>
+        <strong>Lưu ý:</strong> Trình duyệt hoặc điện thoại có thể làm chậm/tạm dừng GPS khi tắt màn hình,
+        chuyển ứng dụng hoặc mất mạng. Vì vậy vị trí hiển thị có thể là vị trí cập nhật gần nhất, không phải
+        lúc nào cũng là vị trí hiện tại.
+      </p>
+
+      <button id="closeGuideBtn" class="secondary-btn">Đóng hướng dẫn</button>
+    </section>
+
+    <div id="info">Nhập mã chia sẻ và chọn chế độ.</div>
+
+    <div class="map-wrap">
+      <div id="map"></div>
+
+      <button id="locateMeBtn" title="Xem vị trí của tôi" aria-label="Xem vị trí của tôi">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="8"></circle>
+          <circle cx="12" cy="12" r="2" fill="#ffffff"></circle>
+        </svg>
+      </button>
+    </div>
+  </main>
 
   <div id="foundUserMsg"></div>
-  <div id="info">Nhập tên và chọn chế độ</div>
-  <div style="position:relative;">
-    <div id="map"></div>
-    <button id="locateMeBtn" title="Xem vị trí của tôi" onclick="showMyLocation()">
-      <!-- SVG icon vị trí -->
-      <svg viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="8" stroke="none"/>
-        <circle cx="12" cy="12" r="2" fill="#fff"/>
-      </svg>
-    </button>
-  </div>
 
   <script>
-    // Firebase cấu hình
+    /* Firebase cấu hình */
     const firebaseConfig = {
       apiKey: "AIzaSyDbAhdrKAiv_0VFj8nS2b9-aM6nwbtZXaA",
       authDomain: "mapgps-6fa8a.firebaseapp.com",
@@ -169,278 +383,606 @@
       appId: "1:237570405681:web:583749449110d7e1896c10",
       measurementId: "G-9S5MMD1DJE"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Icon marker màu xanh cho chính mình
-    const blueIcon = new L.Icon({
-      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
-      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
-    });
+    const $ = (id) => document.getElementById(id);
 
-    // Icon marker màu đỏ cho đối phương
-    const redIcon = new L.Icon({
-      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
-    });
-
-    let map, marker, myLocationMarker;
-    let baseLayers;
-    let geoWatchId = null;
+    let map;
+    let sharedMarker = null;
+    let myLocationMarker = null;
     let trackPolyline = null;
 
+    let geoWatchId = null;
+    let activeShareCode = "";
+    let historyCount = 0;
+
+    let viewingHistoryRef = null;
+    let viewingLastRef = null;
+    let historyListener = null;
+    let lastListener = null;
+
+    let lastSentTime = 0;
+    let lastSentLat = null;
+    let lastSentLng = null;
+
+    let hasCenteredShareMap = false;
+    let hasCenteredViewMap = false;
+    let foundMessageTimer = null;
+    let hideMessageTimer = null;
+
+    const blueIcon = new L.Icon({
+      iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
+      shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+
+    const redIcon = new L.Icon({
+      iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+      shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+
     function initMap() {
-      const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap'
-      });
-      const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19,
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
-      });
+      if (map) return;
 
-      baseLayers = {
-        "Đường phố": streetLayer,
-        "Vệ tinh": satelliteLayer
-      };
-
-      const vietnamBounds = L.latLngBounds([8.3, 102.0], [23.4, 110.0]);
-      map = L.map('map', { layers: [streetLayer] });
-      map.fitBounds(vietnamBounds);
-
-      L.control.layers(baseLayers).addTo(map);
-
-      marker = null;
-      myLocationMarker = null;
-      trackPolyline = null;
-    }
-
-    function showMyLocation() {
-      if (!map) initMap();
-      if (!navigator.geolocation) {
-        document.getElementById("info").innerHTML = `<span class="gps-error">Thiết bị không hỗ trợ GPS</span>`;
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(pos => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        if (!myLocationMarker) {
-          myLocationMarker = L.marker([lat, lng], {icon: blueIcon}).addTo(map);
+      /*
+        Dùng Esri Satellite làm nền mặc định.
+        Điều này giúp tránh hiện tượng nền trắng khi tile OpenStreetMap bị chặn/chậm.
+      */
+      const satelliteLayer = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        {
+          maxZoom: 19,
+          attribution: "Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics"
         }
-        myLocationMarker.setLatLng([lat, lng]).setIcon(blueIcon).bindPopup("<b>Tôi</b>").openPopup();
-        map.setView([lat, lng], 16);
-        document.getElementById("info").innerText = `Vị trí của tôi: ${lat.toFixed(5)}, ${lng.toFixed(5)} lúc ${new Date().toLocaleTimeString()}`;
-      }, err => {
-        if (err.code === 1) {
-          document.getElementById("info").innerHTML = `<span class="gps-error">❌ Bạn chưa cấp quyền truy cập vị trí cho trình duyệt.<br>Vui lòng kiểm tra lại cài đặt và cấp quyền vị trí cho trang web!</span>`;
-        } else {
-          document.getElementById("info").innerHTML = `<span class="gps-error">Không lấy được vị trí: ${err.message}</span>`;
-        }
-      }, { enableHighAccuracy: true, timeout: 10000 });
-    }
-
-    function startShare() {
-      if (!map) initMap();
-      const username = document.getElementById("username").value.trim();
-      if (!username) return alert("Nhập tên người dùng");
-      document.getElementById("info").innerText = "Đang chia sẻ liên tục...";
-      if (!navigator.geolocation) {
-        document.getElementById("info").innerHTML = `<span class="gps-error">Thiết bị không hỗ trợ GPS</span>`;
-        return;
-      }
-
-      db.ref("locations/" + username).remove();
-      if (marker) { map.removeLayer(marker); marker = null; }
-      if (trackPolyline) { map.removeLayer(trackPolyline); trackPolyline = null; }
-      marker = L.marker([0, 0], {icon: blueIcon}).addTo(map);
-
-      if (geoWatchId !== null) {
-        navigator.geolocation.clearWatch(geoWatchId);
-        geoWatchId = null;
-      }
-
-      geoWatchId = navigator.geolocation.watchPosition(
-        pos => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const timestamp = Date.now();
-          marker.setLatLng([lat, lng]).setIcon(blueIcon).bindPopup("<b>Tôi</b>").openPopup();
-          map.setView([lat, lng], 16);
-          db.ref("locations/" + username + "/history").push({ lat, lng, timestamp });
-          db.ref("locations/" + username + "/last").set({ lat, lng, timestamp });
-          document.getElementById("info").innerText = `✅ Đang chia sẻ vị trí: ${lat.toFixed(5)}, ${lng.toFixed(5)} lúc ${new Date(timestamp).toLocaleTimeString()}`;
-        },
-        err => {
-          if (err.code === 1) {
-            document.getElementById("info").innerHTML = `<span class="gps-error">❌ Bạn chưa cấp quyền truy cập vị trí cho trình duyệt.<br>Vui lòng kiểm tra lại cài đặt và cấp quyền vị trí cho trang web!</span>`;
-          } else {
-            document.getElementById("info").innerHTML = `<span class="gps-error">Không lấy được vị trí: ${err.message}</span>`;
-          }
-        },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
       );
 
-      var stopBtn = document.getElementById("stopShareBtn");
-      stopBtn.style.display = "inline-block";
-      stopBtn.classList.add("sharing");
-    }
-
-    function stopShare() {
-      if (geoWatchId !== null) {
-        navigator.geolocation.clearWatch(geoWatchId);
-        geoWatchId = null;
-        document.getElementById("info").innerText = "Đã dừng chia sẻ vị trí.";
-        var stopBtn = document.getElementById("stopShareBtn");
-        stopBtn.style.display = "none";
-        stopBtn.classList.remove("sharing");
-        if (marker) { map.removeLayer(marker); marker = null; }
-        if (trackPolyline) { map.removeLayer(trackPolyline); trackPolyline = null; }
-        const username = document.getElementById("username").value.trim();
-        if (username) {
-          db.ref("locations/" + username).remove();
+      const streetLayer = L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+          maxZoom: 19,
+          attribution: "© OpenStreetMap"
         }
-      }
+      );
+
+      map = L.map("map", {
+        layers: [satelliteLayer],
+        zoomControl: true
+      });
+
+      const vietnamBounds = L.latLngBounds([8.3, 102.0], [23.4, 110.0]);
+      map.fitBounds(vietnamBounds);
+
+      L.control.layers(
+        {
+          "Vệ tinh": satelliteLayer,
+          "Đường phố": streetLayer
+        },
+        null,
+        { position: "topright" }
+      ).addTo(map);
     }
 
-    // Hiện thông báo đã tìm thấy người dùng, chỉ 3 giây rồi mờ dần và mất đi
-    function showFoundUserMsg(username) {
-      var el = document.getElementById("foundUserMsg");
-      el.style.opacity = "1";
-      el.innerHTML = `Đã tìm thấy <b>${username}</b>`;
-      el.style.display = "block";
-      setTimeout(function() {
-        el.style.opacity = "0";
-        setTimeout(function() {
-          el.style.display = "none";
-        }, 1200);
+    function getShareCode() {
+      return $("shareCode").value.trim();
+    }
+
+    function isValidShareCode(code) {
+      return (
+        code.length >= 3 &&
+        code.length <= 40 &&
+        !/[.#$\[\]/]/.test(code)
+      );
+    }
+
+    function validateShareCode() {
+      const code = getShareCode();
+
+      if (!code) {
+        showInfo("Vui lòng nhập mã chia sẻ.", true);
+        return null;
+      }
+
+      if (!isValidShareCode(code)) {
+        showInfo(
+          "Mã chia sẻ phải có 3–40 ký tự và không được chứa: . # $ [ ] /",
+          true
+        );
+        return null;
+      }
+
+      return code;
+    }
+
+    function showInfo(message, isError = false) {
+      $("info").textContent = message;
+      $("info").className = isError ? "error" : "";
+    }
+
+    function setInfoHtml(html) {
+      $("info").innerHTML = html;
+      $("info").className = "";
+    }
+
+    function createPopupLabel(text) {
+      const label = document.createElement("strong");
+      label.textContent = text;
+      return label;
+    }
+
+    function showFoundUserMsg(code) {
+      const message = $("foundUserMsg");
+
+      clearTimeout(foundMessageTimer);
+      clearTimeout(hideMessageTimer);
+
+      message.textContent = `Đã tìm thấy mã chia sẻ: ${code}`;
+      message.style.opacity = "1";
+      message.style.display = "block";
+
+      foundMessageTimer = setTimeout(() => {
+        message.style.opacity = "0";
+
+        hideMessageTimer = setTimeout(() => {
+          message.style.display = "none";
+        }, 800);
       }, 3000);
-    }
-
-    function startView() {
-      if (!map) initMap();
-      const username = document.getElementById("username").value.trim();
-      if (!username) return alert("Nhập tên người dùng");
-
-      document.getElementById("info").innerText = "Đang xem vị trí của " + username;
-
-      let viewerLat = null, viewerLng = null;
-      let foundUserShown = false;
-
-      function renderInfo(data) {
-        const latlng = [data.lat, data.lng];
-        // Marker màu đỏ cho vị trí người chia sẻ
-        if (marker) { map.removeLayer(marker); marker = null; }
-        marker = L.marker(latlng, {icon: redIcon}).addTo(map);
-        marker.setLatLng(latlng).setIcon(redIcon).bindPopup("<b>" + username + "</b>").openPopup();
-        map.setView(latlng, 16);
-
-        let infoHtml = 
-          `📍 Lat: ${data.lat.toFixed(5)}, Lng: ${data.lng.toFixed(5)}<br>
-           ⏱ ${new Date(data.timestamp).toLocaleTimeString()}<br>
-           <a href="https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}" target="_blank">🗺 Chỉ đường đến đây</a>`;
-
-        if (viewerLat !== null && viewerLng !== null) {
-          const distanceKm = getDistanceKm(viewerLat, viewerLng, data.lat, data.lng).toFixed(2);
-          infoHtml =
-            `📍 Lat: ${data.lat.toFixed(5)}, Lng: ${data.lng.toFixed(5)}<br>
-             ⏱ ${new Date(data.timestamp).toLocaleTimeString()}<br>
-             🧭 Cách bạn khoảng: <strong>${distanceKm} km</strong><br>
-             <a href="https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}" target="_blank">🗺 Chỉ đường đến đây</a>`;
-        }
-        document.getElementById("info").innerHTML = infoHtml;
-
-        // Hiện thông báo đã tìm thấy người dùng (chỉ hiện 1 lần khi có dữ liệu lần đầu)
-        if (!foundUserShown) {
-          showFoundUserMsg(username);
-          foundUserShown = true;
-        }
-      }
-
-      if (trackPolyline) { map.removeLayer(trackPolyline); trackPolyline = null; }
-
-      navigator.geolocation.getCurrentPosition(viewerPos => {
-        viewerLat = viewerPos.coords.latitude;
-        viewerLng = viewerPos.coords.longitude;
-
-        if (!myLocationMarker) {
-          myLocationMarker = L.marker([viewerLat, viewerLng], { icon: blueIcon }).addTo(map);
-        }
-        myLocationMarker.setLatLng([viewerLat, viewerLng]).setIcon(blueIcon).bindPopup("<b>Tôi</b>");
-
-        db.ref("locations/" + username + "/history").on("value", snap => {
-          const data = snap.val();
-          if (data) {
-            const points = Object.values(data).map(p => [p.lat, p.lng]);
-            if (trackPolyline) { map.removeLayer(trackPolyline); }
-            if (points.length > 1) {
-              trackPolyline = L.polyline(points, {color: 'red', weight: 4, opacity: 0.6}).addTo(map);
-              map.fitBounds(trackPolyline.getBounds());
-            }
-          }
-        });
-        db.ref("locations/" + username + "/last").on("value", snap => {
-          const data = snap.val();
-          if (data) {
-            renderInfo(data);
-          } else {
-            document.getElementById("info").innerHTML = `<span class="error-highlight">Không có dữ liệu vị trí cho người dùng này.</span>`;
-            foundUserShown = false;
-          }
-        });
-      }, err => {
-        db.ref("locations/" + username + "/history").on("value", snap => {
-          const data = snap.val();
-          if (data) {
-            const points = Object.values(data).map(p => [p.lat, p.lng]);
-            if (trackPolyline) { map.removeLayer(trackPolyline); }
-            if (points.length > 1) {
-              trackPolyline = L.polyline(points, {color: 'red', weight: 4, opacity: 0.6}).addTo(map);
-              map.fitBounds(trackPolyline.getBounds());
-            }
-          }
-        });
-        db.ref("locations/" + username + "/last").on("value", snap => {
-          const data = snap.val();
-          if (data) {
-            renderInfo(data);
-          } else {
-            document.getElementById("info").innerHTML =
-              `<span class="error-highlight">Không có dữ liệu vị trí cho người dùng này.</span>`;
-            foundUserShown = false;
-          }
-        });
-      }, { enableHighAccuracy: true, timeout: 10000 });
     }
 
     function getDistanceKm(lat1, lng1, lat2, lng2) {
       const R = 6371;
       const dLat = (lat2 - lat1) * Math.PI / 180;
       const dLng = (lng2 - lng1) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLng/2) * Math.sin(dLng/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
+
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function shouldSendLocation(lat, lng, timestamp) {
+      if (lastSentLat === null || lastSentLng === null) return true;
+
+      const movedMeters =
+        getDistanceKm(lastSentLat, lastSentLng, lat, lng) * 1000;
+
+      const passedSeconds = (timestamp - lastSentTime) / 1000;
+
+      return movedMeters >= 20 || passedSeconds >= 10;
+    }
+
+    function clearSharedMapObjects() {
+      if (sharedMarker) {
+        map.removeLayer(sharedMarker);
+        sharedMarker = null;
+      }
+
+      if (trackPolyline) {
+        map.removeLayer(trackPolyline);
+        trackPolyline = null;
+      }
+    }
+
+    function stopView() {
+      if (viewingHistoryRef && historyListener) {
+        viewingHistoryRef.off("value", historyListener);
+      }
+
+      if (viewingLastRef && lastListener) {
+        viewingLastRef.off("value", lastListener);
+      }
+
+      viewingHistoryRef = null;
+      viewingLastRef = null;
+      historyListener = null;
+      lastListener = null;
+      hasCenteredViewMap = false;
+    }
+
+    function showMyLocation() {
+      initMap();
+
+      if (!navigator.geolocation) {
+        showInfo("Thiết bị hoặc trình duyệt này không hỗ trợ định vị.", true);
+        return;
+      }
+
+      showInfo("Đang lấy vị trí của bạn...");
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude: lat, longitude: lng } = position.coords;
+
+          if (!myLocationMarker) {
+            myLocationMarker = L.marker([lat, lng], { icon: blueIcon }).addTo(map);
+          }
+
+          myLocationMarker
+            .setLatLng([lat, lng])
+            .setIcon(blueIcon)
+            .bindPopup(createPopupLabel("Vị trí của tôi"));
+
+          map.setView([lat, lng], 16);
+
+          showInfo(
+            `Vị trí của bạn: ${lat.toFixed(5)}, ${lng.toFixed(5)} — ${new Date().toLocaleTimeString()}`
+          );
+        },
+        handleLocationError,
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 10000
+        }
+      );
+    }
+
+    function handleLocationError(error) {
+      let message = "Không thể lấy vị trí hiện tại.";
+
+      if (error.code === 1) {
+        message = "Bạn chưa cấp quyền vị trí cho trình duyệt. Hãy mở cài đặt trình duyệt và cho phép trang web dùng vị trí.";
+      } else if (error.code === 2) {
+        message = "Không xác định được vị trí. Hãy kiểm tra GPS, Wi‑Fi hoặc kết nối mạng.";
+      } else if (error.code === 3) {
+        message = "Lấy vị trí quá lâu. Vui lòng thử lại ở nơi có tín hiệu GPS tốt hơn.";
+      }
+
+      showInfo(message, true);
+    }
+
+    async function trimOldHistory(historyRef) {
+      if (historyCount <= 500) return;
+
+      try {
+        const oldPointSnap = await historyRef
+          .orderByChild("timestamp")
+          .limitToFirst(1)
+          .once("value");
+
+        oldPointSnap.forEach((child) => child.ref.remove());
+        historyCount--;
+      } catch (error) {
+        console.warn("Không thể xóa điểm lịch sử cũ:", error);
+      }
+    }
+
+    async function startShare() {
+      initMap();
+      stopView();
+
+      const code = validateShareCode();
+      if (!code) return;
+
+      if (!navigator.geolocation) {
+        showInfo("Thiết bị hoặc trình duyệt này không hỗ trợ định vị.", true);
+        return;
+      }
+
+      if (geoWatchId !== null) {
+        await stopShare(false);
+      }
+
+      activeShareCode = code;
+      historyCount = 0;
+      lastSentTime = 0;
+      lastSentLat = null;
+      lastSentLng = null;
+      hasCenteredShareMap = false;
+
+      clearSharedMapObjects();
+
+      const locationRef = db.ref(`locations/${activeShareCode}`);
+      const historyRef = locationRef.child("history");
+      const lastRef = locationRef.child("last");
+
+      try {
+        await locationRef.remove();
+
+        /*
+          Firebase sẽ xóa dữ liệu nếu phát hiện kết nối của người chia sẻ bị ngắt.
+          Vẫn nên bấm “Dừng chia sẻ” để xóa ngay và chắc chắn nhất.
+        */
+        locationRef.onDisconnect().remove();
+
+        $("stopShareBtn").style.display = "inline-block";
+        showInfo("Đang chờ vị trí GPS để bắt đầu chia sẻ...");
+
+        geoWatchId = navigator.geolocation.watchPosition(
+          async (position) => {
+            const { latitude: lat, longitude: lng, accuracy } = position.coords;
+            const timestamp = Date.now();
+
+            if (!shouldSendLocation(lat, lng, timestamp)) return;
+
+            lastSentTime = timestamp;
+            lastSentLat = lat;
+            lastSentLng = lng;
+
+            if (!sharedMarker) {
+              sharedMarker = L.marker([lat, lng], { icon: blueIcon }).addTo(map);
+            }
+
+            sharedMarker
+              .setLatLng([lat, lng])
+              .setIcon(blueIcon)
+              .bindPopup(createPopupLabel("Tôi đang chia sẻ vị trí"));
+
+            if (!hasCenteredShareMap) {
+              map.setView([lat, lng], 16);
+              hasCenteredShareMap = true;
+            }
+
+            const locationData = { lat, lng, timestamp };
+
+            try {
+              await lastRef.set(locationData);
+              await historyRef.push(locationData);
+
+              historyCount++;
+              trimOldHistory(historyRef);
+
+              showInfo(
+                `✅ Đang chia sẻ vị trí: ${lat.toFixed(5)}, ${lng.toFixed(5)} — ${new Date(timestamp).toLocaleTimeString()}${accuracy ? ` (sai số khoảng ${Math.round(accuracy)} m)` : ""}`
+              );
+            } catch (error) {
+              console.error(error);
+              showInfo("Không thể lưu vị trí lên Firebase. Vui lòng kiểm tra kết nối mạng.", true);
+            }
+          },
+          handleLocationError,
+          {
+            enableHighAccuracy: true,
+            maximumAge: 5000,
+            timeout: 15000
+          }
+        );
+      } catch (error) {
+        console.error(error);
+        showInfo("Không thể bắt đầu chia sẻ. Vui lòng thử lại.", true);
+      }
+    }
+
+    async function stopShare(showMessage = true) {
+      if (geoWatchId !== null) {
+        navigator.geolocation.clearWatch(geoWatchId);
+        geoWatchId = null;
+      }
+
+      $("stopShareBtn").style.display = "none";
+
+      if (activeShareCode) {
+        const ref = db.ref(`locations/${activeShareCode}`);
+
+        try {
+          await ref.onDisconnect().cancel();
+          await ref.remove();
+        } catch (error) {
+          console.warn("Không thể xóa dữ liệu Firebase:", error);
+        }
+      }
+
+      activeShareCode = "";
+      historyCount = 0;
+      lastSentTime = 0;
+      lastSentLat = null;
+      lastSentLng = null;
+      hasCenteredShareMap = false;
+
+      clearSharedMapObjects();
+
+      if (showMessage) {
+        showInfo("Đã dừng chia sẻ và yêu cầu xóa dữ liệu vị trí trên Firebase.");
+      }
+    }
+
+    function subscribeToLocation(code, viewerPosition = null) {
+      stopView();
+      clearSharedMapObjects();
+
+      let foundUserShown = false;
+
+      viewingHistoryRef = db.ref(`locations/${code}/history`);
+      viewingLastRef = db.ref(`locations/${code}/last`);
+
+      historyListener = (snapshot) => {
+        const historyData = snapshot.val();
+
+        if (!historyData) {
+          if (trackPolyline) {
+            map.removeLayer(trackPolyline);
+            trackPolyline = null;
+          }
+          return;
+        }
+
+        const points = Object.values(historyData)
+          .filter((point) =>
+            Number.isFinite(point.lat) &&
+            Number.isFinite(point.lng) &&
+            Number.isFinite(point.timestamp)
+          )
+          .sort((a, b) => a.timestamp - b.timestamp)
+          .slice(-500)
+          .map((point) => [point.lat, point.lng]);
+
+        if (trackPolyline) {
+          map.removeLayer(trackPolyline);
+          trackPolyline = null;
+        }
+
+        if (points.length > 1) {
+          trackPolyline = L.polyline(points, {
+            color: "#bd4b4b",
+            weight: 4,
+            opacity: 0.72
+          }).addTo(map);
+        }
+      };
+
+      lastListener = (snapshot) => {
+        const data = snapshot.val();
+
+        if (!data || !Number.isFinite(data.lat) || !Number.isFinite(data.lng)) {
+          showInfo("Không có dữ liệu vị trí cho mã chia sẻ này.", true);
+          foundUserShown = false;
+          return;
+        }
+
+        if (!sharedMarker) {
+          sharedMarker = L.marker([data.lat, data.lng], { icon: redIcon }).addTo(map);
+        }
+
+        sharedMarker
+          .setLatLng([data.lat, data.lng])
+          .setIcon(redIcon)
+          .bindPopup(createPopupLabel(`Vị trí của ${code}`));
+
+        if (!hasCenteredViewMap) {
+          map.setView([data.lat, data.lng], 16);
+          hasCenteredViewMap = true;
+        }
+
+        const ageMinutes = Math.floor((Date.now() - data.timestamp) / 60000);
+
+        let infoHtml = `
+          📍 <strong>Vị trí:</strong> ${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}<br>
+          ⏱ <strong>Cập nhật:</strong> ${new Date(data.timestamp).toLocaleTimeString()}
+        `;
+
+        if (viewerPosition) {
+          const distanceKm = getDistanceKm(
+            viewerPosition.lat,
+            viewerPosition.lng,
+            data.lat,
+            data.lng
+          ).toFixed(2);
+
+          infoHtml += `<br>🧭 <strong>Cách bạn khoảng:</strong> ${distanceKm} km`;
+        }
+
+        if (ageMinutes >= 2) {
+          infoHtml += `<br><span class="warning">⚠️ Vị trí này đã không cập nhật trong khoảng ${ageMinutes} phút.</span>`;
+        }
+
+        const googleMapsUrl =
+          `https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}`;
+
+        const appleMapsUrl =
+          `https://maps.apple.com/?daddr=${data.lat},${data.lng}&dirflg=d`;
+
+        infoHtml += `
+          <div class="route-buttons">
+            <a class="route-btn" href="${googleMapsUrl}" target="_blank" rel="noopener">
+              🗺 Chỉ đường bằng Google Maps
+            </a>
+            <a class="route-btn" href="${appleMapsUrl}" target="_blank" rel="noopener">
+               Chỉ đường bằng Apple Maps
+            </a>
+          </div>
+        `;
+
+        setInfoHtml(infoHtml);
+
+        if (!foundUserShown) {
+          showFoundUserMsg(code);
+          foundUserShown = true;
+        }
+      };
+
+      viewingHistoryRef.on("value", historyListener);
+      viewingLastRef.on("value", lastListener);
+    }
+
+    function startView() {
+      initMap();
+
+      const code = validateShareCode();
+      if (!code) return;
+
+      if (geoWatchId !== null) {
+        stopShare(false);
+      }
+
+      showInfo(`Đang tìm vị trí của mã: ${code}...`);
+
+      if (!navigator.geolocation) {
+        subscribeToLocation(code);
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const viewerPosition = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+
+          if (!myLocationMarker) {
+            myLocationMarker = L.marker(
+              [viewerPosition.lat, viewerPosition.lng],
+              { icon: blueIcon }
+            ).addTo(map);
+          }
+
+          myLocationMarker
+            .setLatLng([viewerPosition.lat, viewerPosition.lng])
+            .setIcon(blueIcon)
+            .bindPopup(createPopupLabel("Vị trí của tôi"));
+
+          subscribeToLocation(code, viewerPosition);
+        },
+        () => {
+          /*
+            Không cấp GPS vẫn xem được vị trí người khác.
+            Chỉ không hiển thị được khoảng cách từ người xem đến người chia sẻ.
+          */
+          subscribeToLocation(code);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 12000,
+          maximumAge: 10000
+        }
+      );
     }
 
     function toggleGuide() {
-      const guide = document.getElementById("guide");
-      guide.style.display = guide.style.display === "block" ? "none" : "block";
+      const guide = $("guide");
+      const isVisible = guide.style.display === "block";
+
+      guide.style.display = isVisible ? "none" : "block";
     }
 
-    function closeGuide() {
-      document.getElementById("guide").style.display = "none";
-    }
+    $("shareBtn").addEventListener("click", startShare);
+    $("viewBtn").addEventListener("click", startView);
+    $("stopShareBtn").addEventListener("click", () => stopShare(true));
+    $("guideBtn").addEventListener("click", toggleGuide);
+    $("closeGuideBtn").addEventListener("click", () => {
+      $("guide").style.display = "none";
+    });
+    $("locateMeBtn").addEventListener("click", showMyLocation);
 
-    window.onload = initMap;
+    $("shareCode").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") startView();
+    });
+
+    window.addEventListener("beforeunload", () => {
+      stopView();
+    });
+
+    initMap();
   </script>
 </body>
 </html>
